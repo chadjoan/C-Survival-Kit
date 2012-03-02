@@ -32,6 +32,17 @@ string *str_malloc(string *str, size_t length)
 	return str;
 }
 
+string *str_realloc(string *str, size_t length)
+{
+	if ( str == NULL )
+		die("str_malloc(NULL)");
+	
+	str->ptr = realloc(str->ptr, length+1);
+	str->length = length;
+	*(str->ptr + str->length) = '\0';
+	return str;
+}
+
 string str_literal(const char *lit)
 {
 	string str;

@@ -15,15 +15,20 @@ struct string
 /* 
 Zeroes/Nulls out the string. 
 This MUST be called on uninitialized strings before they are fed to 
-  str_malloc or any function that expects a NULL string. 
+  str_malloc or any function that expects a NULL string (str->ptr). 
 */
 string *str_init(string *str);
 
 /* 
 Allocate 'length' bytes for the string 'str'.
-'str' should be NULL before this is called. 
+str->ptr should be NULL before this is called. 
 */
 string *str_malloc(string *str, size_t length);
+
+/*
+Similar to str_malloc, except that non-null str->ptr's will be reallocated.
+*/
+string *str_realloc(string *str, size_t length);
 
 /* Allocates a string and fills it with the given nul-terminated */
 /* c-string literal. */
