@@ -23,10 +23,7 @@ ssize_t sendn(int sock, string text)
 	return n_bytes_sent;
 }
 
-#define ERR_RECVN_RECV_FAILED         1
-#define ERR_RECVN_LENGTH_NOT_GIVEN    2
-#define ERR_RECVN_NOT_ENOUGH_BYTES    3
-exception recvn(int sock, string *buf)
+void recvn(int sock, string *buf)
 {
 	int64_t received = -1;
 	char buffer[4];
@@ -38,10 +35,10 @@ exception recvn(int sock, string *buf)
 	
 	/* Receive message */
 	if ((received = recv(sock, buffer, 4, 0)) < 0)
-		return new_exception(ERR_RECVN_RECV_FAILED, "recvn: Length information not received. recv() call failed with error code %d.", received);
+		THROW_VOID(new_exception("recvn: Length information not received. recv() call failed with error code %d.", received));
 	
 	if ( received < 4 )
-		return new_exception(ERR_RECVN_LENGTH_NOT_GIVEN, "recvn: Length information not received. Received %d bytes instead.", received);
+		THROW_VOID(new_exception("recvn: Length information not received. Received %d bytes instead.", received));
 
 	msg_length = ntohl(((uint32_t*)buffer)[0]);
 	buf = str_realloc(buf, msg_length);
@@ -55,7 +52,7 @@ exception recvn(int sock, string *buf)
 		
 		/* Check for more data */
 		if ((received = recv(sock, msg_cursor, msg_end - msg_cursor, 0)) < 0)
-			return new_exception(ERR_RECVN_NOT_ENOUGH_BYTES, "recvn: Not enough bytes received to complete message.", received);
+			THROW_VOID(new_exception("recvn: Not enough bytes received to complete message.", received));
 		
 		if ( received == 0 )
 			break;
@@ -77,8 +74,6 @@ exception recvn(int sock, string *buf)
 		if ( msg_cursor == msg_end )
 			break;
 	}
-	
-	return no_exception();
 }
 
 ssize_t sendnf(int sock, char *fmtstr, ...)

@@ -27,7 +27,7 @@ on it later.
 Returns a string with a NULL ptr if there was an error reading the message 
 length.  
 */
-exception recvn(int sock, string *buf);
+void recvn(int sock, string *buf);
 
 ssize_t sendnf(int sock, char *fmtstr, ...);
 

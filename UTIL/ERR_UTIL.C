@@ -1,36 +1,171 @@
 
 #include "ERR_UTIL.H"
 #include <stdlib.h>
+#include <unistd.h> /* For ssize_t */
+#include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 
 #include <lib$routines.h> /* lib$signal */
 
-char error_text_buffer[ERROR_BUFFER_SIZE];
+frame_info __frame_info_stack[FRAME_INFO_STACK_SIZE];
+size_t     __frame_info_end = 0;
 
-void print_exception(exception e)
+	
+static void best_effort_vms_path_parse_device(
+	const char *path,
+	      char **device,
+	const char **rest )
 {
-	printf("%s\n",e.error_text);
+	size_t i = 0;
+	char c = path[i];
+	while ( c != '\0' )
+	{
+		if ( c == ':' )
+		{
+			*device = malloc(i+1);
+			memcpy(*device, path, i);
+			(*device)[i] = '\0';
+			*rest = path+i+1;
+			return;
+		}
+		
+		c = path[++i];
+	}
+	
+	/* Return the empty string for device. */
+	*device = malloc(1);
+	(*device)[0] = '\0';
+	*rest = path;
+	return;
 }
 
-exception no_exception()
+static void best_effort_vms_path_parse_directory(
+	const char *path,
+	      char **directory,
+	const char **rest )
 {
-	exception result;
-	result.error_code = 0;
-	result.error_text = NULL;
+	size_t i = 0;
+	char endchar = '\0';
+	char c = path[i];
+	if ( c == '[' || c == '<' )
+	while ( c != '\0' )
+	{
+		if ( c == '[' )
+		{
+			endchar = ']';
+		}
+		else if ( c == '<' )
+		{
+			endchar = '>';
+		}
+		else if ( i > 0 && c == endchar )
+		{
+			*directory = malloc(i);
+			memcpy(*directory, path+1, i);
+			(*directory)[i] = '\0';
+			*rest = path+i+1;
+			return;
+		}
+		
+		c = path[++i];
+	}
+	
+	/* Return the empty string for directory. */
+	*directory = malloc(1);
+	(*directory)[0] = '\0';
+	*rest = path;
+	return;
+}
+
+/* Attempts to break apart an OpenVMS path. */
+/* This does not make system calls, so it could become outdated. */
+static void best_effort_vms_path_parse(
+	const char *path,        /* input: the openvms path to parse. */
+	char **device,
+	char **directory,
+	char **name)
+{
+	const char *rest = path;
+	best_effort_vms_path_parse_device(rest, device, &rest);
+	best_effort_vms_path_parse_directory(rest, directory, &rest);
+	
+	size_t rest_len = strlen(rest);
+	*name = malloc(rest_len+1);
+	memcpy(*name, rest, rest_len);
+	(*name)[rest_len] = '\0';
+	return;
+}
+
+/* TODO: use malloc instead of global/static stuff. */
+#define MSG_BUF_SIZE 32768
+static char msg_buf[MSG_BUF_SIZE];
+char *stack_trace_to_str()
+{
+	char *msg_pos = msg_buf;
+	ssize_t msg_rest_length = MSG_BUF_SIZE;
+	ssize_t i;
+	
+	for ( i = 0; i < __frame_info_end; i++ )
+	{
+		frame_info fi = __frame_info_stack[i];
+		
+		char *device;
+		char *directory;
+		char *name;
+		best_effort_vms_path_parse(fi.file_name, &device, &directory, &name);
+		
+		ssize_t nchars = snprintf(
+			msg_pos, msg_rest_length,
+			"%s: at line %d in function %s\r\n",
+			name,
+			fi.line_number,
+			fi.func_name);
+		
+		free(device);
+		free(directory);
+		free(name);
+		
+		if ( nchars < 0 )
+			continue;
+		msg_pos += nchars;
+		msg_rest_length -= nchars;
+		if ( msg_rest_length < 0 )
+			break;
+	}
+	
+	return msg_buf;
+}
+
+char error_text_buffer[ERROR_BUFFER_SIZE];
+exception *__thrown_exception = NULL;
+
+void print_exception(exception *e)
+{
+	printf("%s\n",e->error_text);
+	printf("%s\n",stack_trace_to_str());
+}
+
+#if 0
+exception *no_exception()
+{
+	exception *result = malloc(sizeof(exception));
+	/* result->error_code = 0; */
+	result->error_text = NULL;
 	return result;
 }
+#endif
 
-exception new_exception(size_t error_code, char *mess, ...)
+exception *new_exception(char *mess, ...)
 {
 	va_list vl;
 	va_start(vl, mess);
 	vsnprintf(error_text_buffer, ERROR_BUFFER_SIZE, mess, vl);
 	va_end(vl);
 	
-	exception result;
-	result.error_code = error_code;
-	result.error_text = error_text_buffer;
+	exception *result = malloc(sizeof(exception));
+	/* result->error_code = error_code; */
+	result->error_text = error_text_buffer;
 	return result;
 }
 
@@ -44,4 +179,14 @@ void die(char *mess, ...)
 	perror(error_text_buffer);
 	/*exit(1);*/
 	lib$signal(EXIT_FAILURE);
+}
+
+int __push_stack_info(size_t line, const char *file, const char *func)
+{
+	frame_info fi;
+	fi.line_number = line;
+	fi.file_name = file;
+	fi.func_name = func;
+	__frame_info_stack[__frame_info_end++] = fi;
+	return 0;
 }
