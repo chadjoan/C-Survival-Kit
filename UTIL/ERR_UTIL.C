@@ -8,8 +8,8 @@
 
 #include <lib$routines.h> /* lib$signal */
 
-frame_info __frame_info_stack[FRAME_INFO_STACK_SIZE];
-size_t     __frame_info_end = 0;
+frame_info  __frame_info_stack[FRAME_INFO_STACK_SIZE];
+ssize_t     __frame_info_end = 0;
 
 	
 static void best_effort_vms_path_parse_device(
@@ -100,13 +100,13 @@ static void best_effort_vms_path_parse(
 /* TODO: use malloc instead of global/static stuff. */
 #define MSG_BUF_SIZE 32768
 static char msg_buf[MSG_BUF_SIZE];
-char *stack_trace_to_str()
+static char *stack_trace_to_str_internal(ssize_t frame_end)
 {
 	char *msg_pos = msg_buf;
 	ssize_t msg_rest_length = MSG_BUF_SIZE;
 	ssize_t i;
 	
-	for ( i = 0; i < __frame_info_end; i++ )
+	for ( i = frame_end-1; i >= 0; i-- )
 	{
 		frame_info fi = __frame_info_stack[i];
 		
@@ -137,13 +137,21 @@ char *stack_trace_to_str()
 	return msg_buf;
 }
 
+char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
+{
+	__push_stack_info(line,file,func);
+	char *result = stack_trace_to_str_internal(__frame_info_end);
+	__pop_stack_info();
+	return result;
+}
+
 char error_text_buffer[ERROR_BUFFER_SIZE];
 exception *__thrown_exception = NULL;
 
 void print_exception(exception *e)
 {
 	printf("%s\n",e->error_text);
-	printf("%s\n",stack_trace_to_str());
+	printf("%s\n",stack_trace_to_str_internal(e->frame_info_index));
 }
 
 #if 0
@@ -189,4 +197,15 @@ int __push_stack_info(size_t line, const char *file, const char *func)
 	fi.func_name = func;
 	__frame_info_stack[__frame_info_end++] = fi;
 	return 0;
+}
+
+frame_info __pop_stack_info()
+{
+	frame_info fi = __frame_info_stack[__frame_info_end--];
+	if ( __frame_info_end < 0 )
+		die("Attempt to pop stack info at stack bottom.\r\n"		
+			"Happened in file %s at line %d in function %s\r\n",
+			fi.file_name, fi.line_number, fi.func_name);
+
+	return fi;
 }

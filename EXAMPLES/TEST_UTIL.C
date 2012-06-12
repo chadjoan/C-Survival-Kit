@@ -4,6 +4,9 @@
 int baz()
 {
 	printf("Baz doesn't throw.\n");
+	printf("It does print a stack trace before returning, though:\n");
+	printf("%s",stack_trace_to_str());
+	printf("\n");
 	return 0;
 }
 
