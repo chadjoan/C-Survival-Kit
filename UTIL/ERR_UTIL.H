@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <limits.h> /* For INT_MIN and the like. */
 #include <setjmp.h>
+#include <assert.h>
 
 #include "UTIL_MACRO.H"
 #include "UTIL_EXCEPTIONS_GENERATED.H"
@@ -113,7 +114,7 @@ jmp_buf *__pop_try_context();
 */
 #define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
-		ERR_UTIL_TRACE("%s, %d.93: __PROPOGATE\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
 		ERR_UTIL_TRACE("frame_info_index: %d\n",__frame_info_end-1); \
 		longjmp( \
 			__frame_context_stack[__frame_info_end-1], \
@@ -132,7 +133,7 @@ Example usage:
 */
 #define THROW(e) \
 	do { \
-		ERR_UTIL_TRACE("%s, %d.102: THROW\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.136: THROW\n", __FILE__, __LINE__); \
 		__thrown_exception = (e); \
 		if ( __thrown_exception == NULL ) \
 			__thrown_exception = new_exception(-1,"NULL was thrown."); \
@@ -179,14 +180,14 @@ Example usage:
 #define CALL(expr) /* */ \
 	do { \
 		if ( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) == 0 ) { \
-			ERR_UTIL_TRACE("%s, %d.115: CALL.setjmp\n", __FILE__, __LINE__); \
+			ERR_UTIL_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
 			(expr); \
 		} else { \
-			ERR_UTIL_TRACE("%s, %d.118: CALL.longjmp\n", __FILE__, __LINE__); \
+			ERR_UTIL_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
 			__pop_stack_info(); \
 			__PROPOGATE_THROWN_EXCEPTIONS; \
 		} \
-		ERR_UTIL_TRACE("%s, %d.122: CALL.success\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 	} while (0)
 	
@@ -232,46 +233,90 @@ Example usage:
 */
 #define TRY /* */ \
 	if ( setjmp(*__push_try_context()) != __TRY_SAFE_EXIT ) { \
-		ERR_UTIL_TRACE("%s, %d.235: TRY.if\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \
-			ERR_UTIL_TRACE("%s, %d.237: TRY.do\n", __FILE__, __LINE__); \
-			switch ( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) ) \
+			ERR_UTIL_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
+			switch( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) ) \
 			{ \
-			case 0: { \
-				ERR_UTIL_TRACE("%s, %d.241: TRY: case 0:\n", __FILE__, __LINE__); \
+			case __TRY_EXCEPTION_CLEANUP: \
+			{ \
+				/* Exception cleanup case. */ \
+				/* Note that this case is ALWAYS reached because CASE and ENDTRY macros  */ \
+				/*   may follow either the successful block or an exceptional one, so    */ \
+				/*   there is no way to know from within this macro which one should be  */ \
+				/*   jumped to.  The best strategy then is to always jump to the cleanup */ \
+				/*   case after leaving any part of the TRY-CATCH-ENDTRY and only free   */ \
+				/*   exceptions if there actually are any.                               */ \
+				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
+				if (__thrown_exception != NULL) \
+				{ \
+					free(__thrown_exception); \
+					__thrown_exception = NULL; \
+				} \
+				__pop_stack_info(); \
+				longjmp(*__pop_try_context(), __TRY_SAFE_EXIT); \
+			} \
+			default: \
+			{ \
+				/* This is going to look a bit Duffy. ;)                           */ \
+				/* It is fairly important, however, that we nest the 'case 0:'     */ \
+				/* statement inside of an if statement that is otherwise never     */ \
+				/* evaluated.  This strange configuration is driven by the need to */ \
+				/* have the code at the end of each block (after macro expansion)  */ \
+				/* look identical but do slightly different things.  The if(0)     */ \
+				/* ensures that each end-of-block can assume that the previous     */ \
+				/* block started as some form of if-statement.  The 0 in the       */ \
+				/* if(0) makes sure that it never gets re-evaluated when           */ \
+				/* exceptions are thrown: it must only be evaluated once when      */ \
+				/* the TRY block is entered, and that causes setjmp to select      */ \
+				/* the 0th case. Either way, the end-of-blocks will cleanup        */ \
+				/* thrown exceptions /if they exist/ and otherwise exit cleanly.   */ \
+				/* An early approach was to place everything inside a switch-case  */ \
+				/* statement and never use if-else.  That configuration was        */ \
+				/* incapable of handling exception inheritance because the cases   */ \
+				/* in a switch-case can't be computed expressions.                 */ \
+				if ( 0 ) \
+				{ \
+				case 0: \
+					/* Normal/successful case. */ \
+					ERR_UTIL_TRACE("%s, %d.282: TRY: case 0:\n", __FILE__, __LINE__); \
 
 #define CATCH(__error_code, exc_name) /* */ \
-				__pop_stack_info(); \
-				ERR_UTIL_TRACE("%s, %d.245: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
-				longjmp(*__pop_try_context(), __TRY_SAFE_EXIT); \
+					/* This end-of-block may be either the end of the normal/success case */ \
+					/*   OR the end of a catch block.  It must be able to do the correct */ \
+					/*   thing regardless of where it comes from. */ \
+					ERR_UTIL_TRACE("%s, %d.288: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
+					longjmp( __frame_context_stack[__frame_info_end-1], __TRY_EXCEPTION_CLEANUP); \
 				} \
-			case __error_code: { \
-				ERR_UTIL_TRACE("%s, %d.249: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
-				exception *exc_name = __thrown_exception;
+				else if ( exception_is_a( __thrown_exception->error_code, __error_code) ) \
+				{ \
+					/* CATCH block. */ \
+					ERR_UTIL_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
+					exception *exc_name = __thrown_exception;
 
 #define ENDTRY /* */ \
-				ERR_UTIL_TRACE("%s, %d.253: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
-				longjmp( __frame_context_stack[__frame_info_end-1], __TRY_EXCEPTION_CLEANUP); \
+					/* This end-of-block may be either the end of the normal/success case */ \
+					/*   OR the end of a catch block.  It must be able to do the correct */ \
+					/*   thing regardless of where it comes from. */ \
+					ERR_UTIL_TRACE("%s, %d.301: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
+					longjmp( __frame_context_stack[__frame_info_end-1], __TRY_EXCEPTION_CLEANUP); \
 				} \
-			case __TRY_EXCEPTION_CLEANUP: { \
-				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
-				free(__thrown_exception); \
-				__thrown_exception = NULL; \
-				__pop_stack_info(); \
-				longjmp(*__pop_try_context(), __TRY_SAFE_EXIT); \
+				else \
+				{ \
+					/* An exception was thrown and we can't handle it. */ \
+					ERR_UTIL_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
+					__pop_stack_info(); \
+					__pop_try_context(); \
+					__PROPOGATE_THROWN_EXCEPTIONS; \
 				} \
-			default: { \
-				ERR_UTIL_TRACE("%s, %d.264: TRY: default: longjmp\n", __FILE__, __LINE__); \
-				__pop_stack_info(); \
-				__pop_try_context(); \
-				__PROPOGATE_THROWN_EXCEPTIONS; \
-				} \
-			} \
+				assert(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
+			} /* default: { } */ \
+			} /* switch(setjmp(*__push...)) \
 			/* If execution makes it here, then the caller */ \
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
-			ERR_UTIL_TRACE("%s, %d.274: TRY: break found!\n", __FILE__, __LINE__); \
+			ERR_UTIL_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
 			__pop_stack_info(); \
 			__pop_try_context(); \
 			THROW(new_exception(BREAK_IN_TRY_CATCH, "\n"\
@@ -283,7 +328,7 @@ Example usage:
 		/* used a "continue" statement and is trying to */ \
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
-		ERR_UTIL_TRACE("%s, %d.286: TRY: continue found!\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 		__pop_try_context(); \
 		THROW(new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
@@ -291,6 +336,6 @@ Example usage:
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n" )); \
 	} \
-	ERR_UTIL_TRACE("%s, %d.294: TRY: done.\n", __FILE__, __LINE__);
+	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
 	
 #endif

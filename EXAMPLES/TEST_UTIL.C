@@ -12,7 +12,7 @@ int baz()
 
 float qux()
 {
-	RAISE(10,"qux does throw!\n");
+	RAISE(GENERIC_EXCEPTION,"qux does throw!\n");
 	printf("qux should not print this.\n");
 	return 0.0;
 }
@@ -137,7 +137,7 @@ void main()
 	TRY
 		baz();
 		printf("No exception thrown.\n");
-	CATCH(10, e)
+	CATCH(GENERIC_EXCEPTION, e)
 		print_exception(e);
 	ENDTRY
 	
@@ -146,16 +146,16 @@ void main()
 	TRY
 		TRY
 			printf("Nested TRY-TRY-CATCH test.\n");
-		CATCH(10, e)
+		CATCH(GENERIC_EXCEPTION, e)
 			print_exception(e);
 		ENDTRY
 		
 		foo();
 		printf("No exception thrown.\n");
-	CATCH(10, e)
+	CATCH(GENERIC_EXCEPTION, e)
 		TRY
 			printf("Nested CATCH-TRY-CATCH test.\n");
-		CATCH(10, e2)
+		CATCH(GENERIC_EXCEPTION, e2)
 			printf("This shouldn't happen.\n");
 			/* print_exception(e2);*/
 		ENDTRY
@@ -170,7 +170,7 @@ void main()
 				printf("I'm in a loop.\n");
 				printf("Now to bail without stopping first!\n");
 				break;
-			CATCH(10,e)
+			CATCH(GENERIC_EXCEPTION,e)
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
 			ENDTRY
 		}
@@ -187,7 +187,7 @@ void main()
 				printf("I'm in a loop (again).\n");
 				printf("Now to bail without stopping first!\n");
 				continue;
-			CATCH(10,e)
+			CATCH(GENERIC_EXCEPTION,e)
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
 			ENDTRY
 		}
