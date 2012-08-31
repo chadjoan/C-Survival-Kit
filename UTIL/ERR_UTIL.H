@@ -232,43 +232,37 @@ Example usage:
 */
 #define TRY /* */ \
 	if ( setjmp(*__push_try_context()) != __TRY_SAFE_EXIT ) { \
-		ERR_UTIL_TRACE("%s, %d.153: TRY.if\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.235: TRY.if\n", __FILE__, __LINE__); \
 		do { \
-			ERR_UTIL_TRACE("%s, %d.155: TRY.do\n", __FILE__, __LINE__); \
+			ERR_UTIL_TRACE("%s, %d.237: TRY.do\n", __FILE__, __LINE__); \
 			switch ( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) ) \
 			{ \
 			case 0: { \
-				ERR_UTIL_TRACE("%s, %d.159: TRY: case 0:\n", __FILE__, __LINE__); \
-			case __TRY_EXCEPTION_CLEANUP: { \
-					ERR_UTIL_TRACE("%s, %d.161: TRY: case CLEANUP\n", __FILE__, __LINE__); \
-					if ( setjmp(*__push_try_context()) == __TRY_EXCEPTION_CLEANUP ) \
-					{ \
-						ERR_UTIL_TRACE("%s, %d.164: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
-						free(__thrown_exception); \
-						__thrown_exception = NULL; \
-						longjmp(*__pop_try_context(), __TRY_SAFE_EXIT); \
-					} \
-					ERR_UTIL_TRACE("%s, %d.170: TRY: case CLEANUP: setjmp\n", __FILE__, __LINE__); \
-				}
+				ERR_UTIL_TRACE("%s, %d.241: TRY: case 0:\n", __FILE__, __LINE__); \
 
 #define CATCH(__error_code, exc_name) /* */ \
 				__pop_stack_info(); \
-				ERR_UTIL_TRACE("%s, %d.174: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
-				longjmp(*__pop_try_context(), __TRY_EXCEPTION_CLEANUP); \
+				ERR_UTIL_TRACE("%s, %d.245: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
+				longjmp(*__pop_try_context(), __TRY_SAFE_EXIT); \
 				} \
 			case __error_code: { \
-				ERR_UTIL_TRACE("%s, %d.178: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
+				ERR_UTIL_TRACE("%s, %d.249: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
 				exception *exc_name = __thrown_exception;
 
 #define ENDTRY /* */ \
-				ERR_UTIL_TRACE("%s, %d.182: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
+				ERR_UTIL_TRACE("%s, %d.253: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
+				longjmp( __frame_context_stack[__frame_info_end-1], __TRY_EXCEPTION_CLEANUP); \
+				} \
+			case __TRY_EXCEPTION_CLEANUP: { \
+				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
+				free(__thrown_exception); \
+				__thrown_exception = NULL; \
 				__pop_stack_info(); \
-				longjmp(*__pop_try_context(), __TRY_EXCEPTION_CLEANUP); \
+				longjmp(*__pop_try_context(), __TRY_SAFE_EXIT); \
 				} \
 			default: { \
-				ERR_UTIL_TRACE("%s, %d.187: TRY: default: longjmp\n", __FILE__, __LINE__); \
+				ERR_UTIL_TRACE("%s, %d.264: TRY: default: longjmp\n", __FILE__, __LINE__); \
 				__pop_stack_info(); \
-				__pop_try_context(); \
 				__pop_try_context(); \
 				__PROPOGATE_THROWN_EXCEPTIONS; \
 				} \
@@ -277,9 +271,8 @@ Example usage:
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
-			ERR_UTIL_TRACE("%s, %d.192: TRY: break found!\n", __FILE__, __LINE__); \
+			ERR_UTIL_TRACE("%s, %d.274: TRY: break found!\n", __FILE__, __LINE__); \
 			__pop_stack_info(); \
-			__pop_try_context(); \
 			__pop_try_context(); \
 			THROW(new_exception(BREAK_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'break' statement from within a TRY-CATCH block.\n" \
@@ -290,15 +283,14 @@ Example usage:
 		/* used a "continue" statement and is trying to */ \
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
-		ERR_UTIL_TRACE("%s, %d.198: TRY: continue found!\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("%s, %d.286: TRY: continue found!\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
-		__pop_try_context(); \
 		__pop_try_context(); \
 		THROW(new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n" )); \
 	} \
-	ERR_UTIL_TRACE("%s, %d.204: TRY: done.\n", __FILE__, __LINE__);
+	ERR_UTIL_TRACE("%s, %d.294: TRY: done.\n", __FILE__, __LINE__);
 	
 #endif

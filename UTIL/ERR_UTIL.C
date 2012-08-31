@@ -20,8 +20,9 @@ void unittest_err_util()
 	if( !exception_is_a(GENERIC_EXCEPTION, GENERIC_EXCEPTION) )  RAISE(GENERIC_EXCEPTION,"Assertion failed.");
 	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) RAISE(GENERIC_EXCEPTION,"Assertion failed.");
 	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    RAISE(GENERIC_EXCEPTION,"Assertion failed.");
+	printf("err_util unittest passed!\n");
 }
-	
+
 static void best_effort_vms_path_parse_device(
 	const char *path,
 	      char **device,
