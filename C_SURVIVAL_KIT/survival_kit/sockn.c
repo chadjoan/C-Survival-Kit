@@ -1,13 +1,14 @@
-#include "SOCKN.H"
-
-#include "STR_UTIL.H"
-#include "ERR_UTIL.H"
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <inttypes.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+
+#include "survival_kit/sockn.h"
+#include "survival_kit/str.h"
+#include "survival_kit/features.h"
+
 
 ssize_t sendn(int sock, string text)
 {

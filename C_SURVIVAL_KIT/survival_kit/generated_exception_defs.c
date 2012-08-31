@@ -1,7 +1,7 @@
 #include <inttypes.h>
 #include <assert.h>
 
-#include "ERR_UTIL.H"
+#include "survival_kit/generated_exception_defs.h"
 
 err_code_t __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 	0, /* Never use 0, it has a special meaning for setjmp/longjmp. */

@@ -1,11 +1,12 @@
 
-#include "STR_UTIL.H"
-#include "ERR_UTIL.H"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h> /* For ssize_t */
+
+#include "survival_kit/str.h"
+#include "survival_kit/features.h"
 
 string *str_init(string *str)
 {

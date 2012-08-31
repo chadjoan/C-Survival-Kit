@@ -1,5 +1,4 @@
 
-#include "ERR_UTIL.H"
 #include <stdlib.h>
 #include <unistd.h> /* For ssize_t */
 #include <string.h>
@@ -7,6 +6,8 @@
 #include <stdarg.h>
 
 #include <lib$routines.h> /* lib$signal */
+
+#include "survival_kit/features.h"
 
 frame_info  __frame_info_stack[FRAME_INFO_STACK_SIZE];
 jmp_buf     __frame_context_stack[FRAME_INFO_STACK_SIZE];

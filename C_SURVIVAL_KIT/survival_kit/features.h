@@ -8,8 +8,8 @@
 #include <setjmp.h>
 #include <assert.h>
 
-#include "UTIL_MACRO.H"
-#include "UTIL_EXCEPTIONS_GENERATED.H"
+#include "survival_kit/macro.h"
+#include "survival_kit/generated_exception_defs.h"
 
 /* TODO: what if an exception is raised from within a CATCH block? */
 
