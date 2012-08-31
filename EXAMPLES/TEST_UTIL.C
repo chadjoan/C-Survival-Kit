@@ -194,6 +194,4 @@ void main()
 	CATCH(CONTINUE_IN_TRY_CATCH, e)
 		print_exception(e);
 	ENDTRY
-	
-	/*RAISE(GENERIC_EXCEPTION,"Hi there!");*/
 }

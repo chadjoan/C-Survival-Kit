@@ -11,6 +11,8 @@
 #include "UTIL_MACRO.H"
 #include "UTIL_EXCEPTIONS_GENERATED.H"
 
+/* TODO: what if an exception is raised from within a CATCH block? */
+
 /* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
 // debug the code that is supposed to make debugging easier. */
 #define DO_ERR_UTIL_TRACING 0
