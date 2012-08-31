@@ -8,6 +8,7 @@
 #include <setjmp.h>
 
 #include "UTIL_MACRO.H"
+#include "UTIL_EXCEPTIONS_GENERATED.H"
 
 /* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
 // debug the code that is supposed to make debugging easier. */
@@ -19,9 +20,26 @@
 #endif
 
 /** Exception definitions.  TODO: these should have a definition syntax that allows a separate tool to sweep all source files and automatically allocate non-colliding error codes for all exceptions and place them in a file that can be included from ERR_UTIL.H. */
-#define GENERIC_EXCEPTION -2
-#define BREAK_IN_TRY_CATCH -98
-#define CONTINUE_IN_TRY_CATCH -99
+/* GENERIC exceptions are the root of all catchable exceptions. */
+/* @define_exception(GENERIC_EXCEPTION, "An exception was thrown.") */
+/* @define_exception(BREAK_IN_TRY_CATCH : GENERIC_EXCEPTION,
+"Code has attempted to use a 'break' statement from within a TRY-CATCH block.\n"
+"This could easily corrupt program execution and corrupt debugging data.\n"
+"Do not do this, ever!") */
+/* @define_exception(CONTINUE_IN_TRY_CATCH : GENERIC_EXCEPTION,
+"Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n"
+"This could easily corrupt program execution and corrupt debugging data.\n"
+"Do not do this, ever!" ) */
+
+/** Unit test. */
+void unittest_err_util();
+
+/*
+FATAL exceptions should never be caught.
+They signal potentially irreversable corruption, such as memory corruption
+that may cause things like unexpected null pointers or access violations.
+*/
+/* @define_exception(FATAL_EXCEPTION, "A fatal exception was thrown.") */
 
 /* Implementation details. */
 typedef struct frame_info frame_info;
@@ -48,7 +66,7 @@ typedef struct exception exception;
 struct exception
 {
 	/* Implementation note: keep this small, it will be returned by-value from functions a lot. */
-	size_t error_code;   /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
+	err_code_t error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
 	char *error_text;    /** READ ONLY: a description for the error. */
 	ssize_t frame_info_index; /** Points to the point in the frame info stack where the exception happened. */
 };
@@ -71,7 +89,7 @@ void print_exception(exception *e);
 #define stack_trace_to_str() __stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
 
 /** Allocates a new exception. */
-exception *new_exception(size_t error_code, char *mess, ...);
+exception *new_exception(err_code_t error_code, char *mess, ...);
 
 /** Call this to deallocate the memory used by an exception. */
 /** This will be called automatically in TRY_CATCH(expr) ... ENDTRY blocks. */
@@ -102,20 +120,17 @@ jmp_buf *__pop_try_context();
 			__thrown_exception->error_code); \
 	} while (0)
 
-/** 
-The single argument version accepts an exception as its argument and throws it.
-The double (or more) argument version accepts an exception type as the first 
-  parameter and a message as its second argument.  The message may be a C
-  format string with substitution values given in subsequent arguments.
-This is a statement and may not be nested inside expressions.
+/**
+Throws the exception 'e'.
+This is usually used with the new_exception function, and allows for
+  exceptions to be created in one place and then thrown in another.
+While this is the strictly more powerful way to throw exceptions, the more
+  convenient way for common cases would be to use the RAISE macro.
+This macro expands to a statement and may not be nested inside expressions.
 Example usage:
 	THROW(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
-	THROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
-	THROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
 */
-#define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
-
-#define THROW1(e) /* */ \
+#define THROW(e) \
 	do { \
 		ERR_UTIL_TRACE("%s, %d.102: THROW\n", __FILE__, __LINE__); \
 		__thrown_exception = (e); \
@@ -126,12 +141,32 @@ Example usage:
 		__pop_stack_info(); \
 		__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
-	
-#define THROW2(etype, emsg) \
-	THROW1(new_exception(etype, emsg))
 
-#define THROW3(etype, emsg, ...) \
-	THROW1(new_exception(etype, emsg, __VA_ARGS__))
+/** 
+Creates an exception of the type given and then throws it.
+This is a more concise variant of the THROW macro.
+The single argument version accepts an exception type as the first argument
+  and uses the default message for that exception type.
+  (TODO: The single arg version is not implemented yet.)
+The double (or more) argument version accepts an exception type as the first 
+  argument and a message as its second argument.  The message may be a C
+  format string with substitution values given in subsequent arguments.
+This macro expands to a statement and may not be nested inside expressions.
+Example usage:
+	RAISE(GENERIC_EXCEPTION); // Use the exception type's default message.
+	RAISE(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
+	RAISE(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
+*/
+#define RAISE(...) MACRO_DISPATCHER3(RAISE, __VA_ARGS__)(__VA_ARGS__)
+
+#define RAISE1(e) \
+	THROW(new_exception(etype))
+	
+#define RAISE2(etype, emsg) \
+	THROW(new_exception(etype, emsg))
+
+#define RAISE3(etype, emsg, ...) \
+	THROW(new_exception(etype, emsg, __VA_ARGS__))
 
 /** Evaluates the given expression while creating a stack entry at this point
 // in the code.  The whole purpose of doing this is to provide better debug

@@ -15,6 +15,12 @@ ssize_t     __frame_info_end = 0;
 jmp_buf     __try_context_stack[TRY_CONTEXT_STACK_SIZE];
 ssize_t     __try_context_end = 0;
 
+void unittest_err_util()
+{
+	if( !exception_is_a(GENERIC_EXCEPTION, GENERIC_EXCEPTION) )  RAISE(GENERIC_EXCEPTION,"Assertion failed.");
+	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) RAISE(GENERIC_EXCEPTION,"Assertion failed.");
+	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    RAISE(GENERIC_EXCEPTION,"Assertion failed.");
+}
 	
 static void best_effort_vms_path_parse_device(
 	const char *path,
@@ -168,7 +174,7 @@ exception *no_exception()
 }
 #endif
 
-exception *new_exception(size_t error_code, char *mess, ...)
+exception *new_exception(ssize_t error_code, char *mess, ...)
 {
 	va_list vl;
 	va_start(vl, mess);

@@ -8,5 +8,6 @@ $
 $! @cutil:compile lang_util
 $ @cutil:compile str_util
 $ @cutil:compile err_util
+$ @cutil:compile util_exceptions_generated
 $ @cutil:compile sockn
 $

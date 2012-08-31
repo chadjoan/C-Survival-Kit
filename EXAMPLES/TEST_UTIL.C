@@ -12,8 +12,7 @@ int baz()
 
 float qux()
 {
-	/*THROWV(NULL);*/
-	THROW(10,"qux does throw!\n");
+	RAISE(10,"qux does throw!\n");
 	printf("qux should not print this.\n");
 	return 0.0;
 }
@@ -50,7 +49,7 @@ void unittest_scope_exit_exceptional(int *result)
 	SCOPE_EXIT
 		*result--;
 	ENDSCOPE
-	THROW(new_exception(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n"));
+	RAISE(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 }
 
 void unittest_scope_failure_noraml(int *result)
@@ -70,7 +69,7 @@ void unittest_scope_failure_exceptional(int *result)
 	SCOPE_FAILURE
 		*result--;
 	ENDSCOPE
-	THROW(new_exception(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n"));
+	RAISE(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 }
 
 void unittest_scope_success_normal(int *result)
@@ -90,7 +89,7 @@ void unittest_scope_success_exceptional(int *result)
 	SCOPE_SUCCESS
 		*result--;
 	ENDSCOPE
-	THROW(new_exception(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n"));
+	RAISE(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 }
 
 void unittest_scope()
@@ -133,6 +132,7 @@ void main()
 	printf("max: %d\n", MAX(1, 2, 4, 3));
 	exit(0);
 	*/
+	unittest_err_util();
 
 	TRY
 		baz();
@@ -195,5 +195,5 @@ void main()
 		print_exception(e);
 	ENDTRY
 	
-	/*THROW(GENERIC_EXCEPTION,"Hi there!");*/
+	/*RAISE(GENERIC_EXCEPTION,"Hi there!");*/
 }
