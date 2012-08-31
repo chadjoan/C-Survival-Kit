@@ -7,6 +7,8 @@
 #include <limits.h> /* For INT_MIN and the like. */
 #include <setjmp.h>
 
+#include "UTIL_MACRO.H"
+
 /* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
 // debug the code that is supposed to make debugging easier. */
 #define DO_ERR_UTIL_TRACING 0
@@ -100,15 +102,23 @@ jmp_buf *__pop_try_context();
 			__thrown_exception->error_code); \
 	} while (0)
 
-/** Throws the exception e. 
-// This is a statement and may not be nested inside expressions.
-// Example usage:
-//   THROW(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
+/** 
+The single argument version accepts an exception as its argument and throws it.
+The double (or more) argument version accepts an exception type as the first 
+  parameter and a message as its second argument.  The message may be a C
+  format string with substitution values given in subsequent arguments.
+This is a statement and may not be nested inside expressions.
+Example usage:
+	THROW(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
+	THROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
+	THROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
 */
-#define THROW(e) /* */ \
+#define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
+
+#define THROW1(e) /* */ \
 	do { \
 		ERR_UTIL_TRACE("%s, %d.102: THROW\n", __FILE__, __LINE__); \
-		__thrown_exception = e; \
+		__thrown_exception = (e); \
 		if ( __thrown_exception == NULL ) \
 			__thrown_exception = new_exception(-1,"NULL was thrown."); \
 		__push_stack_info(__LINE__,__FILE__,__func__); \
@@ -116,6 +126,12 @@ jmp_buf *__pop_try_context();
 		__pop_stack_info(); \
 		__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
+	
+#define THROW2(etype, emsg) \
+	THROW1(new_exception(etype, emsg))
+
+#define THROW3(etype, emsg, ...) \
+	THROW1(new_exception(etype, emsg, __VA_ARGS__))
 
 /** Evaluates the given expression while creating a stack entry at this point
 // in the code.  The whole purpose of doing this is to provide better debug
@@ -129,7 +145,7 @@ jmp_buf *__pop_try_context();
 	do { \
 		if ( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) == 0 ) { \
 			ERR_UTIL_TRACE("%s, %d.115: CALL.setjmp\n", __FILE__, __LINE__); \
-			expr; \
+			(expr); \
 		} else { \
 			ERR_UTIL_TRACE("%s, %d.118: CALL.longjmp\n", __FILE__, __LINE__); \
 			__pop_stack_info(); \
@@ -138,7 +154,7 @@ jmp_buf *__pop_try_context();
 		ERR_UTIL_TRACE("%s, %d.122: CALL.success\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 	} while (0)
-
+	
 /* __TRY_SAFE_EXIT is an implementation detail.
 // It allows execution to exit a TRY-CATCH block by jumping to a state distinct
 // from the dangerous ways of exiting a TRY-CATCH block.  The "safe" way is

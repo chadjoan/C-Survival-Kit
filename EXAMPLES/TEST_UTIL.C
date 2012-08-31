@@ -13,7 +13,7 @@ int baz()
 float qux()
 {
 	/*THROWV(NULL);*/
-	THROW(new_exception(10,"qux does throw!\n"));
+	THROW(10,"qux does throw!\n");
 	printf("qux should not print this.\n");
 	return 0.0;
 }
@@ -31,8 +31,109 @@ int foo()
 	return 42;
 }
 
+/* All scope unittest subfunctions should return 0. */
+/*
+int unittest_scope_exit_normal(int *result)
+{
+	int *result = 2;
+	SCOPE_EXIT(*result--);
+	SCOPE_EXIT
+		*result--;
+	ENDSCOPE
+	RETURN;
+}
+
+void unittest_scope_exit_exceptional(int *result)
+{
+	*result = 2;
+	SCOPE_EXIT(*result--);
+	SCOPE_EXIT
+		*result--;
+	ENDSCOPE
+	THROW(new_exception(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n"));
+}
+
+void unittest_scope_failure_noraml(int *result)
+{
+	*result = 0;
+	SCOPE_FAILURE(*result--);
+	SCOPE_FAILURE
+		*result--;
+	ENDSCOPE
+	RETURN;
+}
+
+void unittest_scope_failure_exceptional(int *result)
+{
+	int *result = 2;
+	SCOPE_FAILURE(*result--);
+	SCOPE_FAILURE
+		*result--;
+	ENDSCOPE
+	THROW(new_exception(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n"));
+}
+
+void unittest_scope_success_normal(int *result)
+{
+	int *result = 2;
+	SCOPE_SUCCESS(*result--);
+	SCOPE_SUCCESS
+		*result--;
+	ENDSCOPE
+	RETURN;
+}
+
+void unittest_scope_success_exceptional(int *result)
+{
+	*result = 0;
+	SCOPE_SUCCESS(*result--);
+	SCOPE_SUCCESS
+		*result--;
+	ENDSCOPE
+	THROW(new_exception(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n"));
+}
+
+void unittest_scope()
+{
+	int val = 1;
+	
+	unittest_scope_exit_normal(&val);
+	assert_eq(val,0);
+	
+	unittest_scope_success_normal(&val);
+	assert_eq(val,0);
+	
+	unittest_scope_failure_normal(&val);
+	assert_eq(val,0);
+	
+	TRY
+		unittest_scope_exit_exceptional(&val);
+	CATCH(GENERIC_EXCEPTION,e)
+		assert_eq(val,0);
+	ENDTRY
+	
+	TRY
+		unittest_scope_success_exceptional(&val);
+	CATCH(GENERIC_EXCEPTION,e)
+		assert_eq(val,0);
+	ENDTRY
+	
+	TRY
+		unittest_scope_failure_exceptional(&val);
+	CATCH(GENERIC_EXCEPTION,e)
+		assert_eq(val,0);
+	ENDTRY
+}
+*/
+
+
 void main()
 {
+	/*printf("nargs: %d\n", VA_NARG(1,2,3));
+	printf("max: %d\n", MAX(1, 2, 4, 3));
+	exit(0);
+	*/
+
 	TRY
 		baz();
 		printf("No exception thrown.\n");
@@ -94,4 +195,5 @@ void main()
 		print_exception(e);
 	ENDTRY
 	
+	/*THROW(GENERIC_EXCEPTION,"Hi there!");*/
 }
