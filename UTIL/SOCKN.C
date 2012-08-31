@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#define SOCKET_EXCEPTION -1999
+
 ssize_t sendn(int sock, string text)
 {
 	uint32_t length_nwb = htonl(text.length);
@@ -35,10 +37,10 @@ void recvn(int sock, string *buf)
 	
 	/* Receive message */
 	if ((received = recv(sock, buffer, 4, 0)) < 0)
-		THROW_VOID(new_exception("recvn: Length information not received. recv() call failed with error code %d.", received));
+		THROW(SOCKET_EXCEPTION,"recvn: Length information not received. recv() call failed with error code %d.", received);
 	
 	if ( received < 4 )
-		THROW_VOID(new_exception("recvn: Length information not received. Received %d bytes instead.", received));
+		THROW(SOCKET_EXCEPTION,"recvn: Length information not received. Received %d bytes instead.", received);
 
 	msg_length = ntohl(((uint32_t*)buffer)[0]);
 	buf = str_realloc(buf, msg_length);
@@ -52,7 +54,7 @@ void recvn(int sock, string *buf)
 		
 		/* Check for more data */
 		if ((received = recv(sock, msg_cursor, msg_end - msg_cursor, 0)) < 0)
-			THROW_VOID(new_exception("recvn: Not enough bytes received to complete message.", received));
+			THROW(SOCKET_EXCEPTION,"recvn: Not enough bytes received to complete message.", received);
 		
 		if ( received == 0 )
 			break;
