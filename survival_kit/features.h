@@ -35,7 +35,7 @@
 "Do not do this, ever!" ) */
 
 /** Unit test. */
-void unittest_err_util();
+void skit_unittest_features();
 
 /*
 FATAL exceptions should never be caught.
