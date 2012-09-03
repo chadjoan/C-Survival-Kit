@@ -5,7 +5,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <lib$routines.h> /* lib$signal */
+#if defined(__DECC) && defined(__VMS)
+#  include <lib$routines.h> /* lib$signal */
+#else
+#  include <execinfo.h> /* backtrace_symbols_fd */
+#endif
 
 #include "survival_kit/features.h"
 
@@ -215,7 +219,7 @@ static void unittest_scope()
 }
 */
 
-void skit_unittest_features
+void skit_unittest_features()
 {
 	printf("skit_unittest_features()\n");
 	unittest_exceptions();
