@@ -37,6 +37,18 @@
 /** Unit test. */
 void skit_unittest_features();
 
+/* */
+#define USE_FEATURES \
+	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
+	skit_func_context skit_func_ctx; \
+	skit_func_context_init(&skit_func_ctx); \
+	skit_thread_context skit_thread_ctx; \
+	skit_thread_context_get(&skit_thread_ctx); \
+	do {} while(0)
+
+/* TODO: redefine 'break', 'continue', 'goto', and 'return' so that they always
+   compile fail when used in places where they shouldn't appear. */
+
 /*
 FATAL exceptions should never be caught.
 They signal potentially irreversable corruption, such as memory corruption
@@ -208,6 +220,7 @@ Example usage:
 */
 #define __TRY_EXCEPTION_CLEANUP INT_MIN
 
+
 /** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
 //    int foo, len;
 //    len = 10;
@@ -339,5 +352,5 @@ Example usage:
 "Do not do this, ever!\n" )); \
 	} \
 	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
-	
+
 #endif
