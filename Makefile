@@ -1,6 +1,10 @@
 
 CC=gcc
-CFLAGS=-Wall -ggdb
+CFLAGS=-Wall -rdynamic -ggdb
+# CFLAGS rationale:
+# -Wall      : prints all warnings.  We generally want to make sure there are no warnings.
+# -rdynamic  : allows the C function backtrace_symbols_fd to look up function names when printing stack traces.
+# -ggdb      : debug information.  -ggdb was chosen over -g because it has better info for gdb.
 
 LIBFILE=lib/survival_kit.o
 

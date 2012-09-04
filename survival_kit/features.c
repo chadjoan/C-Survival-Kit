@@ -1,6 +1,6 @@
 
 #include <stdlib.h>
-#include <unistd.h> /* For ssize_t */
+#include <unistd.h> /* For ssize_t and (maybe) STDERR_FILENO */
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -9,6 +9,7 @@
 #  include <lib$routines.h> /* lib$signal */
 #else
 #  include <execinfo.h> /* backtrace_symbols_fd */
+#  define HAVE_LINUX_BACKTRACE
 #endif
 
 #include "survival_kit/features.h"
@@ -403,7 +404,25 @@ void skit_die(char *mess, ...)
 	vsnprintf(error_text_buffer, ERROR_BUFFER_SIZE, mess, vl);
 	va_end(vl);
 	
-	perror(error_text_buffer);
+	fprintf(stderr,"\n");
+	fprintf(stderr,"ERROR: skit_die was called.\n");
+	fprintf(stderr,"Message:\n");
+	
+	fprintf(stderr,"%s\n",error_text_buffer);
+	fprintf(stderr,"\n");
+	
+	fprintf(stderr,"perror value:\n");
+	perror("");
+	fprintf(stderr,"\n");
+	
+#ifdef HAVE_LINUX_BACKTRACE
+	fprintf(stderr,"backtrace:\n");
+	void *backtrace_buf[256];
+	int n_addresses = backtrace(backtrace_buf,256);
+	backtrace_symbols_fd(backtrace_buf, n_addresses, STDERR_FILENO);
+	fprintf(stderr,"\n");
+#endif
+	
 	exit(1);
 	/*lib$signal(EXIT_FAILURE);*/ /* This produced too much spam when exiting after a bunch of setjmp/longjmps. */
 }

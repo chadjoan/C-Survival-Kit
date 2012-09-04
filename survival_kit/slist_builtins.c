@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define SKIT_T_DIE_ON_ERROR 1
 #define SKIT_T_ELEM_TYPE int
 #define SKIT_T_PREFIX utest_int
 #define SKIT_T_FUNC_ATTR static

@@ -7,6 +7,8 @@
 
 #include "survival_kit/templates/slist.h"
 
+#include <stdio.h>
+
 SKIT_T(slist) *SKIT_T(slist_init)(SKIT_T(slist) *list)
 {
 	list->start = NULL;
@@ -39,7 +41,13 @@ SKIT_T(snode) *SKIT_T(slist_pop)(SKIT_T(slist) *list)
 	if ( list->start == NULL )
 	{
 #		if defined(SKIT_T_DIE_ON_ERROR)
-			skit_die("Attempt to pop a value from a zero-length slist.");
+#		define SKIT_T_STR3(str) #str
+#		define SKIT_T_STR2(str) SKIT_T_STR3(str)
+#		define SKIT_T_STR(ident) SKIT_T_STR2(SKIT_T(slist))
+			skit_die("Attempt to pop a value from a zero-length " SKIT_T_STR(slist) ".");
+#		undef SKIT_T_STR
+#		undef SKIT_T_STR2
+#		undef SKIT_T_STR3
 #		else
 			RAISE(OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length slist.");
 #		endif
