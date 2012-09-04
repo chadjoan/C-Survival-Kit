@@ -80,6 +80,7 @@ static void unittest_exceptions()
 			printf("Nested CATCH-TRY-CATCH test.\n");
 		CATCH(GENERIC_EXCEPTION, e2)
 			printf("This shouldn't happen.\n");
+			UNUSED(e2);
 			/* print_exception(e2);*/
 		ENDTRY
 		
@@ -94,6 +95,7 @@ static void unittest_exceptions()
 				printf("Now to bail without stopping first!\n");
 				break;
 			CATCH(GENERIC_EXCEPTION,e)
+				UNUSED(e);
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
 			ENDTRY
 		}
@@ -112,6 +114,7 @@ static void unittest_exceptions()
 				continue;
 			CATCH(GENERIC_EXCEPTION,e)
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
+				UNUSED(e);
 			ENDTRY
 		}
 	CATCH(CONTINUE_IN_TRY_CATCH, e)

@@ -1,8 +1,12 @@
 
 CC=gcc
-CFLAGS=
+CFLAGS=-Wall -ggdb
 
-LIBFILE=lib/libsurvival_kit.a
+LIBFILE=lib/survival_kit.o
+
+TOOL_EXES= \
+	bin/unittests
+
 OBJECT_FILES= \
 	$(obj_exists) \
 	obj/str.o \
@@ -10,12 +14,18 @@ OBJECT_FILES= \
 	obj/features.o \
 	obj/sockn.o
 
-all: $(LIBFILE)
+all: $(LIBFILE) $(TOOL_EXES)
+
+tools: $(TOOL_EXES)
+
+bin/%: tools_src/%.c $(LIBFILE)
+	$(CC) $(CFLAGS) -I. $(LIBFILE) $< -o $@
 
 library: $(LIBFILE)
 
-lib/libsurvival_kit.a: $(OBJECT_FILES) $(lib_exists)
-	ar rcs lib/libsurvival_kit.a $<	
+$(LIBFILE): $(OBJECT_FILES) $(lib_exists)
+	ld -r $(OBJECT_FILES) -o $(LIBFILE)
+#	ar rcs $(LIBFILE) $(OBJECT_FILES)
 
 obj/%.o: survival_kit/%.c
 	$(CC) $(CFLAGS) -I. -c $< -o $@
@@ -27,4 +37,4 @@ obj_exists: | obj
 	mkdir -p obj
 
 clean:
-	rm -rf lib/* && rm -rf obj/*
+	rm -rf lib/* && rm -rf obj/* && rm -rf bin/*

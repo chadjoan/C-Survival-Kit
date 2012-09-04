@@ -313,7 +313,7 @@ Example usage:
 				} \
 				assert(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
 			} /* default: { } */ \
-			} /* switch(setjmp(*__push...)) \
+			} /* switch(setjmp(*__push...)) */ \
 			/* If execution makes it here, then the caller */ \
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \

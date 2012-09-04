@@ -125,4 +125,16 @@ It will call func3 if any other number of arguments are supplied.
 #define MACRO_DISPATCHER3(func, ...) \
 	MACRO_DISPATCHER_(func, VA_NARG3(__VA_ARGS__))
 
+/** 
+Use this to silence warnings about unused variables when the variable is
+intentionally declared but not used.
+Example:
+	void foo(...)
+	{
+		int a; // Normally the compiler might print "warning: unused variable 'a'"
+		UNUSED(a); // Now the compiler will be silenced.
+	}
+*/
+#define UNUSED(expr) do { (void)(expr); } while (0)
+
 #endif

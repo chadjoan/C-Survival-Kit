@@ -60,7 +60,7 @@ void recvn(int sock, string *buf)
 		
 		if ( msg_cursor + received > msg_end )
 		{
-			printf("Error: received too many bytes: %d\n", msg_cursor + received - msg_end);
+			printf("Error: received too many bytes: %ld\n", msg_cursor + received - msg_end);
 			received = msg_end - msg_cursor;
 		}
 		

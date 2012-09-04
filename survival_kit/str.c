@@ -57,7 +57,7 @@ string str_literal(const char *lit)
 string *str_append(string *str1, string str2)
 {
 	if ( str1 == NULL )
-		die("str_append(NULL,???)");
+		die("str_append(NULL,?\?\?)");
 	else if ( str1->ptr == NULL && str2.ptr == NULL )
 		die("str_append(ptr=NULL,ptr=NULL)");
 	else if ( str1->ptr == NULL )
