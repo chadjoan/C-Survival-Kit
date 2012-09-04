@@ -14,6 +14,7 @@ err_code_t __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 	GENERIC_EXCEPTION, /* BREAK_IN_TRY_CATCH */
 	GENERIC_EXCEPTION, /* CONTINUE_IN_TRY_CATCH */
 	GENERIC_EXCEPTION, /* SOCKET_EXCEPTION */
+	GENERIC_EXCEPTION, /* OUT_OF_BOUNDS */
 	};
 
 int exception_is_a( err_code_t ecode1, err_code_t ecode2 )

@@ -9,6 +9,7 @@ TOOL_EXES= \
 
 OBJECT_FILES= \
 	$(obj_exists) \
+	obj/slist_builtins.o \
 	obj/str.o \
 	obj/generated_exception_defs.o \
 	obj/features.o \
