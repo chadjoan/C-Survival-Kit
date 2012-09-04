@@ -99,7 +99,7 @@ exception *new_exception(err_code_t error_code, char *mess, ...);
 exception *free_exception(exception *e);
 
 /** Unconditionally exit the program and print the formatted string 'mess'. */
-void die(char *mess, ...);
+void skit_die(char *mess, ...);
 
 /* Macro implementation details.  Do not use directly. */
 char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
@@ -117,7 +117,7 @@ jmp_buf *__pop_try_context();
 #define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
 		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
-		ERR_UTIL_TRACE("frame_info_index: %d\n",__frame_info_end-1); \
+		ERR_UTIL_TRACE("frame_info_index: %li\n",__frame_info_end-1); \
 		longjmp( \
 			__frame_context_stack[__frame_info_end-1], \
 			__thrown_exception->error_code); \

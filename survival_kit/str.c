@@ -18,9 +18,9 @@ string *str_init(string *str)
 string *str_malloc(string *str, size_t length)
 {
 	if ( str == NULL )
-		die("str_malloc(NULL)");
+		skit_die("str_malloc(NULL)");
 	else if ( str->ptr != NULL ) {
-		die(
+		skit_die(
 			"str_malloc: Argument str->ptr is not NULL.\n"
 			"str_malloc: This could be an attempt to overwrite a memory-leaked string.\n"
 			"str_malloc: Be sure to use str_init() or str_delete() on the string before\n"
@@ -36,7 +36,7 @@ string *str_malloc(string *str, size_t length)
 string *str_realloc(string *str, size_t length)
 {
 	if ( str == NULL )
-		die("str_malloc(NULL)");
+		skit_die("str_malloc(NULL)");
 	
 	str->ptr = realloc(str->ptr, length+1);
 	str->length = length;
@@ -57,17 +57,17 @@ string str_literal(const char *lit)
 string *str_append(string *str1, string str2)
 {
 	if ( str1 == NULL )
-		die("str_append(NULL,?\?\?)");
+		skit_die("str_append(NULL,?\?\?)");
 	else if ( str1->ptr == NULL && str2.ptr == NULL )
-		die("str_append(ptr=NULL,ptr=NULL)");
+		skit_die("str_append(ptr=NULL,ptr=NULL)");
 	else if ( str1->ptr == NULL )
-		die("str_append(ptr=NULL,'%.60s')",str2.ptr);
+		skit_die("str_append(ptr=NULL,'%.60s')",str2.ptr);
 	else if ( str2.ptr == NULL )
-		die("str_append('%.60s',ptr=NULL)");
+		skit_die("str_append('%.60s',ptr=NULL)");
 	
 	/* TODO: slicing safety:
 	if ( str_is_slice(str1) )
-		die("attempt to append onto a slice.  Call "dup" first.");
+		skit_die("attempt to append onto a slice.  Call "dup" first.");
 	*/
 	
 	if ( str2.length <= 0 )
@@ -84,7 +84,7 @@ string *str_append(string *str1, string str2)
 string str_dup(string str)
 {
 	if ( str.ptr == NULL )
-		die("str_dup(ptr=NULL)");
+		skit_die("str_dup(ptr=NULL)");
 
 	string newstr;
 	newstr.ptr = malloc(str.length+1);

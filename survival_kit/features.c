@@ -53,9 +53,9 @@ static int foo()
 
 static void unittest_exceptions()
 {
-	if( !exception_is_a(GENERIC_EXCEPTION, GENERIC_EXCEPTION) )  RAISE(GENERIC_EXCEPTION,"Assertion failed.");
-	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) RAISE(GENERIC_EXCEPTION,"Assertion failed.");
-	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    RAISE(GENERIC_EXCEPTION,"Assertion failed.");
+	if( !exception_is_a(GENERIC_EXCEPTION, GENERIC_EXCEPTION) )  skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
+	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
+	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	
 	TRY
 		baz();
@@ -396,7 +396,7 @@ exception *new_exception(ssize_t error_code, char *mess, ...)
 	return result;
 }
 
-void die(char *mess, ...)
+void skit_die(char *mess, ...)
 {
 	va_list vl;
 	va_start(vl, mess);
@@ -410,7 +410,7 @@ void die(char *mess, ...)
 
 jmp_buf *__push_stack_info(size_t line, const char *file, const char *func)
 {
-	ERR_UTIL_TRACE("%s, %d: __push_stack_info(%d, %s, %s)\n", file, line, line, file, func);
+	ERR_UTIL_TRACE("%s, %li: __push_stack_info(%li, %s, %s)\n", file, line, line, file, func);
 	frame_info fi;
 	fi.line_number = line;
 	fi.file_name = file;
@@ -429,8 +429,8 @@ frame_info __pop_stack_info()
 	if ( __frame_info_end < 0 )
 	{
 		fi = __frame_info_stack[0];
-		die("Attempt to pop stack info at stack bottom.\r\n"		
-			"(probably) Happened in file %s at line %d in function %s\r\n",
+		skit_die("Attempt to pop stack info at stack bottom.\r\n"		
+			"(probably) Happened in file %s at line %li in function %s\r\n",
 			fi.file_name, fi.line_number, fi.func_name);
 	}
 	
@@ -445,7 +445,7 @@ jmp_buf *__push_try_context()
 {
 	if ( __try_context_end >= TRY_CONTEXT_STACK_SIZE )
 	{
-		die("Exceeded TRY stack size of %d.\n%s\n", TRY_CONTEXT_STACK_SIZE, stack_trace_to_str());
+		skit_die("Exceeded TRY stack size of %li.\n%s\n", TRY_CONTEXT_STACK_SIZE, stack_trace_to_str());
 	}
 	
 	return &__try_context_stack[__try_context_end++];
@@ -456,7 +456,7 @@ jmp_buf *__pop_try_context()
 	__try_context_end--;
 	if ( __try_context_end < 0 )
 	{
-		die("TRY context stack pop with no matching push.\n%s\n", stack_trace_to_str());
+		skit_die("TRY context stack pop with no matching push.\n%s\n", stack_trace_to_str());
 	}
 	
 	return &__try_context_stack[__try_context_end];

@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <assert.h>
+#include <stdio.h> /* printf */
 
 #include "survival_kit/generated_exception_defs.h"
 
@@ -17,8 +18,8 @@ err_code_t __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 
 int exception_is_a( err_code_t ecode1, err_code_t ecode2 )
 {
-	err_code_t child_code = ecode1;
-	err_code_t parent_code = ecode2;
+	err_code_t child_code = ecode2;
+	err_code_t parent_code = ecode1;
 	err_code_t last_parent = 0;
 	while (1)
 	{

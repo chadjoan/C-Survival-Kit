@@ -89,7 +89,7 @@ ssize_t sendnf(int sock, char *fmtstr, ...)
 	string sendme = str_literal(response);
 	n_bytes_sent = sendn(sock, sendme);
 	if (n_bytes_sent != response_length) {
-		die("Failed to send bytes to client");
+		skit_die("Failed to send bytes to client");
 	}
 	str_delete(&sendme);
 	return n_bytes_sent;
