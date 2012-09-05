@@ -40,6 +40,9 @@ void skit_unittest_features();
 /* */
 #define USE_FEATURES \
 	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
+	char *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
+	char *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
+	char *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
 	skit_func_context skit_func_ctx; \
 	skit_func_context_init(&skit_func_ctx); \
 	skit_thread_context skit_thread_ctx; \
@@ -48,6 +51,38 @@ void skit_unittest_features();
 
 /* TODO: redefine 'break', 'continue', 'goto', and 'return' so that they always
    compile fail when used in places where they shouldn't appear. */
+
+/* 
+break:
+if ( skit_func_ctx.try_stack.used.length > 0 )
+{
+	fprintf(stderr,"%s, %d: in function %s: Used 'break' statement while in TRY-CATCH block.", 
+		__FILE__, __LINE__, __func__);
+	skit_jmp_buf_flist_pop(&skit_func_ctx.try_stack);
+}
+
+continue:
+(ditto)
+
+goto:
+if (0)
+{
+	(void) *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks;
+	(void) *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks;
+	(void) *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks;
+}
+
+if ( skit_func_ctx.try_stack.used.length > 0 )
+{
+	RAISE(...);
+}
+
+
+SCOPE_EXIT:
+	char goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
+	char goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
+	char goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
+*/
 
 /*
 FATAL exceptions should never be caught.
@@ -130,9 +165,15 @@ jmp_buf *__pop_try_context();
 	do { \
 		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
 		ERR_UTIL_TRACE("frame_info_index: %li\n",__frame_info_end-1); \
-		longjmp( \
-			__frame_context_stack[__frame_info_end-1], \
-			__thrown_exception->error_code); \
+		if ( __frame_info_end-1 >= 0 ) \
+			longjmp( \
+				__frame_context_stack[__frame_info_end-1], \
+				__thrown_exception->error_code); \
+		else \
+		{ \
+			print_exception(__thrown_exception); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
+			skit_die("Exception thrown with no handlers left in the stack."); \
+		} \
 	} while (0)
 
 /**
@@ -204,6 +245,48 @@ Example usage:
 		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 	} while (0)
+
+#if 0
+#define CALL(expr) /* */ \
+	do { \
+		SKIT_DEBUG_INFO_FLIST_GROW_MALLOC(skit_thread_ctx->debug_info_stack); \
+		SKIT_JMP_FLIST_GROW_ALLOCA(skit_thread_ctx->exc_jmp_stack); \
+		\
+		/* Save a copy of the current jmp_stack position. */ \
+		skit_jmp_flist __skit_exc_jmp_stack_save = skit_thread_ctx->exc_jmp_stack; \
+		/* This ensures that we can end up where we started in this call, */ \
+		/*   even if the callee messes up the jmp_stack. */ \
+		/* The jmp_stack could be messed up if someone tries to jump */ \
+		/*   execution out of a TRY-CATCH or scope guard block */ \
+		/*   (using break/continue/goto/return) and somehow manages to succeed, */ \
+		/*   thus preventing pop calls that are supposed to match push calls. */ \
+		/* The debug_info_stack does not have this treatment because it is */ \
+		/*   malloc'd instead of stack allocated.  It is also more resiliant */ \
+		/*   to corruption because it does not appear in macros like */ \
+		/*   TRY-CATCH where the programmer is likely to attempt jumping */ \
+		/*   execution out of a block. */ \
+		\
+		*skit_debug_info_flist_push( \
+			&skit_thread_ctx->debug_info_stack \
+			) = skit_make_debug_info_snode(__LINE__,__FILE__,__func__); \
+		\
+		if ( setjmp(*skit_jmp_flist_push(&skit_thread_ctx->exc_jmp_stack)) == 0 ) { \
+			ERR_UTIL_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
+			(expr); \
+		} else { \
+			ERR_UTIL_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
+			skit_thread_ctx->exc_jmp_stack = __skit_exc_jmp_stack_save; \
+			skit_debug_info_flist_pop(&skit_thread_ctx->debug_info_stack); \
+			__PROPOGATE_THROWN_EXCEPTIONS; \
+		} \
+		\
+		skit_thread_ctx->exc_jmp_stack = __skit_exc_jmp_stack_save; \
+		skit_debug_info_flist_pop(&skit_thread_ctx->debug_info_stack); \
+		\
+		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
+	} while (0)
+
+#endif
 	
 /* __TRY_SAFE_EXIT is an implementation detail.
 // It allows execution to exit a TRY-CATCH block by jumping to a state distinct
@@ -219,7 +302,6 @@ Example usage:
 // exception allocated in the code that threw the exception.
 */
 #define __TRY_EXCEPTION_CLEANUP INT_MIN
-
 
 /** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
 //    int foo, len;
@@ -353,4 +435,145 @@ Example usage:
 	} \
 	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
 
+#define SKIT_JMP_BUF_GROW_ALLOCA(list) \
+	do { \
+		if (skit_jmp_buf_flist_full(&(list))) \
+			skit_jmp_buf_flist_grow(&(list),alloca(sizeof(skit_jmp_buf_snode*))); \
+	} while(0)
+
+#if 0
+/** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
+//    int foo, len;
+//    len = 10;
+//    while ( foo < len )
+//    {
+//        TRY
+//            foo++;
+//            if ( foo > len )
+//                return;  // The stack now permanently contains a reference
+//                         //   to this TRY statement.  Any ENDTRY's
+//                         //   encountered in calling code might actually
+//                         //   end up at the TRY above.
+//            else
+//                continue; // ditto
+//        ENDTRY
+//    }
+//
+//    DO NOT DO THE ABOVE ^^.
+//    The "return" and "continue" statements will leave the TRY/ENDTRY block
+//      without restoring stack information to the expected values.  Certain
+//      instructions such as "break" may also jump to places you wouldn't 
+//      expect.
+//    TOOD: It'd be nice if there was some way to make the compiler forbid
+//      such local jumps or maybe even make them work in sensible ways.
+*/
+#define TRY /* */ \
+	SKIT_JMP_FLIST_GROW_ALLOCA(skit_func_ctx.try_stack);
+	if ( setjmp(*skit_jmp_flist_push(&skit_func_ctx.try_stack)) != __TRY_SAFE_EXIT ) { \
+		ERR_UTIL_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
+		do { \
+			ERR_UTIL_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
+			SKIT_JMP_FLIST_GROW_ALLOCA(skit_thread_ctx->exc_jmp_stack); \
+			switch( setjmp(*skit_jmp_flist_push(&skit_thread_ctx->exc_jmp_stack)) ) \
+			{ \
+			case __TRY_EXCEPTION_CLEANUP: \
+			{ \
+				/* Exception cleanup case. */ \
+				/* Note that this case is ALWAYS reached because CASE and ENDTRY macros  */ \
+				/*   may follow either the successful block or an exceptional one, so    */ \
+				/*   there is no way to know from within this macro which one should be  */ \
+				/*   jumped to.  The best strategy then is to always jump to the cleanup */ \
+				/*   case after leaving any part of the TRY-CATCH-ENDTRY and only free   */ \
+				/*   exceptions if there actually are any.                               */ \
+				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
+				if (__thrown_exception != NULL) \
+				{ \
+					free(__thrown_exception); \
+					__thrown_exception = NULL; \
+				} \
+				skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
+				longjmp(*skit_jmp_flist_pop(&skit_func_ctx.try_stack), __TRY_SAFE_EXIT); \
+			} \
+			default: \
+			{ \
+				/* This is going to look a bit Duffy. ;)                           */ \
+				/* It is fairly important, however, that we nest the 'case 0:'     */ \
+				/* statement inside of an if statement that is otherwise never     */ \
+				/* evaluated.  This strange configuration is driven by the need to */ \
+				/* have the code at the end of each block (after macro expansion)  */ \
+				/* look identical but do slightly different things.  The if(0)     */ \
+				/* ensures that each end-of-block can assume that the previous     */ \
+				/* block started as some form of if-statement.  The 0 in the       */ \
+				/* if(0) makes sure that it never gets re-evaluated when           */ \
+				/* exceptions are thrown: it must only be evaluated once when      */ \
+				/* the TRY block is entered, and that causes setjmp to select      */ \
+				/* the 0th case. Either way, the end-of-blocks will cleanup        */ \
+				/* thrown exceptions /if they exist/ and otherwise exit cleanly.   */ \
+				/* An early approach was to place everything inside a switch-case  */ \
+				/* statement and never use if-else.  That configuration was        */ \
+				/* incapable of handling exception inheritance because the cases   */ \
+				/* in a switch-case can't be computed expressions.                 */ \
+				if ( 0 ) \
+				{ \
+				case 0: \
+					/* Normal/successful case. */ \
+					ERR_UTIL_TRACE("%s, %d.282: TRY: case 0:\n", __FILE__, __LINE__); \
+
+#define CATCH(__error_code, exc_name) /* */ \
+					/* This end-of-block may be either the end of the normal/success case */ \
+					/*   OR the end of a catch block.  It must be able to do the correct */ \
+					/*   thing regardless of where it comes from. */ \
+					ERR_UTIL_TRACE("%s, %d.288: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
+					longjmp( skit_thread_ctx->exc_jmp_stack.front.val, __TRY_EXCEPTION_CLEANUP); \
+				} \
+				else if ( exception_is_a( __thrown_exception->error_code, __error_code) ) \
+				{ \
+					/* CATCH block. */ \
+					ERR_UTIL_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
+					exception *exc_name = __thrown_exception;
+
+#define ENDTRY /* */ \
+					/* This end-of-block may be either the end of the normal/success case */ \
+					/*   OR the end of a catch block.  It must be able to do the correct */ \
+					/*   thing regardless of where it comes from. */ \
+					ERR_UTIL_TRACE("%s, %d.301: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
+					longjmp( skit_thread_ctx->exc_jmp_stack.front.val, __TRY_EXCEPTION_CLEANUP); \
+				} \
+				else \
+				{ \
+					/* An exception was thrown and we can't handle it. */ \
+					ERR_UTIL_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
+					skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
+					skit_jmp_flist_pop(&skit_func_ctx.try_stack); \
+					__PROPOGATE_THROWN_EXCEPTIONS; \
+				} \
+				assert(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
+			} /* default: { } */ \
+			} /* switch(setjmp(*__push...)) */ \
+			/* If execution makes it here, then the caller */ \
+			/* used a "break" statement and is trying to */ \
+			/* corrupt the debug stack.  Don't let them do it! */ \
+			/* Instead, throw another exception. */ \
+			ERR_UTIL_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
+			skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
+			skit_jmp_flist_pop(&skit_func_ctx.try_stack); \
+			THROW(new_exception(BREAK_IN_TRY_CATCH, "\n"\
+"Code has attempted to use a 'break' statement from within a TRY-CATCH block.\n" \
+"This could easily corrupt program execution and corrupt debugging data.\n" \
+"Do not do this, ever!\n" )); \
+		} while (0); \
+		/* If execution makes it here, then the caller */ \
+		/* used a "continue" statement and is trying to */ \
+		/* corrupt the debug stack.  Don't let them do it! */ \
+		/* Instead, throw another exception. */ \
+		ERR_UTIL_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
+		skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
+		skit_jmp_flist_pop(&skit_func_ctx.try_stack); \
+		THROW(new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
+"Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n" \
+"This could easily corrupt program execution and corrupt debugging data.\n" \
+"Do not do this, ever!\n" )); \
+	} \
+	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
+#endif
 #endif

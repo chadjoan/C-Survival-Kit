@@ -11,24 +11,24 @@
 
 SKIT_T(slist) *SKIT_T(slist_init)(SKIT_T(slist) *list)
 {
-	list->start = NULL;
-	list->end = NULL;
+	list->front = NULL;
+	list->back = NULL;
 	list->length = 0;
 	return list;
 }
 
 void SKIT_T(slist_push)(SKIT_T(slist) *list, SKIT_T(snode) *node)
 {
-	if ( list->start == NULL )
+	if ( list->front == NULL )
 	{
-		node->next = NULL; /* This line is necessary for list->start to be NULL when the last node is popped. */
-		list->start = node;
-		list->end = node;
+		node->next = NULL; /* This line is necessary for list->front to be NULL when the last node is popped. */
+		list->front = node;
+		list->back = node;
 	}
 	else
 	{
-		node->next = list->start;
-		list->start = node;
+		node->next = list->front;
+		list->front = node;
 	}
 	
 	list->length += 1;
@@ -38,7 +38,7 @@ SKIT_T(snode) *SKIT_T(slist_pop)(SKIT_T(slist) *list)
 {
 	SKIT_T(snode) *result;
 	
-	if ( list->start == NULL )
+	if ( list->front == NULL )
 	{
 #		if defined(SKIT_T_DIE_ON_ERROR)
 #		define SKIT_T_STR3(str) #str
@@ -54,11 +54,11 @@ SKIT_T(snode) *SKIT_T(slist_pop)(SKIT_T(slist) *list)
 	}
 	else
 	{
-		result = list->start;
-		list->start = result->next;
+		result = list->front;
+		list->front = result->next;
 		result->next = NULL;
-		if ( list->start == NULL )
-			list->end = NULL;
+		if ( list->front == NULL )
+			list->back = NULL;
 	}
 	
 	list->length -= 1;

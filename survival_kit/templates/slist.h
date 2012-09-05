@@ -88,8 +88,8 @@ struct SKIT_T(snode)
 typedef struct SKIT_T(slist) SKIT_T(slist);
 struct SKIT_T(slist)
 {
-	SKIT_T(snode) *start;
-	SKIT_T(snode) *end;
+	SKIT_T(snode) *front;
+	SKIT_T(snode) *back;
 	size_t length;
 };
 
