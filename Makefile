@@ -12,7 +12,6 @@ TOOL_EXES= \
 	bin/unittests
 
 OBJECT_FILES= \
-	$(obj_exists) \
 	obj/slist_builtins.o \
 	obj/str.o \
 	obj/generated_exception_defs.o \
@@ -23,23 +22,27 @@ all: $(LIBFILE) $(TOOL_EXES)
 
 tools: $(TOOL_EXES)
 
-bin/%: tools_src/%.c $(LIBFILE)
+bin/%: tools_src/%.c $(LIBFILE) | bin
 	$(CC) $(CFLAGS) -I. $(LIBFILE) $< -o $@
 
 library: $(LIBFILE)
 
-$(LIBFILE): $(OBJECT_FILES) $(lib_exists)
+$(LIBFILE): $(OBJECT_FILES) | obj lib
 	ld -r $(OBJECT_FILES) -o $(LIBFILE)
 #	ar rcs $(LIBFILE) $(OBJECT_FILES)
 
-obj/%.o: survival_kit/%.c
+obj/%.o: survival_kit/%.c | obj
 	$(CC) $(CFLAGS) -I. -c $< -o $@
 
-lib_exists: | lib
+bin:
+	mkdir -p bin
+
+lib:
 	mkdir -p lib
 
-obj_exists: | obj
+obj:
 	mkdir -p obj
 
 clean:
-	rm -rf lib/* && rm -rf obj/* && rm -rf bin/*
+	rm -rf lib && rm -rf obj && rm -rf bin
+
