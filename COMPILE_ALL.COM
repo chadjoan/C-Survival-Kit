@@ -12,8 +12,9 @@ $ !
 $ LIBRARY/CREATE=(GLO:600,BLO:500) OBJLIB:C_UTIL.OLB
 $ PURGE OBJLIB:C_UTIL.OLB
 $!
+$ @'THIS_DIR'compile slist_builtins
 $ @'THIS_DIR'compile str
-$ @'THIS_DIR'compile features
 $ @'THIS_DIR'compile generated_exception_defs
+$ @'THIS_DIR'compile features
 $ @'THIS_DIR'compile sockn
 $
