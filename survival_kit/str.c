@@ -6,7 +6,7 @@
 #include <unistd.h> /* For ssize_t */
 
 #include "survival_kit/str.h"
-#include "survival_kit/features.h"
+#include "survival_kit/misc.h"
 
 string *str_init(string *str)
 {

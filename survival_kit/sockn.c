@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "survival_kit/misc.h"
 #include "survival_kit/sockn.h"
 #include "survival_kit/str.h"
 #include "survival_kit/features.h"

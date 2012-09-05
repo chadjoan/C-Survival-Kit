@@ -121,10 +121,7 @@ struct exception
 	ssize_t frame_info_index; /** Points to the point in the frame info stack where the exception happened. */
 };
 
-/* Implementation details. */
-/* TODO: these should be stored in thread-local storage. */
-#define ERROR_BUFFER_SIZE 1024
-extern char error_text_buffer[ERROR_BUFFER_SIZE];
+/* Implementation detail. */
 extern exception *__thrown_exception;
 
 /** Prints the given exception to stdout. */
@@ -144,9 +141,6 @@ exception *new_exception(err_code_t error_code, char *mess, ...);
 /** Call this to deallocate the memory used by an exception. */
 /** This will be called automatically in TRY_CATCH(expr) ... ENDTRY blocks. */
 exception *free_exception(exception *e);
-
-/** Unconditionally exit the program and print the formatted string 'mess'. */
-void skit_die(char *mess, ...);
 
 /* Macro implementation details.  Do not use directly. */
 char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );

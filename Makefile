@@ -11,8 +11,16 @@ LIBFILE=lib/survival_kit.o
 TOOL_EXES= \
 	bin/unittests
 
+OBJECT_DIRS= \
+	obj \
+	obj/setjmp
+
 OBJECT_FILES= \
+	obj/misc.o \
 	obj/slist_builtins.o \
+	obj/flist_builtins.o \
+	obj/setjmp/jmp_slist.o \
+	obj/setjmp/jmp_flist.o \
 	obj/str.o \
 	obj/generated_exception_defs.o \
 	obj/features.o \
@@ -27,11 +35,11 @@ bin/%: tools_src/%.c $(LIBFILE) | bin
 
 library: $(LIBFILE)
 
-$(LIBFILE): $(OBJECT_FILES) | obj lib
+$(LIBFILE): $(OBJECT_FILES) | $(OBJECT_DIRS) lib
 	ld -r $(OBJECT_FILES) -o $(LIBFILE)
 #	ar rcs $(LIBFILE) $(OBJECT_FILES)
 
-obj/%.o: survival_kit/%.c | obj
+obj/%.o: survival_kit/%.c | $(OBJECT_DIRS)
 	$(CC) $(CFLAGS) -I. -c $< -o $@
 
 bin:
@@ -40,8 +48,8 @@ bin:
 lib:
 	mkdir -p lib
 
-obj:
-	mkdir -p obj
+$(OBJECT_DIRS):
+	mkdir -p obj/setjmp
 
 clean:
 	rm -rf lib && rm -rf obj && rm -rf bin

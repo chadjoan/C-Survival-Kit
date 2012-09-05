@@ -1,17 +1,10 @@
 
-#include <stdlib.h>
-#include <unistd.h> /* For ssize_t and (maybe) STDERR_FILENO */
+#include <stdarg.h>
+#include <unistd.h> /* For ssize_t */
 #include <string.h>
 #include <stdio.h>
-#include <stdarg.h>
 
-#if defined(__DECC) && defined(__VMS)
-#  include <lib$routines.h> /* lib$signal */
-#else
-#  include <execinfo.h> /* backtrace_symbols_fd */
-#  define HAVE_LINUX_BACKTRACE
-#endif
-
+#include "survival_kit/misc.h"
 #include "survival_kit/features.h"
 
 frame_info  __frame_info_stack[FRAME_INFO_STACK_SIZE];
@@ -365,7 +358,6 @@ char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *fu
 	return result;
 }
 
-char error_text_buffer[ERROR_BUFFER_SIZE];
 exception *__thrown_exception = NULL;
 
 void print_exception(exception *e)
@@ -388,43 +380,13 @@ exception *new_exception(ssize_t error_code, char *mess, ...)
 {
 	va_list vl;
 	va_start(vl, mess);
-	vsnprintf(error_text_buffer, ERROR_BUFFER_SIZE, mess, vl);
+	vsnprintf(skit_error_text_buffer, SKIT_ERROR_BUFFER_SIZE, mess, vl);
 	va_end(vl);
 	
 	exception *result = malloc(sizeof(exception));
 	result->error_code = error_code;
-	result->error_text = error_text_buffer;
+	result->error_text = skit_error_text_buffer;
 	return result;
-}
-
-void skit_die(char *mess, ...)
-{
-	va_list vl;
-	va_start(vl, mess);
-	vsnprintf(error_text_buffer, ERROR_BUFFER_SIZE, mess, vl);
-	va_end(vl);
-	
-	fprintf(stderr,"\n");
-	fprintf(stderr,"ERROR: skit_die was called.\n");
-	fprintf(stderr,"Message:\n");
-	
-	fprintf(stderr,"%s\n",error_text_buffer);
-	fprintf(stderr,"\n");
-	
-	fprintf(stderr,"perror value:\n");
-	perror("");
-	fprintf(stderr,"\n");
-	
-#ifdef HAVE_LINUX_BACKTRACE
-	fprintf(stderr,"backtrace:\n");
-	void *backtrace_buf[256];
-	int n_addresses = backtrace(backtrace_buf,256);
-	backtrace_symbols_fd(backtrace_buf, n_addresses, STDERR_FILENO);
-	fprintf(stderr,"\n");
-#endif
-	
-	exit(1);
-	/*lib$signal(EXIT_FAILURE);*/ /* This produced too much spam when exiting after a bunch of setjmp/longjmps. */
 }
 
 jmp_buf *__push_stack_info(size_t line, const char *file, const char *func)

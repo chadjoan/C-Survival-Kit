@@ -20,6 +20,8 @@ SKIT_T_PREFIX (required) -
 	#define SKIT_T_ELEM_TYPE int
 	#define SKIT_T_PREFIX int
 	#include "survival_kit/templates/slist.h"
+	#undefine SKIT_T_ELEM_TYPE
+	#undefine SKIT_T_PREFIX
 	skit_int_slist  list;        // The type 'skit_int_slist' is defined.
 	skit_int_snode  node;        // The type 'skit_int_snode' is defined.
 	node.val = 42;
@@ -30,6 +32,8 @@ SKIT_T_PREFIX (required) -
 	#define SKIT_T_ELEM_TYPE my_type_with_a_really_long_name
 	#define SKIT_T_PREFIX my_type
 	#include "survival_kit/templates/slist.h"
+	#undefine SKIT_T_ELEM_TYPE
+	#undefine SKIT_T_PREFIX
 	skit_my_type_slist  list;        // The type 'skit_my_type_slist' is defined.
 	skit_my_type_snode  node;        // The type 'skit_my_type_snode' is defined.
 	my_type_with_a_really_long_name foo = create_my_type(...);
@@ -51,32 +55,13 @@ SKIT_T_DIE_ON_ERROR (optional) -
 	implement the ability to throw exceptions.
 */
 
-/* Clean this up if other templates were using it. */
-#ifdef SKIT_T
-#undef SKIT_T
-#undef SKIT_T2
-#undef SKIT_T3
-#endif
+#include "survival_kit/templates/skit_t.h"
 
 #ifndef SKIT_T_ELEM_TYPE
 #error "SKIT_T_ELEM_TYPE is needed but was not defined."
 #endif
 
-#ifndef SKIT_T_PREFIX
-#error "SKIT_T_PREFIX is needed but was not defined."
-#endif
-
-#define SKIT_T3(prefix,ident) \
-	skit_ ## prefix ## _ ## ident
-
-/* This extra level of indirection forces prefix and ident to be expanded 
-   before the ## operator pastes things together. 
-   Source: http://gcc.gnu.org/onlinedocs/cpp/Argument-Prescan.html#Argument-Prescan */
-#define SKIT_T2(prefix,ident) \
-	SKIT_T3(prefix,ident)
-
-#define SKIT_T(ident) \
-	SKIT_T2(SKIT_T_PREFIX,ident)
+#include <unistd.h> /* for ssize_t */
 
 typedef struct SKIT_T(snode) SKIT_T(snode);
 struct SKIT_T(snode)
@@ -90,7 +75,7 @@ struct SKIT_T(slist)
 {
 	SKIT_T(snode) *front;
 	SKIT_T(snode) *back;
-	size_t length;
+	ssize_t length;
 };
 
 /**

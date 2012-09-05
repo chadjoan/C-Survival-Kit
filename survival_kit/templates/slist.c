@@ -1,10 +1,11 @@
-/** See survival_kit/templates/list.h for documentation. */
+/** See survival_kit/templates/slist.h for documentation. */
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
 #	include "survival_kit/features.h"
 #endif
 
+#include "survival_kit/misc.h"
 #include "survival_kit/templates/slist.h"
 
 #include <stdio.h>
@@ -41,13 +42,7 @@ SKIT_T(snode) *SKIT_T(slist_pop)(SKIT_T(slist) *list)
 	if ( list->front == NULL )
 	{
 #		if defined(SKIT_T_DIE_ON_ERROR)
-#		define SKIT_T_STR3(str) #str
-#		define SKIT_T_STR2(str) SKIT_T_STR3(str)
-#		define SKIT_T_STR(ident) SKIT_T_STR2(SKIT_T(slist))
 			skit_die("Attempt to pop a value from a zero-length " SKIT_T_STR(slist) ".");
-#		undef SKIT_T_STR
-#		undef SKIT_T_STR2
-#		undef SKIT_T_STR3
 #		else
 			RAISE(OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length slist.");
 #		endif
@@ -61,7 +56,7 @@ SKIT_T(snode) *SKIT_T(slist_pop)(SKIT_T(slist) *list)
 			list->back = NULL;
 	}
 	
-	list->length -= 1;
+	(list->length) -= 1;
 	
 	return result;
 }
