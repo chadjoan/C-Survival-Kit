@@ -16,7 +16,7 @@
 
 #define SKIT_T_STR3(str) #str
 #define SKIT_T_STR2(str) SKIT_T_STR3(str)
-#define SKIT_T_STR(ident) SKIT_T_STR2(SKIT_T(slist))
+#define SKIT_T_STR(ident) SKIT_T_STR2(SKIT_T(ident))
 
 #define SKIT_T_PRE2(prefix,ident) \
 	skit_ ## prefix ## _ ## ident

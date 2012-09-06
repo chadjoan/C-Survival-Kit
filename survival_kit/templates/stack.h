@@ -1,10 +1,10 @@
 /**
-Template slist: a singly-linked list implementation.
+Template stack: a stack implementation based on a singly-linked list of nodes.
 
 It is the caller's responsibility to undefine template parameters after 
 #include'ing this file.
 
-See "survival_kit/slist_builtins.h" for slist instantiations of common C builtin
+See "survival_kit/stack_builtins.h" for stack instantiations of common C builtin
   types, as well as unit tests.
 
 Parameters:
@@ -19,27 +19,27 @@ SKIT_T_PREFIX (required) -
 	EXAMPLE1:
 	#define SKIT_T_ELEM_TYPE int
 	#define SKIT_T_PREFIX int
-	#include "survival_kit/templates/slist.h"
+	#include "survival_kit/templates/stack.h"
 	#undefine SKIT_T_ELEM_TYPE
 	#undefine SKIT_T_PREFIX
-	skit_int_slist  list;        // The type 'skit_int_slist' is defined.
+	skit_int_stack  list;        // The type 'skit_int_stack' is defined.
 	skit_int_snode  node;        // The type 'skit_int_snode' is defined.
 	node.val = 42;
-	skit_int_slist_init(&list);        // The function 'skit_int_slist_init' is defined.
-	skit_int_slist_push(&list,&node);  // The function 'skit_int_slist_push' is defined.
+	skit_int_stack_init(&list);        // The function 'skit_int_stack_init' is defined.
+	skit_int_stack_push(&list,&node);  // The function 'skit_int_stack_push' is defined.
 	
 	EXAMPLE2:
 	#define SKIT_T_ELEM_TYPE my_type_with_a_really_long_name
 	#define SKIT_T_PREFIX my_type
-	#include "survival_kit/templates/slist.h"
+	#include "survival_kit/templates/stack.h"
 	#undefine SKIT_T_ELEM_TYPE
 	#undefine SKIT_T_PREFIX
-	skit_my_type_slist  list;        // The type 'skit_my_type_slist' is defined.
+	skit_my_type_stack  list;        // The type 'skit_my_type_stack' is defined.
 	skit_my_type_snode  node;        // The type 'skit_my_type_snode' is defined.
 	my_type_with_a_really_long_name foo = create_my_type(...);
 	node.val = foo;
-	skit_my_type_slist_init(&list);        // The function 'skit_my_type_slist_init' is defined.
-	skit_my_type_slist_push(&list,&node);  // The function 'skit_my_type_slist_push' is defined.
+	skit_my_type_stack_init(&list);        // The function 'skit_my_type_stack_init' is defined.
+	skit_my_type_stack_push(&list,&node);  // The function 'skit_my_type_stack_push' is defined.
 
 SKIT_T_FUNC_ATTR (optional, defaualts to nothing) - 
 	Specifies function attributes to be used on all functions created.
@@ -63,18 +63,17 @@ SKIT_T_DIE_ON_ERROR (optional) -
 
 #include <unistd.h> /* for ssize_t */
 
-typedef struct SKIT_T(snode) SKIT_T(snode);
-struct SKIT_T(snode)
+typedef struct SKIT_T(stnode) SKIT_T(stnode);
+struct SKIT_T(stnode)
 {
 	SKIT_T_ELEM_TYPE val;
-	SKIT_T(snode) *next;
+	SKIT_T(stnode) *next;
 };
 
-typedef struct SKIT_T(slist) SKIT_T(slist);
-struct SKIT_T(slist)
+typedef struct SKIT_T(stack) SKIT_T(stack);
+struct SKIT_T(stack)
 {
-	SKIT_T(snode) *front;
-	SKIT_T(snode) *back;
+	SKIT_T(stnode) *front;
 	ssize_t length;
 };
 
@@ -84,10 +83,10 @@ This is an in-place operation.  The result is provided as a return value so
   that this function may appear within expressions.
 Returns: The list object that was passed in, initialized to an empty list.
 */
-SKIT_T(slist) *SKIT_T(slist_init)(SKIT_T(slist) *list);
+SKIT_T(stack) *SKIT_T(stack_init)(SKIT_T(stack) *list);
 
-/** Pushes a snode onto the front of the list. O(1) operation. */
-void SKIT_T(slist_push)(SKIT_T(slist) *list, SKIT_T(snode) *node);
+/** Pushes a stnode onto the front of the list. O(1) operation. */
+void SKIT_T(stack_push)(SKIT_T(stack) *list, SKIT_T(stnode) *node);
 
-/** Pops a snode from the front of the list. O(1) operation. */
-SKIT_T(snode) *SKIT_T(slist_pop)(SKIT_T(slist) *list);
+/** Pops a stnode from the front of the list. O(1) operation. */
+SKIT_T(stnode) *SKIT_T(stack_pop)(SKIT_T(stack) *list);

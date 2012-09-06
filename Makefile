@@ -17,10 +17,10 @@ OBJECT_DIRS= \
 
 OBJECT_FILES= \
 	obj/misc.o \
-	obj/slist_builtins.o \
-	obj/flist_builtins.o \
-	obj/setjmp/jmp_slist.o \
-	obj/setjmp/jmp_flist.o \
+	obj/stack_builtins.o \
+	obj/fstack_builtins.o \
+	obj/setjmp/jmp_stack.o \
+	obj/setjmp/jmp_fstack.o \
 	obj/str.o \
 	obj/generated_exception_defs.o \
 	obj/features.o \
