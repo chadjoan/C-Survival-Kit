@@ -8,20 +8,13 @@
 #include "survival_kit/misc.h"
 #include "survival_kit/templates/fstack.h"
 
+#include <stdlib.h> /* for size_t */
 #include <stdio.h>
 
 void SKIT_T(fstack_init)( SKIT_T(fstack) *list )
 {
 	SKIT_T(stack_init)(&(list->unused));
 	SKIT_T(stack_init)(&(list->used));
-}
-
-int SKIT_T(fstack_full)( SKIT_T(fstack) *list )
-{
-	if ( list->unused.length == 0 )
-		return 1;
-	else
-		return 0;
 }
 
 void SKIT_T(fstack_grow)( SKIT_T(fstack) *list, void *node )
@@ -49,6 +42,22 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *list )
 	SKIT_T(stnode) *result = SKIT_T(stack_pop)(&(list->unused));
 	SKIT_T(stack_push)(&(list->used),result);
 	return &(result->val);
+}
+
+SKIT_T_ELEM_TYPE *SKIT_T(fstack_alloc)( SKIT_T(fstack) *list, void *function(size_t) allocate )
+{
+	if ( list->unused.length == 0 )
+	{
+		/* Directly allocate onto the "used" stack. */
+		SKIT_T(stnode) *result = (SKIT_T(stnode)*)allocate(sizeof(stnode));
+		SKIT_T(stack_push)(&(list->used),result);
+		return &(result->val);
+	}
+	else
+	{
+		/* Re-use existing nodes. */
+		return SKIT_T(fstack_push)(list);
+	}
 }
 
 SKIT_T_ELEM_TYPE *SKIT_T(fstack_pop)( SKIT_T(fstack) *list )

@@ -24,7 +24,8 @@ OBJECT_FILES= \
 	obj/str.o \
 	obj/generated_exception_defs.o \
 	obj/features.o \
-	obj/sockn.o
+	obj/sockn.o \
+	obj/init.o
 
 all: $(LIBFILE) $(TOOL_EXES)
 

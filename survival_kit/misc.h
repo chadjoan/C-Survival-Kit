@@ -13,6 +13,13 @@ extern char skit_error_text_buffer[SKIT_ERROR_BUFFER_SIZE];
 void skit_die(char *mess, ...);
 
 /** 
+Calls C's malloc function.
+In the future this will check for the existence of a custom allocator and use
+that instead, if it's present.
+*/
+void *skit_malloc(size_t size);
+
+/** 
 Prints a chunk of memory in both hexadecimal and text form. 
 TODO: there is a current limitation that 'size' must be a multiple of 8.
 */

@@ -1,0 +1,13 @@
+
+#include "survival_kit/init.h"
+#include "survival_kit/features.h"
+
+void skit_init()
+{
+	skit_features_init();
+}
+
+void skit_thread_init()
+{
+	skit_features_thread_init();
+}

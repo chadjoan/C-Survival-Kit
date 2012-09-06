@@ -41,10 +41,16 @@ void skit_die(char *mess, ...)
 	fprintf(stderr,"\n");
 #endif
 	
+	/* TODO: this should probably not crash the program if this is not the main
+	 * thread.  If the thread is non-main, then it should just kill the thread. */
 	exit(1);
 	/*lib$signal(EXIT_FAILURE);*/ /* This produced too much spam when exiting after a bunch of setjmp/longjmps. */
 }
 
+void *skit_malloc(size_t size)
+{
+	return malloc(size);
+}
 
 void skit_print_mem(void *ptr, int size)
 {

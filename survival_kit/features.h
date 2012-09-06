@@ -37,16 +37,186 @@
 /** Unit test. */
 void skit_unittest_features();
 
-/* */
+
+/* Implementation details. */
+typedef struct skit_frame_info skit_frame_info;
+struct skit_frame_info
+{
+	uint32_t line_number;
+	const char *file_name;
+	const char *func_name;
+	/* jmp_buf *jmp_context; */
+};
+
+#define SKIT_T_ELEM_TYPE skit_frame_info
+#define SKIT_T_PREFIX debug
+#include "survival_kit/templates/stack.h"
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_PREFIX
+
+#define SKIT_T_ELEM_TYPE skit_frame_info
+#define SKIT_T_PREFIX debug
+#include "survival_kit/templates/fstack.h"
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_PREFIX
+
+
+/** */
+typedef struct skit_exception skit_exception;
+struct skit_exception
+{
+	/* Implementation note: keep this small, it will be returned by-value from functions a lot. */
+	err_code_t error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
+	char *error_text;    /** READ ONLY: a description for the error. */
+	skit_frame_info *frame_info; /** Points to the point in the frame info stack where the exception happened. */
+};
+
+#define SKIT_T_ELEM_TYPE skit_exception
+#define SKIT_T_PREFIX exc
+#include "survival_kit/templates/stack.h"
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_PREFIX
+
+#define SKIT_T_ELEM_TYPE skit_exception
+#define SKIT_T_PREFIX exc
+#include "survival_kit/templates/fstack.h"
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_PREFIX
+
+/**
+This structure contains thread-local data structures needed to implement the
+emulation of various language features found in this module.
+*/
+typedef struct skit_thread_context skit_thread_context;
+struct skit_thread_context
+{
+	skit_jmp_fstack   try_jmp_stack;
+	skit_jmp_fstack   exc_jmp_stack;
+	skit_jmp_fstack   scope_jmp_stack;
+	skit_debug_fstack debug_info_stack;
+	skit_exc_fstack   exc_instance_stack;
+};
+
+/* 
+Used internally to save the position of the call stack before CALLs and other
+nested transfers.  The skit_thread_context_pos struct can then be used to
+reconcile against the skit_thread_context later when the nested code completes.
+The skit_reconcile_thread_context function is used for this.
+*/
+typedef struct skit_thread_context_pos skit_thread_context_pos; 
+struct skit_thread_context_pos
+{
+	ssize_t try_jmp_pos;
+	ssize_t exc_jmp_pos;
+	ssize_t scope_jmp_pos;
+	ssize_t debug_info_pos;
+};
+
+extern pthread_key_t skit_thread_context_key;
+
+/* Internal: users should call skit_init() instead. */
+void skit_features_init();
+
+/* Internal: users should call skit_thread_init() instead. */
+void skit_features_thread_init();
+
+/* Internal: used in macros to emulate language features. */
+skit_thread_context *skit_thread_context_get();
+
+/* More internals. */
+void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
+void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
+void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
+
+/*
+--------------------------------------------------------------------------------
+SCOPE guard hygeine:
+
+--------------------------------------------------------------------------------
+This version of resource cleanup:
+
+skit_stream *resource1 = skit_new_stream("foo.txt","w");
+SCOPE_EXIT(skit_stream_free(resource1));
+skit_stream *resource2 = skit_new_stream("bar.txt","w");
+SCOPE_EXIT(skit_stream_free(resource2));
+
+is preferred over this version:
+
+skit_stream *resource1 = skit_new_stream("foo.txt","w");
+skit_stream *resource2 = skit_new_stream("bar.txt","w");
+SCOPE_EXIT(skit_stream_free(resource1));
+SCOPE_EXIT(skit_stream_free(resource2));
+
+The reason is that if resource2's initialization throws an exception, then the
+former example will cleanup resource1 but the latter will not.
+
+--------------------------------------------------------------------------------
+Since scope guards are implemented with setjmp/longjmp, it is possible to write
+constructs like this:
+
+  mytype *val = (mytype*)malloc(sizeof(mytype);
+  if ( val != NULL )
+  {
+      SCOPE_EXIT
+          free(val));
+          val = NULL;
+      END_SCOPE_EXIT
+  }
+  ... code that uses val ...
+
+This is highly discouraged.  Consider what the similar-looking D code would do:
+
+  mytype* val = cast(mytype*)malloc(mytype.sizeof);
+  if ( val != null )
+  {
+      scope(exit)
+      {
+          free(val);
+          val = null;
+      }
+  }
+  ... code that segfaults when attempting to use val ...
+
+The scope(exit)'s enclosing scope is the if-statement.  When the if statement
+exits, the scope(exit) statement is immediately executed.  Anything that happens
+after the if-statement will see a null value for the 'val' variable.  
+
+The C code will not do the same thing, because the C code's scope guard is only
+defined when it is /executed/ and not when it is /compiled/.  This is actually
+strange behavior and may cause bugs if the code is ever ported to other
+languages or frameworks.  The recommended way to accomplish this is to throw
+an exception if the malloc call returns NULL.  This can be made convenient
+by wrapping the allocation in a function that handles the error detection and
+exception throwing.
+
+The above D code is actually closer in meaning to this C code:
+
+  mytype *val = (mytype*)malloc(sizeof(mytype);
+  if ( val != NULL )
+  SCOPE
+      SCOPE_EXIT
+          free(val));
+          val = NULL;
+      END_SCOPE_EXIT
+  END_SCOPE
+  ... code that segfaults when attempting to use val ...
+
+It would be a shame if this version were confused with the one where {} brackets
+were used instead of SCOPE/END_SCOPE!
+
+--------------------------------------------------------------------------------
+
+
+
+*/
+
+/** Place this at the top of function bodies that use language feature emulation. */
 #define USE_FEATURES \
 	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	char *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
-	skit_func_context skit_func_ctx; \
-	skit_func_context_init(&skit_func_ctx); \
-	skit_thread_context skit_thread_ctx; \
-	skit_thread_context_get(&skit_thread_ctx); \
+	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
 	do {} while(0)
 
 /* TODO: redefine 'break', 'continue', 'goto', and 'return' so that they always
@@ -54,11 +224,11 @@ void skit_unittest_features();
 
 /* 
 break:
-if ( skit_func_ctx.try_stack.used.length > 0 )
+if ( skit_thread_ctx->try_jmp_stack.used.length > 0 )
 {
 	fprintf(stderr,"%s, %d: in function %s: Used 'break' statement while in TRY-CATCH block.", 
 		__FILE__, __LINE__, __func__);
-	skit_jmp_buf_flist_pop(&skit_func_ctx.try_stack);
+	skit_jmp_buf_fstack_pop(&skit_thread_ctx->try_jmp_stack);
 }
 
 continue:
@@ -72,7 +242,7 @@ if (0)
 	(void) *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks;
 }
 
-if ( skit_func_ctx.try_stack.used.length > 0 )
+if ( skit_thread_ctx->try_jmp_stack.used.length > 0 )
 {
 	RAISE(...);
 }
@@ -91,17 +261,8 @@ that may cause things like unexpected null pointers or access violations.
 */
 /* @define_exception(FATAL_EXCEPTION, "A fatal exception was thrown.") */
 
-/* Implementation details. */
-typedef struct frame_info frame_info;
-struct frame_info
-{
-	uint32_t line_number;
-	const char *file_name;
-	const char *func_name;
-	jmp_buf *jmp_context;
-};
-
 /* TODO: these should be stored in thread-local storage. */
+#if 0
 #define FRAME_INFO_STACK_SIZE 1024
 extern frame_info __frame_info_stack[FRAME_INFO_STACK_SIZE];
 extern jmp_buf    __frame_context_stack[FRAME_INFO_STACK_SIZE];
@@ -111,18 +272,9 @@ extern ssize_t    __frame_info_end;
 extern jmp_buf    __try_context_stack[TRY_CONTEXT_STACK_SIZE];
 extern ssize_t    __try_context_end;
 
-/** */
-typedef struct exception exception;
-struct exception
-{
-	/* Implementation note: keep this small, it will be returned by-value from functions a lot. */
-	err_code_t error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
-	char *error_text;    /** READ ONLY: a description for the error. */
-	ssize_t frame_info_index; /** Points to the point in the frame info stack where the exception happened. */
-};
-
 /* Implementation detail. */
 extern exception *__thrown_exception;
+#endif
 
 /** Prints the given exception to stdout. */
 void print_exception(exception *e);
@@ -135,26 +287,49 @@ void print_exception(exception *e);
 */
 #define stack_trace_to_str() __stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
 
+/** Allocates a new exception on the exception stack. */
+skit_exception *skit_new_exception(skit_thread_context *ctx, err_code_t error_code, char *mess, ...);
+
+
+#if 0
 /** Allocates a new exception. */
-exception *new_exception(err_code_t error_code, char *mess, ...);
+exception *skit_new_exception(err_code_t error_code, char *mess, ...);
 
 /** Call this to deallocate the memory used by an exception. */
 /** This will be called automatically in TRY_CATCH(expr) ... ENDTRY blocks. */
 exception *free_exception(exception *e);
+#endif
 
 /* Macro implementation details.  Do not use directly. */
 char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
-jmp_buf *__push_stack_info(size_t line, const char *file, const char *func);
+/*jmp_buf *__push_stack_info(size_t line, const char *file, const char *func);
 frame_info __pop_stack_info();
 
 jmp_buf *__push_try_context();
 jmp_buf *__pop_try_context();
+*/
 
 /* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part
 // of this exception handling module.  It may change in the future if needed
 // to fix bugs or add new features.
 */
+#define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
+	do { \
+		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
+		ERR_UTIL_TRACE("frame_info_index: %li\n",__frame_info_end-1); \
+		if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) \
+			longjmp( \
+				*skit_jmp_stack_pop(&skit_thread_ctx->exc_jmp_stack), \
+				skit_thread_ctx->exc_instance_stack.front.val.error_code); \
+		else \
+		{ \
+			print_exception(__thrown_exception); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
+			skit_die("Exception thrown with no handlers left in the stack."); \
+		} \
+	} while (0)
+
+#if 0
 #define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
 		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
@@ -169,7 +344,9 @@ jmp_buf *__pop_try_context();
 			skit_die("Exception thrown with no handlers left in the stack."); \
 		} \
 	} while (0)
+#endif
 
+#if 0
 /**
 Throws the exception 'e'.
 This is usually used with the new_exception function, and allows for
@@ -180,15 +357,20 @@ This macro expands to a statement and may not be nested inside expressions.
 Example usage:
 	THROW(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
 */
-#define THROW(e) \
+#endif
+
+#define __SKIT_THROW(e) \
 	do { \
 		ERR_UTIL_TRACE("%s, %d.136: THROW\n", __FILE__, __LINE__); \
-		__thrown_exception = (e); \
-		if ( __thrown_exception == NULL ) \
-			__thrown_exception = new_exception(-1,"NULL was thrown."); \
-		__push_stack_info(__LINE__,__FILE__,__func__); \
-		__thrown_exception->frame_info_index = __frame_info_end; \
-		__pop_stack_info(); \
+		(e); \
+		if ( skit_thread_ctx->exc_instance_stack.used.length <= 0 ) \
+			skit_new_exception(skit_thread_ctx, -1, "NULL was thrown."); \
+		skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc); \
+		skit_debug_info_store(&skit_thread_ctx->debug_info_stack.used.front.val, \
+			__LINE__,__FILE__,__func__); \
+		skit_thread_ctx->exc_instance_stack.used.front.val.frame_info \
+			= &skit_thread_ctx->debug_info_stack.used.front.val; \
+		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
 		__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
 
@@ -210,22 +392,15 @@ Example usage:
 #define RAISE(...) MACRO_DISPATCHER3(RAISE, __VA_ARGS__)(__VA_ARGS__)
 
 #define RAISE1(e) \
-	THROW(new_exception(etype))
+	__SKIT_THROW(skit_new_exception(skit_thread_ctx, etype))
 	
 #define RAISE2(etype, emsg) \
-	THROW(new_exception(etype, emsg))
+	__SKIT_THROW(skit_new_exception(skit_thread_ctx, etype, emsg))
 
 #define RAISE3(etype, emsg, ...) \
-	THROW(new_exception(etype, emsg, __VA_ARGS__))
+	__SKIT_THROW(skit_new_exception(skit_thread_ctx, etype, emsg, __VA_ARGS__))
 
-/** Evaluates the given expression while creating a stack entry at this point
-// in the code.  The whole purpose of doing this is to provide better debug
-// info in stack traces.  It is tolerable to forget to use this when calling
-// into other functions because the exception handling mechanism will still
-// be able to return to the nearest enclosing TRY-CATCH.  Wrapping function
-// calls in this macro is desirable though, because the calling file, line,
-// and function name will be absent from stack traces if this is not used.
-*/
+#if 0
 #define CALL(expr) /* */ \
 	do { \
 		if ( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) == 0 ) { \
@@ -239,48 +414,50 @@ Example usage:
 		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 	} while (0)
+#endif
 
-#if 0
+void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
+void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
+
+/** Evaluates the given expression while creating a stack entry at this point
+// in the code.  The whole purpose of doing this is to provide better debug
+// info in stack traces.  It is tolerable to forget to use this when calling
+// into other functions because the exception handling mechanism will still
+// be able to return to the nearest enclosing TRY-CATCH.  Wrapping function
+// calls in this macro is desirable though, because the calling file, line,
+// and function name will be absent from stack traces if this is not used.
+*/
 #define CALL(expr) /* */ \
 	do { \
-		SKIT_DEBUG_INFO_FLIST_GROW_MALLOC(skit_thread_ctx->debug_info_stack); \
-		SKIT_JMP_FLIST_GROW_ALLOCA(skit_thread_ctx->exc_jmp_stack); \
-		\
-		/* Save a copy of the current jmp_stack position. */ \
-		skit_jmp_flist __skit_exc_jmp_stack_save = skit_thread_ctx->exc_jmp_stack; \
+		/* Save a copies of the current stack positions. */ \
+		skit_thread_context_pos __skit_thread_ctx_pos;\
+		skit_save_thread_context_pos(skit_thread_ctx, &__skit_thread_ctx_pos); \
 		/* This ensures that we can end up where we started in this call, */ \
 		/*   even if the callee messes up the jmp_stack. */ \
 		/* The jmp_stack could be messed up if someone tries to jump */ \
 		/*   execution out of a TRY-CATCH or scope guard block */ \
 		/*   (using break/continue/goto/return) and somehow manages to succeed, */ \
 		/*   thus preventing pop calls that are supposed to match push calls. */ \
-		/* The debug_info_stack does not have this treatment because it is */ \
-		/*   malloc'd instead of stack allocated.  It is also more resiliant */ \
-		/*   to corruption because it does not appear in macros like */ \
-		/*   TRY-CATCH where the programmer is likely to attempt jumping */ \
-		/*   execution out of a block. */ \
 		\
-		*skit_debug_info_flist_push( \
-			&skit_thread_ctx->debug_info_stack \
-			) = skit_make_debug_info_snode(__LINE__,__FILE__,__func__); \
+		skit_debug_info_store( \
+			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
+			__LINE__,__FILE__,__func__); \
 		\
-		if ( setjmp(*skit_jmp_flist_push(&skit_thread_ctx->exc_jmp_stack)) == 0 ) { \
+		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) { \
 			ERR_UTIL_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
 			(expr); \
 		} else { \
 			ERR_UTIL_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
-			skit_thread_ctx->exc_jmp_stack = __skit_exc_jmp_stack_save; \
-			skit_debug_info_flist_pop(&skit_thread_ctx->debug_info_stack); \
+			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
+			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 			__PROPOGATE_THROWN_EXCEPTIONS; \
 		} \
 		\
-		skit_thread_ctx->exc_jmp_stack = __skit_exc_jmp_stack_save; \
-		skit_debug_info_flist_pop(&skit_thread_ctx->debug_info_stack); \
+		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
+		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 		\
 		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
 	} while (0)
-
-#endif
 	
 /* __TRY_SAFE_EXIT is an implementation detail.
 // It allows execution to exit a TRY-CATCH block by jumping to a state distinct
@@ -297,6 +474,7 @@ Example usage:
 */
 #define __TRY_EXCEPTION_CLEANUP INT_MIN
 
+#if 0
 /** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
 //    int foo, len;
 //    len = 10;
@@ -428,14 +606,8 @@ Example usage:
 "Do not do this, ever!\n" )); \
 	} \
 	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
+#endif
 
-#define SKIT_JMP_BUF_GROW_ALLOCA(list) \
-	do { \
-		if (skit_jmp_buf_flist_full(&(list))) \
-			skit_jmp_buf_flist_grow(&(list),alloca(sizeof(skit_jmp_buf_snode*))); \
-	} while(0)
-
-#if 0
 /** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
 //    int foo, len;
 //    len = 10;
@@ -462,13 +634,11 @@ Example usage:
 //      such local jumps or maybe even make them work in sensible ways.
 */
 #define TRY /* */ \
-	SKIT_JMP_FLIST_GROW_ALLOCA(skit_func_ctx.try_stack);
-	if ( setjmp(*skit_jmp_flist_push(&skit_func_ctx.try_stack)) != __TRY_SAFE_EXIT ) { \
+	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != __TRY_SAFE_EXIT ) { \
 		ERR_UTIL_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \
 			ERR_UTIL_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
-			SKIT_JMP_FLIST_GROW_ALLOCA(skit_thread_ctx->exc_jmp_stack); \
-			switch( setjmp(*skit_jmp_flist_push(&skit_thread_ctx->exc_jmp_stack)) ) \
+			switch( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)) ) \
 			{ \
 			case __TRY_EXCEPTION_CLEANUP: \
 			{ \
@@ -480,13 +650,12 @@ Example usage:
 				/*   case after leaving any part of the TRY-CATCH-ENDTRY and only free   */ \
 				/*   exceptions if there actually are any.                               */ \
 				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
-				if (__thrown_exception != NULL) \
+				while (skit_thread_ctx->exc_instance_stack.used.length > 0) \
 				{ \
-					free(__thrown_exception); \
-					__thrown_exception = NULL; \
+					skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
 				} \
-				skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
-				longjmp(*skit_jmp_flist_pop(&skit_func_ctx.try_stack), __TRY_SAFE_EXIT); \
+				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+				longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack), __TRY_SAFE_EXIT); \
 			} \
 			default: \
 			{ \
@@ -537,8 +706,8 @@ Example usage:
 				{ \
 					/* An exception was thrown and we can't handle it. */ \
 					ERR_UTIL_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
-					skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
-					skit_jmp_flist_pop(&skit_func_ctx.try_stack); \
+					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+					skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 					__PROPOGATE_THROWN_EXCEPTIONS; \
 				} \
 				assert(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
@@ -549,9 +718,9 @@ Example usage:
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
 			ERR_UTIL_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
-			skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
-			skit_jmp_flist_pop(&skit_func_ctx.try_stack); \
-			THROW(new_exception(BREAK_IN_TRY_CATCH, "\n"\
+			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+			skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
+			THROW(skit_new_exception(BREAK_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'break' statement from within a TRY-CATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n" )); \
@@ -561,13 +730,13 @@ Example usage:
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
 		ERR_UTIL_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
-		skit_jmp_flist_pop(&skit_thread_ctx->exc_jmp_stack); \
-		skit_jmp_flist_pop(&skit_func_ctx.try_stack); \
-		THROW(new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
+		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+		skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
+		THROW(skit_new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n" )); \
 	} \
 	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
-#endif
+
 #endif
