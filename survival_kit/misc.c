@@ -52,26 +52,43 @@ void *skit_malloc(size_t size)
 	return malloc(size);
 }
 
+void skit_free(void *mem)
+{
+	free(mem);
+}
+
 void skit_print_mem(void *ptr, int size)
 {
-	#define line_width 8
-	if ( (size & (line_width-1)) != 0 ) /* HACK */
-		skit_die("print_mem(%p,%d): size argument must be a multiple of %d\n",ptr,size,line_width);
-
-	unsigned char xline[line_width+1];
-	unsigned char line[line_width+1];
-	xline[line_width] = '\0';
-	line[line_width] = '\0';
+	#define LINE_SIZE 8
+	char xline[LINE_SIZE][3];
+	char line[LINE_SIZE+1];
+	/* xline[LINE_SIZE] = '\0'; */
+	line[LINE_SIZE] = '\0';
 	int pos = 0;
 		printf("ADDR: 00 01 02 03 . 04 05 06 07 : text\n");
 	while ( pos < size )
 	{
+		int line_width = LINE_SIZE;
+		int left = size-pos;
+		if ( left < LINE_SIZE )
+			line_width = left;
+	
 		int i = 0;
-		for ( i = 0; i < line_width; i++ )
+		for ( i = 0; i < LINE_SIZE; i++ )
 		{
-			unsigned char c = ((char*)ptr)[pos+i];
-			
-			xline[i] = c;
+			unsigned char c;
+			if ( i < line_width )
+			{
+				c = ((char*)ptr)[pos+i];
+				sprintf(xline[i],"%02x",c);
+			}
+			else
+			{
+				c = ' ';
+				xline[i][0] = ' ';
+				xline[i][1] = ' ';
+				xline[i][2] = '\0';
+			}
 			
 			/* printable ASCII chars */
 			if ( 32 <= c && c <= 126 )
@@ -80,12 +97,12 @@ void skit_print_mem(void *ptr, int size)
 				line[i] = '.';
 		}
 		
-		printf("%04x: %02x %02x %02x %02x . %02x %02x %02x %02x : %s\n",
+		printf("%04x: %s %s %s %s . %s %s %s %s : %s\n",
 			pos,
 			xline[0], xline[1], xline[2], xline[3],
 			xline[4], xline[5], xline[6], xline[7],
 			line);
-		pos += line_width;
+		pos += LINE_SIZE;
 	}
 	printf("\n");
 }

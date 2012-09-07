@@ -17,6 +17,7 @@ OBJECT_DIRS= \
 
 OBJECT_FILES= \
 	obj/misc.o \
+	obj/cstr.o \
 	obj/stack_builtins.o \
 	obj/fstack_builtins.o \
 	obj/setjmp/jmp_stack.o \

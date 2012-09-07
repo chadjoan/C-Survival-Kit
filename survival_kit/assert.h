@@ -29,26 +29,48 @@
 			(val_str)); \
 	} while(0)
 
-#define SKIT_ASSERT_EQ( lhs, rhs, lhs_str, rhs_str ) \
+#define SKIT_ASSERT_EQS( lhs, rhs ) \
+	do { \
+		if ( (lhs) != (rhs) ) skit_die( \
+			"%s: at line %d in function %s: ASSERT_EQS(" #lhs "," #rhs ") failed.\n" \
+			"  lhs == %s\n" \
+			"  rhs == %s", \
+			__FILE__, __LINE__, __func__, \
+			(lhs), \
+			(rhs)); \
+	} while(0)
+
+#define SKIT_ASSERT_NEQS( lhs, rhs ) \
+	do { \
+		if ( (lhs) == (rhs) ) skit_die( \
+			"%s: at line %d in function %s: ASSERT_NEQS(" #lhs "," #rhs ") failed.\n" \
+			"  lhs == %s\n" \
+			"  rhs == %s", \
+			__FILE__, __LINE__, __func__, \
+			(lhs), \
+			(rhs)); \
+	} while(0)
+
+#define SKIT_ASSERT_EQ( lhs, rhs, fmt ) \
 	do { \
 		if ( (lhs) != (rhs) ) skit_die( \
 			"%s: at line %d in function %s: ASSERT_EQ(" #lhs "," #rhs ") failed.\n" \
-			"  lhs == %s\n" \
-			"  rhs == %s", \
+			"  lhs == " fmt "\n" \
+			"  rhs == " fmt, \
 			__FILE__, __LINE__, __func__, \
-			(lhs_str), \
-			(rhs_str)); \
+			(lhs), \
+			(rhs)); \
 	} while(0)
 
-#define SKIT_ASSERT_NEQ( lhs, rhs, lhs_str, rhs_str ) \
+#define SKIT_ASSERT_NEQ( lhs, rhs, fmt ) \
 	do { \
 		if ( (lhs) == (rhs) ) skit_die( \
 			"%s: at line %d in function %s: ASSERT_NEQ(" #lhs "," #rhs ") failed.\n" \
-			"  lhs == %s\n" \
-			"  rhs == %s", \
+			"  lhs == " fmt "\n" \
+			"  rhs == " fmt, \
 			__FILE__, __LINE__, __func__, \
-			(lhs_str), \
-			(rhs_str)); \
+			(lhs), \
+			(rhs)); \
 	} while(0)
 
 #endif

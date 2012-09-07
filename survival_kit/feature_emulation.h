@@ -10,6 +10,7 @@
 
 #include "survival_kit/misc.h"
 #include "survival_kit/assert.h"
+#include "survival_kit/init.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
@@ -115,14 +116,15 @@ were used instead of SCOPE/END_SCOPE!
 /** Place this at the top of function bodies that use language feature emulation. */
 #define USE_FEATURE_EMULATION \
 	do { \
-		SKIT_ASSERT(init_was_called); \
+		SKIT_ASSERT(skit_init_was_called()); \
 	}while(0); \
 	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	char *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
-	SKIT_ASSERT_MSG(skit_thread_ctx != NULL, "This can happen if the thread's skit_thread_init() function was not called."); \
+	SKIT_ASSERT(skit_thread_init_was_called()); \
+	SKIT_ASSERT(skit_thread_ctx != NULL); \
 	(void)skit_thread_ctx; \
 	(void)Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	(void)goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
@@ -264,17 +266,20 @@ jmp_buf *__pop_try_context();
 			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
 			__LINE__,__FILE__,__func__); \
 		\
+		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"); \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) { \
 			SKIT_FEATURE_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
 			(expr); \
 		} else { \
 			SKIT_FEATURE_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
 			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
+			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 			__PROPOGATE_THROWN_EXCEPTIONS; \
 		} \
 		\
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
+		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 		\
 		SKIT_FEATURE_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
@@ -456,10 +461,12 @@ jmp_buf *__pop_try_context();
 */
 #define TRY /* */ \
 	SKIT_FEATURE_TRACE("%s, %d.236: TRY.start\n", __FILE__, __LINE__); \
+	SKIT_FEATURE_TRACE("type_jmp_stack_alloc\n"); \
 	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != __TRY_SAFE_EXIT ) { \
 		SKIT_FEATURE_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \
 			SKIT_FEATURE_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("exc_jmp_stack_alloc\n"); \
 			switch( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)) ) \
 			{ \
 			case __TRY_EXCEPTION_CLEANUP: \
@@ -476,7 +483,9 @@ jmp_buf *__pop_try_context();
 				{ \
 					skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
 				} \
+				SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+				SKIT_FEATURE_TRACE("try_jmp_stack_pop\n"); \
 				longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack), __TRY_SAFE_EXIT); \
 			} \
 			default: \
@@ -528,11 +537,13 @@ jmp_buf *__pop_try_context();
 				{ \
 					/* An exception was thrown and we can't handle it. */ \
 					SKIT_FEATURE_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+					SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 					__PROPOGATE_THROWN_EXCEPTIONS; \
 				} \
-				assert(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
+				SKIT_ASSERT(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
 			} /* default: { } */ \
 			} /* switch(setjmp(*__push...)) */ \
 			/* If execution makes it here, then the caller */ \
@@ -540,7 +551,9 @@ jmp_buf *__pop_try_context();
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
 			SKIT_FEATURE_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+			SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 			THROW(BREAK_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'break' statement from within a TRY-CATCH block.\n" \
@@ -552,7 +565,9 @@ jmp_buf *__pop_try_context();
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
 		SKIT_FEATURE_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+		SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 		THROW(CONTINUE_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n" \

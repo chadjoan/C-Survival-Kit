@@ -7,7 +7,6 @@
 #include "survival_kit/misc.h"
 #include "survival_kit/assert.h"
 
-int init_was_called = 0;
 pthread_key_t skit_thread_context_key;
 
 static void skit_thread_context_init( skit_thread_context *ctx )
@@ -39,8 +38,6 @@ static void skit_thread_context_dtor(void *ctx_ptr)
 void skit_features_init()
 {
 	pthread_key_create(&skit_thread_context_key, skit_thread_context_dtor); 
-	skit_features_thread_init();
-	init_was_called = 1;
 }
 
 void skit_features_thread_init()
@@ -105,7 +102,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func )
 {
-	SKIT_FEATURE_TRACE("%s, %li: skit_debug_info_store(...,%li, %s, %s)\n", file, line, line, file, func);
+	SKIT_FEATURE_TRACE("%s, %d: skit_debug_info_store(...,%d, %s, %s)\n", file, line, line, file, func);
 	
 	dst->line_number = line;
 	dst->file_name = file;
@@ -206,6 +203,10 @@ static char *skit_stack_to_str_internal(const skit_debug_stnode *stack_end)
 {
 	char *msg_pos = msg_buf;
 	ssize_t msg_rest_length = MSG_BUF_SIZE;
+	
+	/* FIRST: scan the unused stack for stack_end. */
+	/*   if it's there, then that will need to be printed backwards. */
+	/* SECOND: print the used stack.  If stack_end wasn't in unused land, then only print from stack_end. */
 	
 	while ( stack_end != NULL )
 	{

@@ -83,7 +83,7 @@ Example usage:
 		/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */ \
 		if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) \
 			longjmp( \
-				*skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+				skit_thread_ctx->exc_jmp_stack.used.front->val, \
 				exc->error_code); \
 		else \
 		{ \

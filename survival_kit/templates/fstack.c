@@ -72,7 +72,9 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_alloc)( SKIT_T(fstack) *stack, void *allocate(si
 SKIT_T_ELEM_TYPE *SKIT_T(fstack_pop)( SKIT_T(fstack) *stack )
 {
 	SKIT_ASSERT(stack != NULL);
+	
 	SKIT_T(stnode) *result = SKIT_T(stack_pop)(&(stack->used));
 	SKIT_T(stack_push)(&(stack->unused),result);
+	
 	return &result->val;
 }

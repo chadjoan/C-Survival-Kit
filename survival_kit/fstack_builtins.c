@@ -6,6 +6,7 @@
 #include "survival_kit/fstack_builtins.h"
 
 #include "survival_kit/misc.h"
+#include "survival_kit/cstr.h"
 
 #include "survival_kit/setjmp/jmp_fstack.h"
 #include <setjmp.h>
@@ -32,6 +33,34 @@ void skit_fstack_unittest()
 		end_was_reached = 1;
 	}
 	assert(end_was_reached);
+	
+	int32_t *i32;
+	skit_i32_fstack i32stack;
+	skit_i32_fstack_init(&i32stack);
+	i32 = skit_i32_fstack_alloc(&i32stack,&skit_malloc);
+	*i32 = 1;
+	
+	i32 = skit_i32_fstack_alloc(&i32stack,&skit_malloc);
+	*i32 = 2;
+	
+	i32 = skit_i32_fstack_alloc(&i32stack,&skit_malloc);
+	*i32 = 3;
+	
+	i32 = skit_i32_fstack_pop(&i32stack);
+	SKIT_ASSERT_EQ(*i32,3, "%d");
+	
+	i32 = skit_i32_fstack_pop(&i32stack);
+	SKIT_ASSERT_EQ(*i32,2, "%d");
+	
+	i32 = skit_i32_fstack_alloc(&i32stack,&skit_malloc);
+	*i32 = 42;
+	
+	i32 = skit_i32_fstack_pop(&i32stack);
+	SKIT_ASSERT_EQ(*i32,42, "%d");
+	
+	i32 = skit_i32_fstack_pop(&i32stack);
+	SKIT_ASSERT_EQ(*i32,1, "%d");
+	
 	
 	printf("  skit_fstack_unittest passed!\n");
 	printf("\n");
