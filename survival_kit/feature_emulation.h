@@ -9,6 +9,7 @@
 #include <assert.h>
 
 #include "survival_kit/misc.h"
+#include "survival_kit/assert.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
@@ -113,11 +114,15 @@ were used instead of SCOPE/END_SCOPE!
 
 /** Place this at the top of function bodies that use language feature emulation. */
 #define USE_FEATURE_EMULATION \
+	do { \
+		SKIT_ASSERT(init_was_called); \
+	}while(0); \
 	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	char *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
+	SKIT_ASSERT_MSG(skit_thread_ctx != NULL, "This can happen if the thread's skit_thread_init() function was not called."); \
 	(void)skit_thread_ctx; \
 	(void)Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	(void)goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
@@ -450,6 +455,7 @@ jmp_buf *__pop_try_context();
 //      such local jumps or maybe even make them work in sensible ways.
 */
 #define TRY /* */ \
+	SKIT_FEATURE_TRACE("%s, %d.236: TRY.start\n", __FILE__, __LINE__); \
 	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != __TRY_SAFE_EXIT ) { \
 		SKIT_FEATURE_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \

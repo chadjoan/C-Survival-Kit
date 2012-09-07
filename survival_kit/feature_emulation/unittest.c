@@ -38,16 +38,24 @@ static void unittest_exceptions()
 {
 	USE_FEATURE_EMULATION;
 	
+	printf("sup.\n");
+	
 	if( !exception_is_a(GENERIC_EXCEPTION, GENERIC_EXCEPTION) )  skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	
+	printf("lol.\n");
+	
 	TRY
+		printf("tryin'.\n");
 		baz();
 		printf("No exception thrown.\n");
 	CATCH(GENERIC_EXCEPTION, e)
+		printf("catchin'.\n");
 		skit_print_exception(e);
 	ENDTRY
+	
+	printf("dead.\n");
 	
 	printf("------\n");
 	

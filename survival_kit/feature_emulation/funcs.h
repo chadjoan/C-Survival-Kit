@@ -5,8 +5,18 @@
 #include <stdio.h>
 #include <pthread.h>
 
+/* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
+// debug the code that is supposed to make debugging easier. */
+#define SKIT_DO_FEATURE_EMULATION_TRACING 1
+#if SKIT_DO_FEATURE_EMULATION_TRACING == 1
+	#define SKIT_FEATURE_TRACE(...) printf(__VA_ARGS__)
+#else
+	#define SKIT_FEATURE_TRACE(...)
+#endif
+
 #include "survival_kit/feature_emulation/types.h"
 
+extern int init_was_called;
 extern pthread_key_t skit_thread_context_key;
 
 /* Internal: users should call skit_init() instead. */
@@ -36,13 +46,5 @@ void skit_print_exception(skit_exception *e);
 char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
 
 
-/* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
-// debug the code that is supposed to make debugging easier. */
-#define SKIT_DO_FEATURE_EMULATION_TRACING 0
-#if SKIT_DO_FEATURE_EMULATION_TRACING == 1
-	#define SKIT_FEATURE_TRACE(...) printf(__VA_ARGS__)
-#else
-	#define SKIT_FEATURE_TRACE(...)
-#endif
 
 #endif

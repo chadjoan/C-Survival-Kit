@@ -5,7 +5,9 @@
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/misc.h"
+#include "survival_kit/assert.h"
 
+int init_was_called = 0;
 pthread_key_t skit_thread_context_key;
 
 static void skit_thread_context_init( skit_thread_context *ctx )
@@ -38,6 +40,7 @@ void skit_features_init()
 {
 	pthread_key_create(&skit_thread_context_key, skit_thread_context_dtor); 
 	skit_features_thread_init();
+	init_was_called = 1;
 }
 
 void skit_features_thread_init()

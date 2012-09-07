@@ -1,4 +1,5 @@
 
+#include "survival_kit/init.h"
 #include "survival_kit/stack_builtins.h"
 #include "survival_kit/fstack_builtins.h"
 #include "survival_kit/feature_emulation.h"
@@ -7,6 +8,7 @@
 
 int main(int argc, char *argv[])
 {
+	skit_init();
 	skit_stack_unittest();
 	skit_fstack_unittest();
 	skit_unittest_features();
