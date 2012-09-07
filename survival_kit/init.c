@@ -1,6 +1,6 @@
 
 #include "survival_kit/init.h"
-#include "survival_kit/features.h"
+#include "survival_kit/feature_emulation.h"
 
 void skit_init()
 {

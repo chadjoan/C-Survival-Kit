@@ -1,6 +1,7 @@
-#include "survival_kit/features.h"
+
 #include "survival_kit/stack_builtins.h"
 #include "survival_kit/fstack_builtins.h"
+#include "survival_kit/feature_emulation.h"
 
 #include <stdio.h> /* incase printf is needed. */
 

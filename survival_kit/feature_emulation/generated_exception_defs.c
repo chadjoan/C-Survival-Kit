@@ -2,9 +2,9 @@
 #include <assert.h>
 #include <stdio.h> /* printf */
 
-#include "survival_kit/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/generated_exception_defs.h"
 
-err_code_t __exc_inheritance_table[__EXC_TABLE_SIZE] = {
+skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 	0, /* Never use 0, it has a special meaning for setjmp/longjmp. */
 	1, /* 1 is pretty dangerous too. */
 	GENERIC_EXCEPTION, /* Is it's own parent. */
@@ -17,11 +17,11 @@ err_code_t __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 	GENERIC_EXCEPTION, /* OUT_OF_BOUNDS */
 	};
 
-int exception_is_a( err_code_t ecode1, err_code_t ecode2 )
+int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {
-	err_code_t child_code = ecode2;
-	err_code_t parent_code = ecode1;
-	err_code_t last_parent = 0;
+	skit_err_code child_code = ecode2;
+	skit_err_code parent_code = ecode1;
+	skit_err_code last_parent = 0;
 	while (1)
 	{
 		/* Invalid parent_codes. */

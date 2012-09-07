@@ -2,7 +2,7 @@
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
-#	include "survival_kit/features.h"
+#	include "survival_kit/feature_emulation/throw.h"
 #endif
 
 #include "survival_kit/misc.h"
@@ -42,7 +42,7 @@ SKIT_T(stnode) *SKIT_T(stack_pop)(SKIT_T(stack) *list)
 #		if defined(SKIT_T_DIE_ON_ERROR)
 			skit_die("Attempt to pop a value from a zero-length " SKIT_T_STR(stack) ".");
 #		else
-			RAISE(OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length stack.");
+			THROW(OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length stack.");
 #		endif
 	}
 	else

@@ -1,4 +1,5 @@
 
+#include <setjmp.h>
 #include "survival_kit/setjmp/jmp_stack.h"
 
 #define SKIT_T_ELEM_TYPE jmp_buf

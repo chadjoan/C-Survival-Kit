@@ -50,7 +50,7 @@ SKIT_T_FUNC_ATTR (optional, defaualts to nothing) -
 SKIT_T_DIE_ON_ERROR (optional) - 
 	Defining this makes it so that invalid operations cause skit_die(...) to be 
 	called instead of raising an exception.
-	This is esed by certain places like the features.h module where 
+	This is esed by certain places like the feature_emulation.h module where 
 	exception throwing can't be used because the lists are being used to 
 	implement the ability to throw exceptions.
 */

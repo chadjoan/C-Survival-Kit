@@ -2,7 +2,6 @@
 #define SOCKN_INCLUDED
 
 #include "survival_kit/str.h"
-#include "survival_kit/features.h"
 
 /* Sends 'text' over 'sock'.  The length of 'text' will become the first 
 4 bytes of the message, stored in network-byte-order.  Use recvn to

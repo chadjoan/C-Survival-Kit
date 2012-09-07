@@ -2,7 +2,7 @@
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
-#	include "survival_kit/features.h"
+#	include "survival_kit/feature_emulation/throw.h"
 #endif
 
 #include "survival_kit/misc.h"
@@ -35,7 +35,7 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *list )
 #		if defined(SKIT_T_DIE_ON_ERROR)
 			skit_die("Attempt to push a value in a " SKIT_T_STR(fstack) " that has no free nodes.");
 #		else
-			RAISE(OUT_OF_BOUNDS,"Attempt to push a value in a freelist that has no free nodes.");
+			THROW(OUT_OF_BOUNDS,"Attempt to push a value in a freelist that has no free nodes.");
 #		endif
 	}
 
@@ -44,12 +44,12 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *list )
 	return &(result->val);
 }
 
-SKIT_T_ELEM_TYPE *SKIT_T(fstack_alloc)( SKIT_T(fstack) *list, void *function(size_t) allocate )
+SKIT_T_ELEM_TYPE *SKIT_T(fstack_alloc)( SKIT_T(fstack) *list, void *allocate(size_t)  )
 {
 	if ( list->unused.length == 0 )
 	{
 		/* Directly allocate onto the "used" stack. */
-		SKIT_T(stnode) *result = (SKIT_T(stnode)*)allocate(sizeof(stnode));
+		SKIT_T(stnode) *result = (SKIT_T(stnode)*)allocate(sizeof(SKIT_T(stnode)));
 		SKIT_T(stack_push)(&(list->used),result);
 		return &(result->val);
 	}

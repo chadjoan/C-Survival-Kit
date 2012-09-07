@@ -1,5 +1,5 @@
-#ifndef ERR_UTIL_INCLUDED
-#define ERR_UTIL_INCLUDED
+#ifndef SKIT_FEATURE_EMULATION_INCLUDED
+#define SKIT_FEATURE_EMULATION_INCLUDED
 
 #include <stdlib.h>
 #include <unistd.h> /* For ssize_t */
@@ -8,8 +8,11 @@
 #include <setjmp.h>
 #include <assert.h>
 
-#include "survival_kit/macro.h"
-#include "survival_kit/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation/funcs.h"
+#include "survival_kit/feature_emulation/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/throw.h"
+#include "survival_kit/feature_emulation/unittest.h"
 
 /* TODO: what if an exception is raised from within a CATCH block? */
 
@@ -33,100 +36,6 @@
 "Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n"
 "This could easily corrupt program execution and corrupt debugging data.\n"
 "Do not do this, ever!" ) */
-
-/** Unit test. */
-void skit_unittest_features();
-
-
-/* Implementation details. */
-typedef struct skit_frame_info skit_frame_info;
-struct skit_frame_info
-{
-	uint32_t line_number;
-	const char *file_name;
-	const char *func_name;
-	/* jmp_buf *jmp_context; */
-};
-
-#define SKIT_T_ELEM_TYPE skit_frame_info
-#define SKIT_T_PREFIX debug
-#include "survival_kit/templates/stack.h"
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-#define SKIT_T_ELEM_TYPE skit_frame_info
-#define SKIT_T_PREFIX debug
-#include "survival_kit/templates/fstack.h"
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-
-/** */
-typedef struct skit_exception skit_exception;
-struct skit_exception
-{
-	/* Implementation note: keep this small, it will be returned by-value from functions a lot. */
-	err_code_t error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
-	char *error_text;    /** READ ONLY: a description for the error. */
-	skit_frame_info *frame_info; /** Points to the point in the frame info stack where the exception happened. */
-};
-
-#define SKIT_T_ELEM_TYPE skit_exception
-#define SKIT_T_PREFIX exc
-#include "survival_kit/templates/stack.h"
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-#define SKIT_T_ELEM_TYPE skit_exception
-#define SKIT_T_PREFIX exc
-#include "survival_kit/templates/fstack.h"
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-/**
-This structure contains thread-local data structures needed to implement the
-emulation of various language features found in this module.
-*/
-typedef struct skit_thread_context skit_thread_context;
-struct skit_thread_context
-{
-	skit_jmp_fstack   try_jmp_stack;
-	skit_jmp_fstack   exc_jmp_stack;
-	skit_jmp_fstack   scope_jmp_stack;
-	skit_debug_fstack debug_info_stack;
-	skit_exc_fstack   exc_instance_stack;
-};
-
-/* 
-Used internally to save the position of the call stack before CALLs and other
-nested transfers.  The skit_thread_context_pos struct can then be used to
-reconcile against the skit_thread_context later when the nested code completes.
-The skit_reconcile_thread_context function is used for this.
-*/
-typedef struct skit_thread_context_pos skit_thread_context_pos; 
-struct skit_thread_context_pos
-{
-	ssize_t try_jmp_pos;
-	ssize_t exc_jmp_pos;
-	ssize_t scope_jmp_pos;
-	ssize_t debug_info_pos;
-};
-
-extern pthread_key_t skit_thread_context_key;
-
-/* Internal: users should call skit_init() instead. */
-void skit_features_init();
-
-/* Internal: users should call skit_thread_init() instead. */
-void skit_features_thread_init();
-
-/* Internal: used in macros to emulate language features. */
-skit_thread_context *skit_thread_context_get();
-
-/* More internals. */
-void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
-void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
-void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
 
 /*
 --------------------------------------------------------------------------------
@@ -276,8 +185,6 @@ extern ssize_t    __try_context_end;
 extern exception *__thrown_exception;
 #endif
 
-/** Prints the given exception to stdout. */
-void print_exception(exception *e);
 
 /** Prints the current stack trace to a string and returns it.
 // For now, this uses statically allocated memory for the returned string.
@@ -287,11 +194,12 @@ void print_exception(exception *e);
 */
 #define stack_trace_to_str() __stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
 
+#if 0
+
 /** Allocates a new exception on the exception stack. */
 skit_exception *skit_new_exception(skit_thread_context *ctx, err_code_t error_code, char *mess, ...);
 
 
-#if 0
 /** Allocates a new exception. */
 exception *skit_new_exception(err_code_t error_code, char *mess, ...);
 
@@ -345,60 +253,6 @@ jmp_buf *__pop_try_context();
 		} \
 	} while (0)
 #endif
-
-#if 0
-/**
-Throws the exception 'e'.
-This is usually used with the new_exception function, and allows for
-  exceptions to be created in one place and then thrown in another.
-While this is the strictly more powerful way to throw exceptions, the more
-  convenient way for common cases would be to use the RAISE macro.
-This macro expands to a statement and may not be nested inside expressions.
-Example usage:
-	THROW(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
-*/
-#endif
-
-#define __SKIT_THROW(e) \
-	do { \
-		ERR_UTIL_TRACE("%s, %d.136: THROW\n", __FILE__, __LINE__); \
-		(e); \
-		if ( skit_thread_ctx->exc_instance_stack.used.length <= 0 ) \
-			skit_new_exception(skit_thread_ctx, -1, "NULL was thrown."); \
-		skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc); \
-		skit_debug_info_store(&skit_thread_ctx->debug_info_stack.used.front.val, \
-			__LINE__,__FILE__,__func__); \
-		skit_thread_ctx->exc_instance_stack.used.front.val.frame_info \
-			= &skit_thread_ctx->debug_info_stack.used.front.val; \
-		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
-		__PROPOGATE_THROWN_EXCEPTIONS; \
-	} while (0)
-
-/** 
-Creates an exception of the type given and then throws it.
-This is a more concise variant of the THROW macro.
-The single argument version accepts an exception type as the first argument
-  and uses the default message for that exception type.
-  (TODO: The single arg version is not implemented yet.)
-The double (or more) argument version accepts an exception type as the first 
-  argument and a message as its second argument.  The message may be a C
-  format string with substitution values given in subsequent arguments.
-This macro expands to a statement and may not be nested inside expressions.
-Example usage:
-	RAISE(GENERIC_EXCEPTION); // Use the exception type's default message.
-	RAISE(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
-	RAISE(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
-*/
-#define RAISE(...) MACRO_DISPATCHER3(RAISE, __VA_ARGS__)(__VA_ARGS__)
-
-#define RAISE1(e) \
-	__SKIT_THROW(skit_new_exception(skit_thread_ctx, etype))
-	
-#define RAISE2(etype, emsg) \
-	__SKIT_THROW(skit_new_exception(skit_thread_ctx, etype, emsg))
-
-#define RAISE3(etype, emsg, ...) \
-	__SKIT_THROW(skit_new_exception(skit_thread_ctx, etype, emsg, __VA_ARGS__))
 
 #if 0
 #define CALL(expr) /* */ \
@@ -720,10 +574,10 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 			ERR_UTIL_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
-			THROW(skit_new_exception(BREAK_IN_TRY_CATCH, "\n"\
+			THROW(BREAK_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'break' statement from within a TRY-CATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
-"Do not do this, ever!\n" )); \
+"Do not do this, ever!\n" ); \
 		} while (0); \
 		/* If execution makes it here, then the caller */ \
 		/* used a "continue" statement and is trying to */ \
@@ -732,10 +586,10 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 		ERR_UTIL_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
-		THROW(skit_new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
+		THROW(CONTINUE_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'continue' statement from within a TRY-CATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
-"Do not do this, ever!\n" )); \
+"Do not do this, ever!\n"); \
 	} \
 	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
 

@@ -8,7 +8,7 @@
 #include "survival_kit/misc.h"
 #include "survival_kit/sockn.h"
 #include "survival_kit/str.h"
-#include "survival_kit/features.h"
+#include "survival_kit/feature_emulation.h"
 
 
 ssize_t sendn(int sock, string text)
