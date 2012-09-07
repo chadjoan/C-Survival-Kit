@@ -3,11 +3,16 @@
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 
+#include <stdarg.h>
+#include <stdio.h>
+
+#include "survival_kit/misc.h"
+
 void skit_throw_exception(
 	int line,
 	const char *file,
 	const char *func,
-	skit_err_code_t etype,
+	skit_err_code etype,
 	const char *fmtMsg,
 	...)
 {
@@ -19,16 +24,16 @@ void skit_throw_exception(
 	
 	/* TODO: BUG: skit_error_text_buffer is global data.  Not thread safe and prevents more than one exception at a time from working. */
 	va_list vl;
-	va_start(vl, mess);
-	vsnprintf(skit_error_text_buffer, SKIT_ERROR_BUFFER_SIZE, mess, vl);
+	va_start(vl, fmtMsg);
+	vsnprintf(skit_error_text_buffer, SKIT_ERROR_BUFFER_SIZE, fmtMsg, vl);
 	va_end(vl);
 	
-	exc->error_code = error_code;
+	exc->error_code = etype;
 	exc->error_text = skit_error_text_buffer;
 	
-	ERR_UTIL_TRACE("%s, %d.136: THROW\n", file, line);
+	SKIT_FEATURE_TRACE("%s, %d.136: THROW\n", file, line);
 	skit_debug_info_store(fi, line, file, func);
-	exc->frame_info = fi;
+	exc->frame_info_node = skit_thread_ctx->debug_info_stack.used.front;
 	
 	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
 	

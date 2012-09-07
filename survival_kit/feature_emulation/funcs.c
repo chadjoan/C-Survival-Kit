@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/types.h"
@@ -72,7 +74,7 @@ static void skit_fstack_reconcile_warn( ssize_t expected, ssize_t got, char *nam
 	/* TODO: Although we can probably fix any problems the user creates for themselves, dieing might be better than warning. */
 	
 	printf("Printing stack trace:\n");
-	printf("%s",stack_trace_to_str());
+	printf("%s",skit_stack_trace_to_str());
 }
 
 #define SKIT_FSTACK_RECONCILE(stack, prev_length, name, name_str) \
@@ -100,16 +102,161 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func )
 {
-	/* ERR_UTIL_TRACE("%s, %li: skit_debug_info_store(...,%li, %s, %s)\n", file, line, line, file, func); */
+	SKIT_FEATURE_TRACE("%s, %li: skit_debug_info_store(...,%li, %s, %s)\n", file, line, line, file, func);
 	
 	dst->line_number = line;
 	dst->file_name = file;
 	dst->func_name = func;
 }
 
+#ifdef __VMS
+static void best_effort_vms_path_parse_device(
+	const char *path,
+	      char **device,
+	const char **rest )
+{
+	size_t i = 0;
+	char c = path[i];
+	while ( c != '\0' )
+	{
+		if ( c == ':' )
+		{
+			*device = skit_malloc(i+1);
+			memcpy(*device, path, i);
+			(*device)[i] = '\0';
+			*rest = path+i+1;
+			return;
+		}
+		
+		c = path[++i];
+	}
+	
+	/* Return the empty string for device. */
+	*device = skit_malloc(1);
+	(*device)[0] = '\0';
+	*rest = path;
+	return;
+}
+
+static void best_effort_vms_path_parse_directory(
+	const char *path,
+	      char **directory,
+	const char **rest )
+{
+	size_t i = 0;
+	char endchar = '\0';
+	char c = path[i];
+	if ( c == '[' || c == '<' )
+	while ( c != '\0' )
+	{
+		if ( c == '[' )
+		{
+			endchar = ']';
+		}
+		else if ( c == '<' )
+		{
+			endchar = '>';
+		}
+		else if ( i > 0 && c == endchar )
+		{
+			*directory = skit_malloc(i);
+			memcpy(*directory, path+1, i);
+			(*directory)[i] = '\0';
+			*rest = path+i+1;
+			return;
+		}
+		
+		c = path[++i];
+	}
+	
+	/* Return the empty string for directory. */
+	*directory = skit_malloc(1);
+	(*directory)[0] = '\0';
+	*rest = path;
+	return;
+}
+
+/* Attempts to break apart an OpenVMS path. */
+/* This does not make system calls, so it could become outdated. */
+static void best_effort_vms_path_parse(
+	const char *path,        /* input: the openvms path to parse. */
+	char **device,
+	char **directory,
+	char **name)
+{
+	const char *rest = path;
+	best_effort_vms_path_parse_device(rest, device, &rest);
+	best_effort_vms_path_parse_directory(rest, directory, &rest);
+	
+	size_t rest_len = strlen(rest);
+	*name = skit_malloc(rest_len+1);
+	memcpy(*name, rest, rest_len);
+	(*name)[rest_len] = '\0';
+	return;
+}
+#endif
+
+/* TODO: use skit_malloc instead of global/static stuff. */
+#define MSG_BUF_SIZE 32768
+static char msg_buf[MSG_BUF_SIZE];
+static char *skit_stack_to_str_internal(const skit_debug_stnode *stack_end)
+{
+	char *msg_pos = msg_buf;
+	ssize_t msg_rest_length = MSG_BUF_SIZE;
+	
+	while ( stack_end != NULL )
+	{
+		const skit_frame_info *fi = &stack_end->val;
+		
+#ifdef __VMS
+		char *device;
+		char *directory;
+		char *name;
+		best_effort_vms_path_parse(fi.file_name, &device, &directory, &name);
+#elif defined(__linux__)
+		const char *name = fi->file_name;
+#else
+#error "Unsupported target.  This code needs porting."
+#endif
+		
+		ssize_t nchars = snprintf(
+			msg_pos, msg_rest_length,
+			"%s: at line %d in function %s\r\n",
+			name,
+			fi->line_number,
+			fi->func_name);
+		
+#ifdef __VMS
+		free(device);
+		free(directory);
+		free(name);
+#endif
+		stack_end = stack_end->next;
+		
+		if ( nchars < 0 )
+			continue;
+		
+		msg_pos += nchars;
+		msg_rest_length -= nchars;
+		if ( msg_rest_length < 0 )
+			break;
+	}
+	
+	return msg_buf;
+}
 
 void skit_print_exception(skit_exception *e)
 {
 	printf("%s\n",e->error_text);
-	printf("%s\n",stack_trace_to_str_internal(e->frame_info_index));
+	printf("%s\n",skit_stack_to_str_internal(e->frame_info_node));
+}
+
+char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
+{
+	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
+	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
+	skit_debug_info_store(fi, line, file, func);
+	char *result = skit_stack_to_str_internal(skit_thread_ctx->debug_info_stack.used.front);
+	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
+	return result;
 }

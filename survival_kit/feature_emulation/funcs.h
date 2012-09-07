@@ -2,6 +2,7 @@
 #ifndef SKIT_FEATURE_EMULATION_FUNCS_INCLUDED
 #define SKIT_FEATURE_EMULATION_FUNCS_INCLUDED
 
+#include <stdio.h>
 #include <pthread.h>
 
 #include "survival_kit/feature_emulation/types.h"
@@ -25,5 +26,23 @@ void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, co
 /** Prints the given exception to stdout. */
 void skit_print_exception(skit_exception *e);
 
+/** Prints the current stack trace to a string and returns it.
+// For now, this uses statically allocated memory for the returned string.
+// It will eventually allocate dynamic memory for the string and the caller
+// will be responsible for free'ing the string.
+// TODO: dynamically allocate the string.
+*/
+#define skit_stack_trace_to_str() skit_stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
+char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
+
+
+/* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
+// debug the code that is supposed to make debugging easier. */
+#define SKIT_DO_FEATURE_EMULATION_TRACING 0
+#if SKIT_DO_FEATURE_EMULATION_TRACING == 1
+	#define SKIT_FEATURE_TRACE(...) printf(__VA_ARGS__)
+#else
+	#define SKIT_FEATURE_TRACE(...)
+#endif
 
 #endif

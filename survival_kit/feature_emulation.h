@@ -8,6 +8,7 @@
 #include <setjmp.h>
 #include <assert.h>
 
+#include "survival_kit/misc.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
@@ -15,15 +16,6 @@
 #include "survival_kit/feature_emulation/unittest.h"
 
 /* TODO: what if an exception is raised from within a CATCH block? */
-
-/* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
-// debug the code that is supposed to make debugging easier. */
-#define DO_ERR_UTIL_TRACING 0
-#if DO_ERR_UTIL_TRACING == 1
-	#define ERR_UTIL_TRACE(...) printf(__VA_ARGS__)
-#else
-	#define ERR_UTIL_TRACE(...)
-#endif
 
 /** Exception definitions.  TODO: these should have a definition syntax that allows a separate tool to sweep all source files and automatically allocate non-colliding error codes for all exceptions and place them in a file that can be included from ERR_UTIL.H. */
 /* GENERIC exceptions are the root of all catchable exceptions. */
@@ -120,12 +112,17 @@ were used instead of SCOPE/END_SCOPE!
 */
 
 /** Place this at the top of function bodies that use language feature emulation. */
-#define USE_FEATURES \
+#define USE_FEATURE_EMULATION \
 	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	char *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
 	char *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
+	(void)skit_thread_ctx; \
+	(void)Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
+	(void)goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
+	(void)goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
+	(void)goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
 	do {} while(0)
 
 /* TODO: redefine 'break', 'continue', 'goto', and 'return' so that they always
@@ -183,18 +180,6 @@ extern ssize_t    __try_context_end;
 
 /* Implementation detail. */
 extern exception *__thrown_exception;
-#endif
-
-
-/** Prints the current stack trace to a string and returns it.
-// For now, this uses statically allocated memory for the returned string.
-// It will eventually allocate dynamic memory for the string and the caller
-// will be responsible for free'ing the string.
-// TODO: dynamically allocate the string.
-*/
-#define stack_trace_to_str() __stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
-
-#if 0
 
 /** Allocates a new exception on the exception stack. */
 skit_exception *skit_new_exception(skit_thread_context *ctx, err_code_t error_code, char *mess, ...);
@@ -206,7 +191,6 @@ exception *skit_new_exception(err_code_t error_code, char *mess, ...);
 /** Call this to deallocate the memory used by an exception. */
 /** This will be called automatically in TRY_CATCH(expr) ... ENDTRY blocks. */
 exception *free_exception(exception *e);
-#endif
 
 /* Macro implementation details.  Do not use directly. */
 char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
@@ -216,39 +200,20 @@ frame_info __pop_stack_info();
 jmp_buf *__push_try_context();
 jmp_buf *__pop_try_context();
 */
-
-/* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
-// It does as the name suggests.  Do not call it from code that is not a part
-// of this exception handling module.  It may change in the future if needed
-// to fix bugs or add new features.
-*/
-#define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
-	do { \
-		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
-		ERR_UTIL_TRACE("frame_info_index: %li\n",__frame_info_end-1); \
-		if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) \
-			longjmp( \
-				*skit_jmp_stack_pop(&skit_thread_ctx->exc_jmp_stack), \
-				skit_thread_ctx->exc_instance_stack.front.val.error_code); \
-		else \
-		{ \
-			print_exception(__thrown_exception); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
-			skit_die("Exception thrown with no handlers left in the stack."); \
-		} \
-	} while (0)
+#endif
 
 #if 0
 #define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
-		ERR_UTIL_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
-		ERR_UTIL_TRACE("frame_info_index: %li\n",__frame_info_end-1); \
+		SKIT_FEATURE_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); \
 		if ( __frame_info_end-1 >= 0 ) \
 			longjmp( \
 				__frame_context_stack[__frame_info_end-1], \
 				__thrown_exception->error_code); \
 		else \
 		{ \
-			print_exception(__thrown_exception); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
+			skit_print_exception(__thrown_exception); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
 			skit_die("Exception thrown with no handlers left in the stack."); \
 		} \
 	} while (0)
@@ -258,20 +223,17 @@ jmp_buf *__pop_try_context();
 #define CALL(expr) /* */ \
 	do { \
 		if ( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) == 0 ) { \
-			ERR_UTIL_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
 			(expr); \
 		} else { \
-			ERR_UTIL_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
 			__pop_stack_info(); \
 			__PROPOGATE_THROWN_EXCEPTIONS; \
 		} \
-		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 	} while (0)
 #endif
-
-void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
-void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 
 /** Evaluates the given expression while creating a stack entry at this point
 // in the code.  The whole purpose of doing this is to provide better debug
@@ -298,10 +260,10 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 			__LINE__,__FILE__,__func__); \
 		\
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) { \
-			ERR_UTIL_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
 			(expr); \
 		} else { \
-			ERR_UTIL_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
 			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
 			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 			__PROPOGATE_THROWN_EXCEPTIONS; \
@@ -310,7 +272,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
 		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 		\
-		ERR_UTIL_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
 	} while (0)
 	
 /* __TRY_SAFE_EXIT is an implementation detail.
@@ -356,9 +318,9 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 */
 #define TRY /* */ \
 	if ( setjmp(*__push_try_context()) != __TRY_SAFE_EXIT ) { \
-		ERR_UTIL_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \
-			ERR_UTIL_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
 			switch( setjmp(*__push_stack_info(__LINE__,__FILE__,__func__)) ) \
 			{ \
 			case __TRY_EXCEPTION_CLEANUP: \
@@ -370,7 +332,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 				/*   jumped to.  The best strategy then is to always jump to the cleanup */ \
 				/*   case after leaving any part of the TRY-CATCH-ENDTRY and only free   */ \
 				/*   exceptions if there actually are any.                               */ \
-				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
+				SKIT_FEATURE_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
 				if (__thrown_exception != NULL) \
 				{ \
 					free(__thrown_exception); \
@@ -402,32 +364,32 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 				{ \
 				case 0: \
 					/* Normal/successful case. */ \
-					ERR_UTIL_TRACE("%s, %d.282: TRY: case 0:\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.282: TRY: case 0:\n", __FILE__, __LINE__); \
 
 #define CATCH(__error_code, exc_name) /* */ \
 					/* This end-of-block may be either the end of the normal/success case */ \
 					/*   OR the end of a catch block.  It must be able to do the correct */ \
 					/*   thing regardless of where it comes from. */ \
-					ERR_UTIL_TRACE("%s, %d.288: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.288: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
 					longjmp( __frame_context_stack[__frame_info_end-1], __TRY_EXCEPTION_CLEANUP); \
 				} \
 				else if ( exception_is_a( __thrown_exception->error_code, __error_code) ) \
 				{ \
 					/* CATCH block. */ \
-					ERR_UTIL_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
+					SKIT_FEATURE_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
 					exception *exc_name = __thrown_exception;
 
 #define ENDTRY /* */ \
 					/* This end-of-block may be either the end of the normal/success case */ \
 					/*   OR the end of a catch block.  It must be able to do the correct */ \
 					/*   thing regardless of where it comes from. */ \
-					ERR_UTIL_TRACE("%s, %d.301: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.301: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
 					longjmp( __frame_context_stack[__frame_info_end-1], __TRY_EXCEPTION_CLEANUP); \
 				} \
 				else \
 				{ \
 					/* An exception was thrown and we can't handle it. */ \
-					ERR_UTIL_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
 					__pop_stack_info(); \
 					__pop_try_context(); \
 					__PROPOGATE_THROWN_EXCEPTIONS; \
@@ -439,7 +401,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
-			ERR_UTIL_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
 			__pop_stack_info(); \
 			__pop_try_context(); \
 			THROW(new_exception(BREAK_IN_TRY_CATCH, "\n"\
@@ -451,7 +413,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 		/* used a "continue" statement and is trying to */ \
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
-		ERR_UTIL_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
 		__pop_stack_info(); \
 		__pop_try_context(); \
 		THROW(new_exception(CONTINUE_IN_TRY_CATCH, "\n"\
@@ -459,7 +421,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n" )); \
 	} \
-	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
+	SKIT_FEATURE_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
 #endif
 
 /** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
@@ -489,9 +451,9 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 */
 #define TRY /* */ \
 	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != __TRY_SAFE_EXIT ) { \
-		ERR_UTIL_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \
-			ERR_UTIL_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \
 			switch( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)) ) \
 			{ \
 			case __TRY_EXCEPTION_CLEANUP: \
@@ -503,7 +465,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 				/*   jumped to.  The best strategy then is to always jump to the cleanup */ \
 				/*   case after leaving any part of the TRY-CATCH-ENDTRY and only free   */ \
 				/*   exceptions if there actually are any.                               */ \
-				ERR_UTIL_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
+				SKIT_FEATURE_TRACE("%s, %d.258: TRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
 				while (skit_thread_ctx->exc_instance_stack.used.length > 0) \
 				{ \
 					skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
@@ -534,32 +496,32 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 				{ \
 				case 0: \
 					/* Normal/successful case. */ \
-					ERR_UTIL_TRACE("%s, %d.282: TRY: case 0:\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.282: TRY: case 0:\n", __FILE__, __LINE__); \
 
 #define CATCH(__error_code, exc_name) /* */ \
 					/* This end-of-block may be either the end of the normal/success case */ \
 					/*   OR the end of a catch block.  It must be able to do the correct */ \
 					/*   thing regardless of where it comes from. */ \
-					ERR_UTIL_TRACE("%s, %d.288: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
-					longjmp( skit_thread_ctx->exc_jmp_stack.front.val, __TRY_EXCEPTION_CLEANUP); \
+					SKIT_FEATURE_TRACE("%s, %d.288: TRY: case 0: longjmp\n", __FILE__, __LINE__); \
+					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, __TRY_EXCEPTION_CLEANUP); \
 				} \
-				else if ( exception_is_a( __thrown_exception->error_code, __error_code) ) \
+				else if ( exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, __error_code) ) \
 				{ \
 					/* CATCH block. */ \
-					ERR_UTIL_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
-					exception *exc_name = __thrown_exception;
+					SKIT_FEATURE_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
+					skit_exception *exc_name = &skit_thread_ctx->exc_instance_stack.used.front->val;
 
 #define ENDTRY /* */ \
 					/* This end-of-block may be either the end of the normal/success case */ \
 					/*   OR the end of a catch block.  It must be able to do the correct */ \
 					/*   thing regardless of where it comes from. */ \
-					ERR_UTIL_TRACE("%s, %d.301: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
-					longjmp( skit_thread_ctx->exc_jmp_stack.front.val, __TRY_EXCEPTION_CLEANUP); \
+					SKIT_FEATURE_TRACE("%s, %d.301: TRY: case ??: longjmp\n", __FILE__, __LINE__); \
+					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, __TRY_EXCEPTION_CLEANUP); \
 				} \
 				else \
 				{ \
 					/* An exception was thrown and we can't handle it. */ \
-					ERR_UTIL_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.307: TRY: default: longjmp\n", __FILE__, __LINE__); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 					__PROPOGATE_THROWN_EXCEPTIONS; \
@@ -571,7 +533,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
-			ERR_UTIL_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.319: TRY: break found!\n", __FILE__, __LINE__); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 			THROW(BREAK_IN_TRY_CATCH, "\n"\
@@ -583,7 +545,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 		/* used a "continue" statement and is trying to */ \
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
-		ERR_UTIL_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.331: TRY: continue found!\n", __FILE__, __LINE__); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 		THROW(CONTINUE_IN_TRY_CATCH, "\n"\
@@ -591,6 +553,6 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n"); \
 	} \
-	ERR_UTIL_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
+	SKIT_FEATURE_TRACE("%s, %d.339: TRY: done.\n", __FILE__, __LINE__);
 
 #endif

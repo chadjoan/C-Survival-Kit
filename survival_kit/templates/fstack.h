@@ -38,7 +38,7 @@ EXAMPLE:
 int end_was_reached = 0;
 skit_jmp_fstack stack;
 skit_jmp_fstack_init(&stack);
-if (skit_jmp_fstack_full(&stack))
+if (stack.used.length <= 0)
 	skit_jmp_fstack_grow(&stack,alloca(sizeof(skit_jmp_stnode*)));
 if( setjmp(*skit_jmp_fstack_push(&stack)) == 0 )
 {

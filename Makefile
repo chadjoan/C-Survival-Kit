@@ -36,7 +36,7 @@ all: $(LIBFILE) $(TOOL_EXES)
 tools: $(TOOL_EXES)
 
 bin/%: tools_src/%.c $(LIBFILE) | bin
-	$(CC) $(CFLAGS) -I. $(LIBFILE) $< -o $@
+	$(CC) $(CFLAGS) -I. $(LIBFILE) -lpthread $< -o $@
 
 library: $(LIBFILE)
 

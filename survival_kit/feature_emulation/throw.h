@@ -31,7 +31,7 @@ void skit_throw_exception(
 #if 0
 #define __SKIT_RAISE(e) \
 	do { \
-		ERR_UTIL_TRACE("%s, %d.136: THROW\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.136: THROW\n", __FILE__, __LINE__); \
 		(e); \
 		if ( skit_thread_ctx->exc_instance_stack.used.length <= 0 ) \
 			skit_new_exception(skit_thread_ctx, -1, "NULL was thrown."); \
@@ -71,4 +71,25 @@ Example usage:
 #define THROW3(etype, emsg, ...) \
 	skit_throw_exception(__LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
 
+/* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
+// It does as the name suggests.  Do not call it from code that is not a part
+// of this exception handling module.  It may change in the future if needed
+// to fix bugs or add new features.
+*/
+#define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
+	do { \
+		skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val); \
+		SKIT_FEATURE_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
+		/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */ \
+		if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) \
+			longjmp( \
+				*skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+				exc->error_code); \
+		else \
+		{ \
+			skit_print_exception(exc); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
+			skit_die("Exception thrown with no handlers left in the stack."); \
+		} \
+	} while (0)
+	
 #endif

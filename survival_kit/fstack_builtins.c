@@ -18,19 +18,17 @@ void skit_fstack_unittest()
 	printf("skit_fstack_unittest()\n");
 	
 	int end_was_reached = 0;
-	skit_jmp_fstack list;
-	skit_jmp_fstack_init(&list);
-	if (skit_jmp_fstack_full(&list))
-		skit_jmp_fstack_grow(&list,alloca(sizeof(skit_jmp_stnode)));
-	if( setjmp(*skit_jmp_fstack_push(&list)) == 0 )
+	skit_jmp_fstack stack;
+	skit_jmp_fstack_init(&stack);
+	if( setjmp(*skit_jmp_fstack_alloc(&stack,&skit_malloc)) == 0 )
 	{
-		assert(list.used.length == 1);
-		longjmp(*skit_jmp_fstack_pop(&list),1);
+		assert(stack.used.length == 1);
+		longjmp(*skit_jmp_fstack_pop(&stack),1);
 		assert(0);
 	}
 	else
 	{
-		assert(list.used.length == 0);
+		assert(stack.used.length == 0);
 		end_was_reached = 1;
 	}
 	assert(end_was_reached);

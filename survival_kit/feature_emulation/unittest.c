@@ -7,13 +7,14 @@ static int baz()
 {
 	printf("Baz doesn't throw.\n");
 	printf("It does print a stack trace before returning, though:\n");
-	printf("%s",stack_trace_to_str());
+	printf("%s",skit_stack_trace_to_str());
 	printf("\n");
 	return 0;
 }
 
 static float qux()
 {
+	USE_FEATURE_EMULATION;
 	THROW(GENERIC_EXCEPTION,"qux does throw!\n");
 	printf("qux should not print this.\n");
 	return 0.0;
@@ -26,6 +27,7 @@ static void bar(int val1, int val2)
 
 static int foo()
 {
+	USE_FEATURE_EMULATION;
 	/* TODO: bar(TRYR(baz()),TRYR(qux())); */
 	CALL(bar(baz(), qux()));
 	printf("This shouldn't get executed either.\n");
@@ -34,6 +36,8 @@ static int foo()
 
 static void unittest_exceptions()
 {
+	USE_FEATURE_EMULATION;
+	
 	if( !exception_is_a(GENERIC_EXCEPTION, GENERIC_EXCEPTION) )  skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
@@ -42,7 +46,7 @@ static void unittest_exceptions()
 		baz();
 		printf("No exception thrown.\n");
 	CATCH(GENERIC_EXCEPTION, e)
-		print_exception(e);
+		skit_print_exception(e);
 	ENDTRY
 	
 	printf("------\n");
@@ -51,7 +55,7 @@ static void unittest_exceptions()
 		TRY
 			printf("Nested TRY-TRY-CATCH test.\n");
 		CATCH(GENERIC_EXCEPTION, e)
-			print_exception(e);
+			skit_print_exception(e);
 		ENDTRY
 		
 		foo();
@@ -62,10 +66,10 @@ static void unittest_exceptions()
 		CATCH(GENERIC_EXCEPTION, e2)
 			printf("This shouldn't happen.\n");
 			UNUSED(e2);
-			/* print_exception(e2);*/
+			/* skit_print_exception(e2);*/
 		ENDTRY
 		
-		print_exception(e);
+		skit_print_exception(e);
 	ENDTRY
 	
 	TRY
@@ -81,7 +85,7 @@ static void unittest_exceptions()
 			ENDTRY
 		}
 	CATCH(BREAK_IN_TRY_CATCH, e)
-		print_exception(e);
+		skit_print_exception(e);
 	ENDTRY
 	
 	
@@ -99,7 +103,7 @@ static void unittest_exceptions()
 			ENDTRY
 		}
 	CATCH(CONTINUE_IN_TRY_CATCH, e)
-		print_exception(e);
+		skit_print_exception(e);
 	ENDTRY
 	
 	printf("  exception_handling unittest passed!\n");

@@ -1,7 +1,6 @@
 
-#ifndef SKIT_PRINT_MEM_INCLUDED
-#define SKIT_PRINT_MEM_INCLUDED
-
+#ifndef SKIT_MISC_INCLUDED
+#define SKIT_MISC_INCLUDED
 
 /* Implementation details. */
 /* TODO: these should be stored in thread-local storage. */
