@@ -23,7 +23,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
 
 /** Prints the given exception to stdout. */
-void skit_print_exception(exception *e);
+void skit_print_exception(skit_exception *e);
 
 
 #endif

@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/misc.h"
@@ -26,6 +28,7 @@ static void skit_thread_context_init( skit_thread_context *ctx )
 static void skit_thread_context_dtor(void *ctx_ptr)
 {
 	skit_thread_context *ctx = (skit_thread_context*)ctx_ptr;
+	(void)ctx;
 	/* Do nothing for now. TODO: This will be important for multithreading. */
 }
 
@@ -47,7 +50,7 @@ skit_thread_context *skit_thread_context_get()
 	return (skit_thread_context*)pthread_getspecific(skit_thread_context_key);
 }
 
-void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos )
+void skit_save_thread_context_pos( skit_thread_context *skit_thread_ctx, skit_thread_context_pos *pos )
 {
 	pos->try_jmp_pos    = skit_thread_ctx->try_jmp_stack.used.length;
 	pos->exc_jmp_pos    = skit_thread_ctx->exc_jmp_stack.used.length;
@@ -57,7 +60,7 @@ void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context
 
 static void skit_fstack_reconcile_warn( ssize_t expected, ssize_t got, char *name )
 {
-	fprintf(stderr,"Warning: %s was unbalanced after the most recent return.\n");
+	fprintf(stderr,"Warning: %s was unbalanced after the most recent return.\n", name);
 	fprintf(stderr,"  Expected size: %li\n", expected );
 	fprintf(stderr,"  Actual size:   %li\n", got );
 	fprintf(stderr,"  This may mean that a goto, break, continue, or return was made while inside\n");
@@ -78,7 +81,7 @@ static void skit_fstack_reconcile_warn( ssize_t expected, ssize_t got, char *nam
 		{ \
 			skit_fstack_reconcile_warn(prev_length, (stack).used.length, name_str); \
 			while ( (stack).used.length > prev_length ) \
-				name##_pop((stack)); \
+				name##_pop(&(stack)); \
 		} \
 		else if ( (stack).used.length < prev_length ) \
 		{ \
@@ -97,7 +100,7 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func )
 {
-	ERR_UTIL_TRACE("%s, %li: skit_debug_info_store(...,%li, %s, %s)\n", file, line, line, file, func);
+	/* ERR_UTIL_TRACE("%s, %li: skit_debug_info_store(...,%li, %s, %s)\n", file, line, line, file, func); */
 	
 	dst->line_number = line;
 	dst->file_name = file;

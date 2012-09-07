@@ -108,34 +108,44 @@ static void best_effort_vms_path_parse(
 /* TODO: use malloc instead of global/static stuff. */
 #define MSG_BUF_SIZE 32768
 static char msg_buf[MSG_BUF_SIZE];
-static char *stack_trace_to_str_internal(ssize_t frame_end)
+static char *stack_trace_to_str_internal(skit_debug_stnode *stack_end)
 {
 	char *msg_pos = msg_buf;
 	ssize_t msg_rest_length = MSG_BUF_SIZE;
 	ssize_t i;
 	
-	for ( i = frame_end-1; i >= 0; i-- )
+	while ( stack_end != NULL )
 	{
-		frame_info fi = __frame_info_stack[i];
+		frame_info *fi = &stack_end->val;
 		
+#ifdef __VMS
 		char *device;
 		char *directory;
 		char *name;
 		best_effort_vms_path_parse(fi.file_name, &device, &directory, &name);
+#else ifdef __linux__
+		char *name = fi->file_name;
+#else
+#error "Unsupported target.  This code needs porting."
+#endif
 		
 		ssize_t nchars = snprintf(
 			msg_pos, msg_rest_length,
 			"%s: at line %d in function %s\r\n",
 			name,
-			fi.line_number,
-			fi.func_name);
+			fi->line_number,
+			fi->func_name);
 		
+#ifdef __VMS
 		free(device);
 		free(directory);
 		free(name);
+#endif
+		stack_end = stack_end->next;
 		
 		if ( nchars < 0 )
 			continue;
+		
 		msg_pos += nchars;
 		msg_rest_length -= nchars;
 		if ( msg_rest_length < 0 )
@@ -154,9 +164,9 @@ char *__stack_trace_to_str_expr( uint32_t line, const char *file, const char *fu
 	return result;
 }
 
+#if 0
 exception *__thrown_exception = NULL;
 
-#if 0
 exception *no_exception()
 {
 	exception *result = malloc(sizeof(exception));
