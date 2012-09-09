@@ -162,3 +162,29 @@ The data pointed to may be used as long as no other freestack functions are
   called on the stack during the pointer's usage.
 */
 SKIT_T_ELEM_TYPE *SKIT_T(fstack_pop)( SKIT_T(fstack) *stack );
+
+/**
+Walks the stack, calling 'predicate' on each node.
+If 'predicate' returns 0, then the walk will abort.
+The end of the unused substack is considered the "first" node and the end of the
+  used substack is "last" node.  In other words: walking forward through the 
+  freestack involves first walking backwards through the unused stack and then
+  forwards through the used stack.
+The 'context' variable will be passed directly into the calls on 'predicate'.
+'predicate' will not be called on nodes before 'start_node' or after 'end_node'.
+If 'start_node' is NULL, the walk will begin at the very beggining of the stack.
+If 'start_node' is otherwise not in the stack, then 'predicate' will never be
+  be called and an OUT_OF_BOUNDS exception will be thrown.
+If 'end_node' is NULL, the walk will begin at the very end of the stack.
+If 'end_node' is otherwise not in the stack, then the walk will continue through
+  the last node and then throw an OUT_OF_BOUNDS exception.
+If 'end_node' is encountered before 'start_node', then 'predicate' will never
+  be called.
+*/
+void SKIT_T(fstack_walk)(
+	const SKIT_T(fstack) *stack,
+	int predicate(void *context, const SKIT_T(stnode) *node),
+	void *context,
+	const SKIT_T(stnode) *start_node,
+	const SKIT_T(stnode) *end_node
+);

@@ -1,5 +1,5 @@
 
-#include <stdlib.h>
+#include <stdio.h> /* snprintf */
 #include <pthread.h>
 #include "survival_kit/init.h"
 #include "survival_kit/assert.h"

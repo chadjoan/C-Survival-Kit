@@ -78,3 +78,103 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_pop)( SKIT_T(fstack) *stack )
 	
 	return &result->val;
 }
+
+void SKIT_T(fstack_walk)(
+	const SKIT_T(fstack) *stack,
+	int predicate(void *context, const SKIT_T(stnode) *node),
+	void *context,
+	const SKIT_T(stnode) *start_node,
+	const SKIT_T(stnode) *end_node
+)
+{
+	int start_node_reached = 0;
+	int end_node_reached = 0;
+	
+	/* NULL is used to signal that the very beginning of the fstack is to
+	be at the start of the walk. */
+	if ( start_node == NULL )
+		start_node_reached = 1;
+	
+	/* We'll need some random-access memory for storing the unused nodes that 
+	we walk so that we can walk them backwards (in stack order, forwards in
+	fstack order). */
+	char reversing_buffer_stack_mem[1024];
+	SKIT_T(stnode) **reversing_buffer;
+	if ( stack->unused.length * sizeof(SKIT_T(stnode)*) < 1024 )
+		reversing_buffer = (SKIT_T(stnode)**)reversing_buffer_stack_mem;
+	else
+		reversing_buffer = (SKIT_T(stnode)**)malloc(stack->unused.length * sizeof(SKIT_T(stnode)));
+	
+	/* Populate the buffer used to walk the unused stack backwards. */
+	SKIT_T(stnode) *cur_node;
+	ssize_t reversing_index = 0;
+	
+	cur_node = stack->unused.front;
+	while ( cur_node != NULL )
+	{
+		reversing_buffer[reversing_index] = cur_node;
+		reversing_index += 1;
+		
+		if ( cur_node == start_node )
+		{
+			start_node_reached = 1;
+			break;
+		}
+		
+		cur_node = cur_node->next;
+	}
+	
+	/* Walk the part that exists in the unused buffer. */
+	/* We only need to do this if the start_node is in there or the caller is
+	   requesting that we start at the very beginning (eg. start_node==NULL). */
+	if ( start_node_reached || start_node == NULL )
+	{
+		while ( reversing_index > 0 )
+		{
+			reversing_index--;
+			
+			cur_node = reversing_buffer[reversing_index];
+			
+			if ( predicate(context, cur_node) == 0 )
+			{
+				end_node_reached = 1;
+				break;
+			}
+			
+			if ( cur_node == end_node )
+			{
+				end_node_reached = 1;
+				break;
+			}
+		}
+	}
+	
+	/* Now walk the used buffer. */
+	if ( !end_node_reached )
+	{
+		cur_node = stack->used.front;
+		while ( cur_node != NULL )
+		{
+			if ( cur_node == start_node )
+				start_node_reached = 1;
+			
+			if ( start_node_reached && (predicate(context, cur_node) == 0) )
+			{
+				end_node_reached = 1;
+				break;
+			}
+			
+			if ( cur_node == end_node )
+			{
+				end_node_reached = 1;
+				break;
+			}
+			
+			cur_node = cur_node->next;
+		}
+	}
+	
+	/* Free heap memory if we used it. */
+	if ( ((char*)reversing_buffer) != reversing_buffer_stack_mem )
+		free((void*)reversing_buffer);
+}

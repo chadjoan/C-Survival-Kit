@@ -5,6 +5,7 @@
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/misc.h"
+#include "survival_kit/init.h"
 #include "survival_kit/assert.h"
 
 pthread_key_t skit_thread_context_key;
@@ -199,68 +200,107 @@ static void best_effort_vms_path_parse(
 /* TODO: use skit_malloc instead of global/static stuff. */
 #define MSG_BUF_SIZE 32768
 static char msg_buf[MSG_BUF_SIZE];
-static char *skit_stack_to_str_internal(const skit_debug_stnode *stack_end)
+
+typedef struct skit_stack_to_str_context skit_stack_to_str_context;
+struct skit_stack_to_str_context
 {
+	char *msg_pos;
+	ssize_t msg_rest_length;
+};
+
+static int skit_stack_to_str_each(void *context, const skit_debug_stnode *node)
+{
+	skit_stack_to_str_context *ctx = (skit_stack_to_str_context*)context;
+	
+	const skit_frame_info *fi = &node->val;
+	
+#ifdef __VMS
+	char *device;
+	char *directory;
+	char *name;
+	best_effort_vms_path_parse(fi.file_name, &device, &directory, &name);
+#elif defined(__linux__)
+	const char *name = fi->file_name;
+#else
+#error "Unsupported target.  This code needs porting."
+#endif
+	
+	ssize_t nchars = snprintf(
+		ctx->msg_pos, ctx->msg_rest_length,
+		"%s: at line %d in function %s\r\n",
+		name,
+		fi->line_number,
+		fi->func_name);
+	
+#ifdef __VMS
+	free(device);
+	free(directory);
+	free(name);
+#endif
+	
+	if ( nchars < 0 )
+		return 1; /* Keep iterating, don't adjust msg_pos. */
+	
+	ctx->msg_pos += nchars;
+	ctx->msg_rest_length -= nchars;
+	if ( ctx->msg_rest_length < 0 )
+		return 0; /* Stop iterating. */
+	
+	return 1; /* Keep iterating. */
+}
+
+static char *skit_stack_to_str_internal(
+	const skit_thread_context *skit_thread_ctx,
+	const skit_debug_stnode *stack_start)
+{
+	SKIT_ASSERT(skit_thread_ctx != NULL);
+	SKIT_ASSERT(stack_start != NULL);
+	skit_stack_to_str_context ctx;
+	
+	ctx.msg_pos = msg_buf;
+	ctx.msg_rest_length = MSG_BUF_SIZE;
+	
+	skit_debug_fstack_walk(&skit_thread_ctx->debug_info_stack, 
+		&skit_stack_to_str_each, &ctx, stack_start, NULL);
+	
+#if 0
 	char *msg_pos = msg_buf;
 	ssize_t msg_rest_length = MSG_BUF_SIZE;
 	
 	/* FIRST: scan the unused stack for stack_end. */
+	int in_unused_stack = 0;
+	cur_node = skit_thread_ctx->debug_info_stack.unused.front;
+	while ( cur_node != NULL )
+	{
+		
+	}
 	/*   if it's there, then that will need to be printed backwards. */
 	/* SECOND: print the used stack.  If stack_end wasn't in unused land, then only print from stack_end. */
 	
-	while ( stack_end != NULL )
+	cur_node = stack_end;
+	while ( cur_node != NULL )
 	{
-		const skit_frame_info *fi = &stack_end->val;
-		
-#ifdef __VMS
-		char *device;
-		char *directory;
-		char *name;
-		best_effort_vms_path_parse(fi.file_name, &device, &directory, &name);
-#elif defined(__linux__)
-		const char *name = fi->file_name;
-#else
-#error "Unsupported target.  This code needs porting."
-#endif
-		
-		ssize_t nchars = snprintf(
-			msg_pos, msg_rest_length,
-			"%s: at line %d in function %s\r\n",
-			name,
-			fi->line_number,
-			fi->func_name);
-		
-#ifdef __VMS
-		free(device);
-		free(directory);
-		free(name);
-#endif
-		stack_end = stack_end->next;
-		
-		if ( nchars < 0 )
-			continue;
-		
-		msg_pos += nchars;
-		msg_rest_length -= nchars;
-		if ( msg_rest_length < 0 )
-			break;
 	}
+#endif
 	
 	return msg_buf;
 }
 
 void skit_print_exception(skit_exception *e)
 {
+	SKIT_ASSERT(skit_thread_init_was_called());
+	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
 	printf("%s\n",e->error_text);
-	printf("%s\n",skit_stack_to_str_internal(e->frame_info_node));
+	printf("%s\n",skit_stack_to_str_internal(skit_thread_ctx, e->frame_info_node));
 }
 
 char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
 {
+	SKIT_ASSERT(skit_thread_init_was_called());
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
 	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
 	skit_debug_info_store(fi, line, file, func);
-	char *result = skit_stack_to_str_internal(skit_thread_ctx->debug_info_stack.used.front);
+	char *result = skit_stack_to_str_internal(skit_thread_ctx, skit_thread_ctx->debug_info_stack.used.front);
 	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
 	return result;
 }
