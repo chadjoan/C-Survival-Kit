@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/throw.h"

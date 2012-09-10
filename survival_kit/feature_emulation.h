@@ -11,6 +11,7 @@
 #include "survival_kit/misc.h"
 #include "survival_kit/assert.h"
 #include "survival_kit/init.h"
+#include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"

@@ -11,6 +11,7 @@ goto, break, continue, or return; nor may they be entered with a goto.
 #include <setjmp.h>
 #include <unistd.h>
 
+#include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 
@@ -76,6 +77,8 @@ goto, break, continue, or return; nor may they be entered with a goto.
 		{ \
 			if ( (skit_scope_ctx->exit_status) & (macro_arg_exit_status) ) \
 			{ \
+				SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_GUARD_PTR,0); \
+				\
 				/* We set another jump point to catch any exceptions that might be \
 				thrown while in the scope guard.  This is important because exiting \
 				the scope guard with a thrown exception is forbidden. */ \
@@ -132,10 +135,11 @@ goto, break, continue, or return; nor may they be entered with a goto.
 
 #define SCOPE \
 { \
-	SKIT_DECLARE_CHECK(SKIT_NO_NESTING_SCOPES_TXT,1); \
-	/* SKIT_DECLARE_CHECK(Use_NSCOPE_and_NSCOPE_END_to_nest_SCOPE_statements,1); */ \
-	SKIT_DECLARE_CHECK(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT, 1); \
-	SKIT_DECLARE_CHECK(SKIT_END_SCOPE_WITHOUT_SCOPE_TXT, 0); \
+	SKIT_COMPILE_TIME_CHECK(SKIT_NO_NESTING_SCOPES_TXT,1); \
+	/* SKIT_COMPILE_TIME_CHECK(Use_NSCOPE_and_NSCOPE_END_to_nest_SCOPE_statements,1); */ \
+	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT, 1); \
+	SKIT_COMPILE_TIME_CHECK(SKIT_END_SCOPE_WITHOUT_SCOPE_TXT, 0); \
+	SKIT_COMPILE_TIME_CHECK(SKIT_NO_RET_FROM_SCOPE_PTR, 0);
 
 #if 0
 /* 
@@ -169,9 +173,9 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 	__skit_scope_ctx.scope_fn_exit = NULL; \
 	__skit_scope_ctx.scope_guards_used = 0; \
 	__skit_scope_ctx.exit_status = SKIT_SCOPE_NOT_EXITING; \
-	SKIT_DECLARE_CHECK(SKIT_SCOPE_EXIT_HAS_USE_TXT, 1); \
-	SKIT_DECLARE_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
-	SKIT_DECLARE_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
+	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_EXIT_HAS_USE_TXT, 1); \
+	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
+	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
 
 #define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) \
 		do { \

@@ -240,6 +240,12 @@ static void unittest_scope()
 
 void skit_unittest_features()
 {
+	/* goto gets redefined in compile_time_errors.h.  
+	It's used uncommonly enough that we should make sure it
+	still compiles in places where it should compile. */
+	goto foolabel;
+	foolabel:
+	
 	printf("skit_unittest_features()\n");
 	unittest_exceptions();
 	unittest_scope();
