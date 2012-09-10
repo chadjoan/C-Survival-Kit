@@ -26,7 +26,6 @@ OBJECT_FILES= \
 	obj/feature_emulation/generated_exception_defs.o \
 	obj/feature_emulation/funcs.o \
 	obj/feature_emulation/types.o \
-	obj/feature_emulation/throw.o \
 	obj/feature_emulation/unittest.o \
 	obj/feature_emulation.o \
 	obj/sockn.o \

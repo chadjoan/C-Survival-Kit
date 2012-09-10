@@ -2,7 +2,23 @@
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
-#	include "survival_kit/feature_emulation/throw.h"
+	#include "survival_kit/feature_emulation/generated_exception_defs.h"
+
+	/*
+	This skit_throw_exception_no_ctx definition is used to break macro recursion.
+	This definition is duplicated in "survival_kit/feature_emulation/fstack.c" and
+	  "survival_kit/feature_emulation/funcs.h".  If this ever changes, then those
+	  must be updated.
+	See "survival_kit/feature_emulation/funcs.h" for rationale.
+	*/
+	void skit_throw_exception_no_ctx(
+		int line,
+		const char *file,
+		const char *func,
+		skit_err_code etype,
+		const char *fmtMsg,
+		...);
+
 #endif
 
 #include "survival_kit/misc.h"
@@ -46,7 +62,8 @@ SKIT_T(stnode) *SKIT_T(stack_pop)(SKIT_T(stack) *stack)
 #		if defined(SKIT_T_DIE_ON_ERROR)
 			skit_die("Attempt to pop a value from a zero-length " SKIT_T_STR(stack) ".");
 #		else
-			THROW(OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length stack.");
+			skit_throw_exception_no_ctx( __LINE__, __FILE__, __func__,
+				OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length stack.");
 #		endif
 	}
 	else

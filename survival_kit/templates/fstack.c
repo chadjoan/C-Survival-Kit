@@ -2,7 +2,23 @@
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
-#	include "survival_kit/feature_emulation/throw.h"
+
+#include "survival_kit/feature_emulation/generated_exception_defs.h"
+
+	/*
+	This skit_throw_exception_no_ctx definition is used to break macro recursion.
+	This definition is duplicated in "survival_kit/feature_emulation/stack.c" and
+	  "survival_kit/feature_emulation/funcs.h".  If this ever changes, then those
+	  must be updated.
+	See "survival_kit/feature_emulation/funcs.h" for rationale.
+	*/
+void skit_throw_exception_no_ctx(
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
 #endif
 
 #include "survival_kit/misc.h"
@@ -41,7 +57,8 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *stack )
 #		if defined(SKIT_T_DIE_ON_ERROR)
 			skit_die("Attempt to push a value in a " SKIT_T_STR(fstack) " that has no free nodes.");
 #		else
-			THROW(OUT_OF_BOUNDS,"Attempt to push a value in a freelist that has no free nodes.");
+			skit_throw_exception_no_ctx( __LINE__, __FILE__, __func__,
+				OUT_OF_BOUNDS,"Attempt to push a value in a freelist that has no free nodes.");
 #		endif
 	}
 
@@ -173,6 +190,8 @@ void SKIT_T(fstack_walk)(
 			cur_node = cur_node->next;
 		}
 	}
+	
+	/* TODO: THROW with OUT_OF_BOUNDS if things start/end nodes are non-NULL and aren't found. */
 	
 	/* Free heap memory if we used it. */
 	if ( ((char*)reversing_buffer) != reversing_buffer_stack_mem )

@@ -3,6 +3,7 @@
 #define SKIT_THROW_INCLUDED
 
 #include "survival_kit/macro.h"
+#include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
 
 #if 0
@@ -19,13 +20,6 @@ Example usage:
 #endif
 
 
-void skit_throw_exception(
-	int line,
-	const char *file,
-	const char *func,
-	skit_err_code etype,
-	const char *fmtMsg,
-	...);
 
 
 #if 0
@@ -63,13 +57,13 @@ Example usage:
 #define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
 
 #define THROW1(e) \
-	skit_throw_exception(__LINE__, __FILE__, __func__, etype)
+	skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype)
 	
 #define THROW2(etype, emsg) \
-	skit_throw_exception(__LINE__, __FILE__, __func__, etype, emsg)
+	skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg)
 
 #define THROW3(etype, emsg, ...) \
-	skit_throw_exception(__LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
+	skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
 
 /* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part

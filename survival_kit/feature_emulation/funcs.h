@@ -32,6 +32,47 @@ void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
 
+/*
+This skit_throw_exception_no_ctx definition is used to break macro recursion.
+This definition is duplicated in "survival_kit/feature_emulation/stack.c" and
+  "survival_kit/feature_emulation/fstack.c".  If this ever changes, then those
+  must be updated.
+The recursion happens when (f)stack.c includes this module which includes
+  feature_emulation/types.h which then redefines SKIT_T_ELEM_TYPE and 
+  includes stack again.  
+There is no way to save the template parameters (like SKIT_T_ELEM_TYPE or
+  SKIT_T_PREFIX) and forcing callers to '#include "survival_kit/feature_emulation/types.h"'
+  before including (f)stack.c is inconsistent and undesirable.
+The strategy then is to call an exception throwing function directly, without
+  the aid of macros.  This requires keeping the definitions of this function
+  in sync.
+Due to the lack of the ability to include "survival_kit/feature_emulation/types.h"
+  this definition is not allowed to use skit_thread_context* or anything that uses
+  fstacks/stacks.  It obtains this information in the .c file by calling
+  skit_thread_context_get.  
+*/
+void skit_throw_exception_no_ctx(
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
+
+/*
+This is the more common alternative (still internal-use-only) to
+skit_throw_exception_no_ctx.  It is more desirable in most cases
+because it avoids making repeated calls to skit_thread_context_get.
+*/
+void skit_throw_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
+
 /** Prints the given exception to stdout. */
 void skit_print_exception(skit_exception *e);
 

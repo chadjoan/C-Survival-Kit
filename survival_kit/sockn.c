@@ -27,6 +27,8 @@ ssize_t sendn(int sock, string text)
 
 void recvn(int sock, string *buf)
 {
+	USE_FEATURE_EMULATION;
+
 	int64_t received = -1;
 	char buffer[4];
 	size_t msg_length = 0;
