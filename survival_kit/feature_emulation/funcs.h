@@ -44,6 +44,13 @@ void skit_print_exception(skit_exception *e);
 #define skit_stack_trace_to_str() skit_stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
 char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
 
-
+/* 
+Used internally by macros to simplify the creation of error messages that are
+printed at compile-time when the macros are used incorrectly.
+*/
+#define SKIT_DECLARE_CHECK(errtxt, initial_val) \
+        char errtxt = initial_val; \
+        (void)(errtxt); /* Silence misleading "warning: unused variable" messages from the compiler. */ \
+        do {} while(0)
 
 #endif

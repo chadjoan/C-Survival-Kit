@@ -28,7 +28,7 @@ static void bar(int val1, int val2)
 static int foo()
 {
 	USE_FEATURE_EMULATION;
-	/* TODO: bar(TRYR(baz()),TRYR(qux())); */
+	/* TODO: bar(CALL(baz()),CALL(qux())); */
 	CALL(bar(baz(), qux()));
 	printf("This shouldn't get executed either.\n");
 	return 42;
@@ -111,28 +111,31 @@ static void unittest_exceptions()
 
 
 /* All scope unittest subfunctions should return 0. */
-/*
-static int unittest_scope_exit_normal(int *result)
-{
-	int *result = 2;
-	SCOPE_EXIT(*result--);
-	SCOPE_EXIT
-		*result--;
-	ENDSCOPE
-	RETURN;
-}
+static void unittest_scope_exit_normal(int *result)
+SCOPE
+	USE_FEATURE_EMULATION;
+	
+	*result = 2;
+	SCOPE_EXIT((*result)--);
+	SCOPE_EXIT_BEGIN
+		(*result)--;
+	END_SCOPE_EXIT
+END_SCOPE
 
 static void unittest_scope_exit_exceptional(int *result)
-{
+SCOPE
+	USE_FEATURE_EMULATION;
+	
 	*result = 2;
-	SCOPE_EXIT(*result--);
-	SCOPE_EXIT
-		*result--;
-	ENDSCOPE
+	SCOPE_EXIT((*result)--);
+	SCOPE_EXIT_BEGIN
+		(*result)--;
+	END_SCOPE_EXIT
 	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
-}
+END_SCOPE
 
-static void unittest_scope_failure_noraml(int *result)
+/*
+static void unittest_scope_failure_normal(int *result)
 {
 	*result = 0;
 	SCOPE_FAILURE(*result--);
@@ -171,26 +174,27 @@ static void unittest_scope_success_exceptional(int *result)
 	ENDSCOPE
 	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 }
-
+*/
 static void unittest_scope()
 {
+	USE_FEATURE_EMULATION;
 	int val = 1;
 	
 	unittest_scope_exit_normal(&val);
-	assert_eq(val,0);
-	
+	SKIT_ASSERT_EQ(val,0,"%d");
+	/*
 	unittest_scope_success_normal(&val);
 	assert_eq(val,0);
 	
 	unittest_scope_failure_normal(&val);
 	assert_eq(val,0);
-	
+	*/
 	TRY
 		unittest_scope_exit_exceptional(&val);
 	CATCH(GENERIC_EXCEPTION,e)
-		assert_eq(val,0);
+		SKIT_ASSERT_EQ(val,0,"%d");
 	ENDTRY
-	
+	/*
 	TRY
 		unittest_scope_success_exceptional(&val);
 	CATCH(GENERIC_EXCEPTION,e)
@@ -202,16 +206,15 @@ static void unittest_scope()
 	CATCH(GENERIC_EXCEPTION,e)
 		assert_eq(val,0);
 	ENDTRY
-	
+	*/
 	printf("  scope unittest passed!\n");
 }
-*/
 
 void skit_unittest_features()
 {
 	printf("skit_unittest_features()\n");
 	unittest_exceptions();
-	/* unittest_scope(); */
+	unittest_scope();
 	printf("  features unittest passed!\n");
 }
 /* End unittests. */

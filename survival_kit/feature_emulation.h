@@ -15,6 +15,7 @@
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
 #include "survival_kit/feature_emulation/throw.h"
+#include "survival_kit/feature_emulation/scope.h"
 #include "survival_kit/feature_emulation/unittest.h"
 
 /* TODO: what if an exception is raised from within a CATCH block? */
@@ -34,6 +35,10 @@
 /*
 --------------------------------------------------------------------------------
 SCOPE guard hygeine:
+
+--------------------------------------------------------------------------------
+Do not exit scope guards with throw, return, break, continue, or goto 
+statements.
 
 --------------------------------------------------------------------------------
 This version of resource cleanup:
@@ -125,6 +130,7 @@ were used instead of SCOPE/END_SCOPE!
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
 	SKIT_ASSERT(skit_thread_init_was_called()); \
 	SKIT_ASSERT(skit_thread_ctx != NULL); \
+	USE_SCOPE_EMULATION; \
 	(void)skit_thread_ctx; \
 	(void)Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
 	(void)goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
@@ -524,7 +530,12 @@ jmp_buf *__pop_try_context();
 				{ \
 					/* CATCH block. */ \
 					SKIT_FEATURE_TRACE("%s, %d.294: TRY: case %d:\n", __FILE__, __LINE__, __error_code); \
-					skit_exception *exc_name = &skit_thread_ctx->exc_instance_stack.used.front->val;
+					skit_exception *exc_name = &skit_thread_ctx->exc_instance_stack.used.front->val; \
+					/* The caller may not want to actually use the named exception. */ \
+					/* They might just want to prevent its propogation and do different logic. */ \
+					/* Thus we'll write (void)(exc_name) to prevent "warning: unused variable" messages. */ \
+					(void)(exc_name);
+					
 
 #define ENDTRY /* */ \
 					/* This end-of-block may be either the end of the normal/success case */ \
