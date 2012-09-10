@@ -25,7 +25,9 @@ static void skit_thread_context_init( skit_thread_context *ctx )
 		/* Uncaught exception(s)!  We're going down! */
 		while ( ctx->exc_instance_stack.used.length > 0 )
 		{
+			fprintf(stderr,"Attempting to print exception:\n");
 			skit_print_exception( skit_exc_fstack_pop(&ctx->exc_instance_stack) );
+			fprintf(stderr,"\n");
 		}
 		skit_die("Uncaught exception(s).");
 	}
@@ -157,6 +159,7 @@ void skit_throw_exception_no_ctx(
 	skit_scope_context dummy_scope_ctx;
 	dummy_scope_ctx.scope_fn_exit = NULL;
 	dummy_scope_ctx.scope_guards_used = 0;
+	dummy_scope_ctx.exit_status = 0; /* This value shouldn't matter. */
 	
 	/* Forward var args to the real exception throwing function. */
 	va_list vl;
@@ -341,8 +344,8 @@ static char *skit_stack_to_str_internal(
 	const skit_thread_context *skit_thread_ctx,
 	const skit_debug_stnode *stack_start)
 {
-	SKIT_ASSERT(skit_thread_ctx != NULL);
-	SKIT_ASSERT(stack_start != NULL);
+	SKIT_ASSERT_NO_TRACE(skit_thread_ctx != NULL);
+	SKIT_ASSERT_NO_TRACE(stack_start != NULL);
 	skit_stack_to_str_context ctx;
 	
 	ctx.msg_pos = msg_buf;
@@ -384,11 +387,26 @@ void skit_print_exception(skit_exception *e)
 
 char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
 {
-	SKIT_ASSERT(skit_thread_init_was_called());
-	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
-	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
-	skit_debug_info_store(fi, line, file, func);
-	char *result = skit_stack_to_str_internal(skit_thread_ctx, skit_thread_ctx->debug_info_stack.used.front);
-	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
+	char *result = NULL;
+	if ( skit_thread_init_was_called() )
+	{
+		skit_thread_context *skit_thread_ctx = skit_thread_context_get();
+		skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
+		skit_debug_info_store(fi, line, file, func);
+		result = skit_stack_to_str_internal(skit_thread_ctx, skit_thread_ctx->debug_info_stack.used.front);
+		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
+	}
+	else
+	{
+		strcpy( msg_buf, "No stack trace available because neither skit_init nor skit_thread_init were called.\n" );
+		result = msg_buf;
+	}
 	return result;
+}
+
+void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func )
+{
+	printf("Attempting to print stack trace.\n");
+	char *result = skit_stack_trace_to_str_expr(line,file,func);
+	printf("Stack trace:\n%s\n", result);
 }

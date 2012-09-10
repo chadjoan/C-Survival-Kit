@@ -55,7 +55,7 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *stack )
 	if ( stack->unused.length == 0 )
 	{
 #		if defined(SKIT_T_DIE_ON_ERROR)
-			skit_die("Attempt to push a value in a " SKIT_T_STR(fstack) " that has no free nodes.");
+			SKIT_ASSERT_MSG(0, "Attempt to push a value in a " SKIT_T_STR(fstack) " that has no free nodes.");
 #		else
 			skit_throw_exception_no_ctx( __LINE__, __FILE__, __func__,
 				OUT_OF_BOUNDS,"Attempt to push a value in a freelist that has no free nodes.");

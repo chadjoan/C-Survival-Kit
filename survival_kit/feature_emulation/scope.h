@@ -14,6 +14,11 @@ goto, break, continue, or return; nor may they be entered with a goto.
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 
+#define SKIT_SCOPE_NOT_EXITING   0x00
+#define SKIT_SCOPE_SUCCESS_EXIT  0x01
+#define SKIT_SCOPE_FAILURE_EXIT  0x02
+#define SKIT_SCOPE_ANY_EXIT      0x03 /* success | exit */
+
 /* These define messages that show at compile-time if the caller does something wrong. */
 /* They are wrapped in macros to make it easier to alter the text. */
 #define SKIT_SCOPE_EXIT_HAS_USE_TXT \
@@ -36,14 +41,8 @@ goto, break, continue, or return; nor may they be entered with a goto.
 /* End of error message definitions. */
 
 
-#define SCOPE_EXIT(expr) \
-	do { \
-		SCOPE_EXIT_BEGIN \
-			(expr); \
-		END_SCOPE_EXIT \
-	} while (0)
 
-#define SCOPE_EXIT_BEGIN \
+#define SCOPE_GUARD_BEGIN(macro_arg_exit_status) \
 	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && \
 	   The_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_SCOPE_EXIT_statement ){ \
 		if ( !skit_scope_ctx->scope_guards_used ) \
@@ -69,34 +68,67 @@ goto, break, continue, or return; nor may they be entered with a goto.
 			int skit_jmp_code = setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)); \
 			if ( skit_jmp_code != 0 ) \
 			{ \
-				__SKIT_SCAN_SCOPE_GUARDS; \
+				__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
 				longjmp(skit_thread_ctx->exc_jmp_stack.used.front->val, skit_jmp_code); \
 			} \
 		} \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->scope_jmp_stack, &skit_malloc)) != 0 ) \
 		{ \
-			/* We set another jump point to catch any exceptions that might be \
-			thrown while in the scope guard.  This is important because exiting \
-			the scope guard with a thrown exception is forbidden. */ \
-			if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) \
-			{
-
-#define END_SCOPE_EXIT \
-			} \
-			else \
+			if ( (skit_scope_ctx->exit_status) & (macro_arg_exit_status) ) \
 			{ \
-				/* An exception was thrown! */ \
-				/* It is safe to write to stderr here because we are crashing no matter what. */ \
-				fprintf(stderr, "An exception was thrown in a SCOPE_EXIT block."); \
-				fprintf(stderr, "SCOPE_EXIT may not exit due to thrown exceptions."); \
-				fprintf(stderr, "The exception thrown is as follows:\n"); \
-				skit_print_exception(&skit_thread_ctx->exc_instance_stack.used.front->val); \
-				SKIT_ASSERT(0); \
+				/* We set another jump point to catch any exceptions that might be \
+				thrown while in the scope guard.  This is important because exiting \
+				the scope guard with a thrown exception is forbidden. */ \
+				if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) \
+				{
+
+#define END_SCOPE_GUARD \
+				} \
+				else \
+				{ \
+					/* An exception was thrown! */ \
+					/* It is safe to write to stderr here because we are crashing no matter what. */ \
+					fprintf(stderr, "An exception was thrown in a SCOPE_EXIT block."); \
+					fprintf(stderr, "SCOPE_EXIT may not exit due to thrown exceptions."); \
+					fprintf(stderr, "The exception thrown is as follows:\n"); \
+					skit_print_exception(&skit_thread_ctx->exc_instance_stack.used.front->val); \
+					SKIT_ASSERT(0); \
+				} \
+				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			} \
-			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->scope_jmp_stack),1); \
 		} \
 	}
+
+
+#define SCOPE_EXIT_BEGIN    SCOPE_GUARD_BEGIN(SKIT_SCOPE_ANY_EXIT)
+#define SCOPE_SUCCESS_BEGIN SCOPE_GUARD_BEGIN(SKIT_SCOPE_SUCCESS_EXIT)
+#define SCOPE_FAILURE_BEGIN SCOPE_GUARD_BEGIN(SKIT_SCOPE_FAILURE_EXIT)
+
+#define END_SCOPE_EXIT    END_SCOPE_GUARD
+#define END_SCOPE_SUCCESS END_SCOPE_GUARD
+#define END_SCOPE_FAILURE END_SCOPE_GUARD
+
+#define SCOPE_EXIT(expr) \
+	do { \
+		SCOPE_EXIT_BEGIN \
+			(expr); \
+		END_SCOPE_EXIT \
+	} while (0)
+
+#define SCOPE_FAILURE(expr) \
+	do { \
+		SCOPE_FAILURE_BEGIN \
+			(expr); \
+		END_SCOPE_FAILURE \
+	} while (0)
+
+#define SCOPE_SUCCESS(expr) \
+	do { \
+		SCOPE_SUCCESS_BEGIN \
+			(expr); \
+		END_SCOPE_SUCCESS \
+	} while (0)
 
 #define SCOPE \
 { \
@@ -136,14 +168,17 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 	(void) skit_scope_ctx; \
 	__skit_scope_ctx.scope_fn_exit = NULL; \
 	__skit_scope_ctx.scope_guards_used = 0; \
+	__skit_scope_ctx.exit_status = SKIT_SCOPE_NOT_EXITING; \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_EXIT_HAS_USE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
 
-#define __SKIT_SCAN_SCOPE_GUARDS \
+#define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) \
 		do { \
 			if ( skit_scope_ctx->scope_guards_used ) \
 			{ \
+				skit_scope_ctx->exit_status = macro_arg_exit_status; \
+				\
 				/* This setjmp tells the scan how to return to this point. */ \
 				if ( setjmp(*skit_scope_ctx->scope_fn_exit) == 0 )\
 				{ \
@@ -162,6 +197,6 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 	/* Check to make sure there is a corresponding SCOPE statement. */ \
 	if ( !SKIT_END_SCOPE_WITHOUT_SCOPE_TXT ) \
 	{ \
-		__SKIT_SCAN_SCOPE_GUARDS; \
+		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
 	} \
 }

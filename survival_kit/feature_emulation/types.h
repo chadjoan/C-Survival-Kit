@@ -109,6 +109,7 @@ struct skit_scope_context
 {
 	jmp_buf *scope_fn_exit;
 	char scope_guards_used;
+	char exit_status;
 };
 
 #ifdef SKIT_CLEAN_HEADER_MACROS

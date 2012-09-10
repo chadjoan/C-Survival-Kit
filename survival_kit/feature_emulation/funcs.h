@@ -89,6 +89,12 @@ void skit_print_exception(skit_exception *e);
 #define skit_stack_trace_to_str() skit_stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
 char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
 
+/** Prints the current stack trace to stdout. */
+/* These definitions are duplicated in "survival_kit/assert.h" to prevent macro recursion. */
+/* Be sure to change those definitions if altering these. */
+#define skit_print_stack_trace() skit_print_stack_trace_func(__LINE__,__FILE__,__func__)
+void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func );
+
 /* 
 Used internally by macros to simplify the creation of error messages that are
 printed at compile-time when the macros are used incorrectly.

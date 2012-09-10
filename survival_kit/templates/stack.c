@@ -59,8 +59,9 @@ SKIT_T(stnode) *SKIT_T(stack_pop)(SKIT_T(stack) *stack)
 	
 	if ( stack->front == NULL )
 	{
+
 #		if defined(SKIT_T_DIE_ON_ERROR)
-			skit_die("Attempt to pop a value from a zero-length " SKIT_T_STR(stack) ".");
+			SKIT_ASSERT_MSG(0, "Attempt to pop a value from a zero-length " SKIT_T_STR(stack) ".");
 #		else
 			skit_throw_exception_no_ctx( __LINE__, __FILE__, __func__,
 				OUT_OF_BOUNDS,"Attempt to pop a value from a zero-length stack.");

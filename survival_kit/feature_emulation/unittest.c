@@ -151,47 +151,52 @@ SCOPE
 	CALL(unittest_scope_fn_that_throws());
 END_SCOPE
 
-/*
 static void unittest_scope_failure_normal(int *result)
-{
+SCOPE
+	USE_FEATURE_EMULATION;
+	
 	*result = 0;
-	SCOPE_FAILURE(*result--);
-	SCOPE_FAILURE
-		*result--;
-	ENDSCOPE
-	RETURN;
-}
+	SCOPE_FAILURE((*result)--);
+	SCOPE_FAILURE_BEGIN
+		(*result)--;
+	END_SCOPE_FAILURE
+END_SCOPE
 
 static void unittest_scope_failure_exceptional(int *result)
-{
-	int *result = 2;
-	SCOPE_FAILURE(*result--);
-	SCOPE_FAILURE
-		*result--;
-	ENDSCOPE
+SCOPE
+	USE_FEATURE_EMULATION;
+	
+	*result = 2;
+	SCOPE_FAILURE((*result)--);
+	SCOPE_FAILURE_BEGIN
+		(*result)--;
+	END_SCOPE_FAILURE
 	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
-}
+END_SCOPE
 
 static void unittest_scope_success_normal(int *result)
-{
-	int *result = 2;
-	SCOPE_SUCCESS(*result--);
-	SCOPE_SUCCESS
-		*result--;
-	ENDSCOPE
-	RETURN;
-}
+SCOPE
+	USE_FEATURE_EMULATION;
+	
+	*result = 2;
+	SCOPE_SUCCESS((*result)--);
+	SCOPE_SUCCESS_BEGIN
+		(*result)--;
+	END_SCOPE_SUCCESS
+END_SCOPE
 
 static void unittest_scope_success_exceptional(int *result)
-{
+SCOPE
+	USE_FEATURE_EMULATION;
+	
 	*result = 0;
-	SCOPE_SUCCESS(*result--);
-	SCOPE_SUCCESS
-		*result--;
-	ENDSCOPE
+	SCOPE_SUCCESS((*result)--);
+	SCOPE_SUCCESS_BEGIN
+		(*result)--;
+	END_SCOPE_SUCCESS
 	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
-}
-*/
+END_SCOPE
+
 static void unittest_scope()
 {
 	USE_FEATURE_EMULATION;
@@ -199,13 +204,13 @@ static void unittest_scope()
 	
 	unittest_scope_exit_normal(&val);
 	SKIT_ASSERT_EQ(val,0,"%d");
-	/*
+	
 	unittest_scope_success_normal(&val);
-	assert_eq(val,0);
+	SKIT_ASSERT_EQ(val,0,"%d");
 	
 	unittest_scope_failure_normal(&val);
-	assert_eq(val,0);
-	*/
+	SKIT_ASSERT_EQ(val,0,"%d");
+	
 	TRY
 		unittest_scope_exit_exceptional(&val);
 	CATCH(GENERIC_EXCEPTION,e)
@@ -218,19 +223,18 @@ static void unittest_scope()
 		SKIT_ASSERT_EQ(val,0,"%d");
 	ENDTRY
 	
-	/*
 	TRY
 		unittest_scope_success_exceptional(&val);
 	CATCH(GENERIC_EXCEPTION,e)
-		assert_eq(val,0);
+		SKIT_ASSERT_EQ(val,0,"%d");
 	ENDTRY
 	
 	TRY
 		unittest_scope_failure_exceptional(&val);
 	CATCH(GENERIC_EXCEPTION,e)
-		assert_eq(val,0);
+		SKIT_ASSERT_EQ(val,0,"%d");
 	ENDTRY
-	*/
+
 	printf("  scope unittest passed!\n");
 }
 
