@@ -136,6 +136,18 @@ SCOPE
 	SCOPE_EXIT_BEGIN
 		(*result)--;
 	END_SCOPE_EXIT
+	unittest_scope_fn_that_throws();
+END_SCOPE
+
+static void unittest_scope_exit_exceptional_call(int *result)
+SCOPE
+	USE_FEATURE_EMULATION;
+	
+	*result = 2;
+	SCOPE_EXIT((*result)--);
+	SCOPE_EXIT_BEGIN
+		(*result)--;
+	END_SCOPE_EXIT
 	CALL(unittest_scope_fn_that_throws());
 END_SCOPE
 
@@ -199,6 +211,13 @@ static void unittest_scope()
 	CATCH(GENERIC_EXCEPTION,e)
 		SKIT_ASSERT_EQ(val,0,"%d");
 	ENDTRY
+	
+	TRY
+		unittest_scope_exit_exceptional_call(&val);
+	CATCH(GENERIC_EXCEPTION,e)
+		SKIT_ASSERT_EQ(val,0,"%d");
+	ENDTRY
+	
 	/*
 	TRY
 		unittest_scope_success_exceptional(&val);
