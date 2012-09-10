@@ -61,6 +61,17 @@ goto, break, continue, or return; nor may they be entered with a goto.
 			/*   the scope_jmp_stack. */ \
 			skit_scope_ctx->scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
 			skit_scope_ctx->scope_guards_used = 1; \
+			\
+			/* We set a  jump point to catch any exceptions that might be */ \
+			/* thrown from a function that wasn't called with the CALL macro. */ \
+			/* This is important because we'll need to ensure that the scope */ \
+			/*   guards get scanned during abnormal exit. */ \
+			int skit_jmp_code = setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)); \
+			if ( skit_jmp_code != 0 ) \
+			{ \
+				__SKIT_SCAN_SCOPE_GUARDS; \
+				longjmp(skit_thread_ctx->exc_jmp_stack.used.front->val, skit_jmp_code); \
+			} \
 		} \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->scope_jmp_stack, &skit_malloc)) != 0 ) \
 		{ \
@@ -141,6 +152,9 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 					/*   will automatically return execution just past this point. */ \
 					longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->scope_jmp_stack),1); \
 				} \
+				/* Pop the extra jmp frame that was allocated to catch any unplanned exits. */ \
+				/* The code that allocated the frame will handle further longjmp'ing. */ \
+				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			} \
 		} while(0)
 

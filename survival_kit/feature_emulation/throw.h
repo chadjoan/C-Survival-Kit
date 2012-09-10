@@ -71,8 +71,6 @@ Example usage:
 // of this exception handling module.  It may change in the future if needed
 // to fix bugs or add new features.
 */
-/* TODO: BUG?  __SKIT_SCAN_SCOPE_GUARDS should probably happen when the exception is caught (or uncaught but unwinds the stack).
-   As it is, functions not called with the CALL statement might be able to throw and have the exception jump past the scope guarding logic. */
 #define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
 		__SKIT_SCAN_SCOPE_GUARDS; \
