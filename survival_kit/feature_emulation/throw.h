@@ -58,22 +58,13 @@ Example usage:
 #define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
 
 #define THROW1(e) \
-	do { \
-		__SKIT_SCAN_SCOPE_GUARDS; \
-		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype); \
-	} while(0)
+		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype)
 	
 #define THROW2(etype, emsg) \
-	do { \
-		__SKIT_SCAN_SCOPE_GUARDS; \
-		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg); \
-	} while(0)
+		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype, emsg)
 
 #define THROW3(etype, emsg, ...) \
-	do { \
-		__SKIT_SCAN_SCOPE_GUARDS; \
-		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__); \
-	} while(0)
+		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
 
 /* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part
@@ -82,6 +73,7 @@ Example usage:
 */
 #define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
+		__SKIT_SCAN_SCOPE_GUARDS; \
 		skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val); \
 		SKIT_FEATURE_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
 		/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */ \

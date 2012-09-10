@@ -104,6 +104,13 @@ struct skit_thread_context
 	skit_exc_fstack   exc_instance_stack;
 };
 
+typedef struct skit_scope_context skit_scope_context;
+struct skit_scope_context
+{
+	jmp_buf *scope_fn_exit;
+	char scope_guards_used;
+};
+
 #ifdef SKIT_CLEAN_HEADER_MACROS
 #	undef SKIT_T_STACK_HEADER
 #	undef SKIT_T_FREESTACK_HEADER

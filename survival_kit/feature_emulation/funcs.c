@@ -115,6 +115,7 @@ void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, co
 
 static void skit_throw_exception_internal(
 	skit_thread_context *skit_thread_ctx,
+	skit_scope_context *skit_scope_ctx,
 	int line,
 	const char *file,
 	const char *func,
@@ -151,10 +152,18 @@ void skit_throw_exception_no_ctx(
 {
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
 	
+	/* We can't get this, and this function shouldn't be called from
+	   places with scope guards.  So we'll assume there are none. */
+	skit_scope_context dummy_scope_ctx;
+	dummy_scope_ctx.scope_fn_exit = NULL;
+	dummy_scope_ctx.scope_guards_used = 0;
+	
+	/* Forward var args to the real exception throwing function. */
 	va_list vl;
 	va_start(vl, fmtMsg);
 	skit_throw_exception_internal(
 		skit_thread_ctx,
+		&dummy_scope_ctx,
 		line,
 		file,
 		func,
@@ -166,6 +175,7 @@ void skit_throw_exception_no_ctx(
 
 void skit_throw_exception(
 	skit_thread_context *skit_thread_ctx,
+	skit_scope_context *skit_scope_ctx,
 	int line,
 	const char *file,
 	const char *func,
@@ -173,10 +183,12 @@ void skit_throw_exception(
 	const char *fmtMsg,
 	...)
 {
+	/* Forward everything to the real exception throwing function. */
 	va_list vl;
 	va_start(vl, fmtMsg);
 	skit_throw_exception_internal(
 		skit_thread_ctx,
+		skit_scope_ctx,
 		line,
 		file,
 		func,

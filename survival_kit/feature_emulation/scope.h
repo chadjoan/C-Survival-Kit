@@ -46,7 +46,7 @@ goto, break, continue, or return; nor may they be entered with a goto.
 #define SCOPE_EXIT_BEGIN \
 	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && \
 	   The_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_SCOPE_EXIT_statement ){ \
-		if ( !__skit_scope_guards_used ) \
+		if ( !skit_scope_ctx->scope_guards_used ) \
 		{ \
 			/* Placing this fstack_alloc has been tricky. */ \
 			/* It can't go in the SCOPE statement because skit_thread_ctx isn't defined at that point. */ \
@@ -59,8 +59,8 @@ goto, break, continue, or return; nor may they be entered with a goto.
 			/* The existence of a scope guard will force SCOPE/END_SCOPE to be used and thus */ \
 			/*   also force usage of RETURN or THROW statements that will properly unwind */ \
 			/*   the scope_jmp_stack. */ \
-			__skit_scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
-			__skit_scope_guards_used = 1; \
+			skit_scope_ctx->scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
+			skit_scope_ctx->scope_guards_used = 1; \
 		} \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->scope_jmp_stack, &skit_malloc)) != 0 ) \
 		{ \
@@ -116,21 +116,25 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 #define USE_SCOPE_EMULATION \
 	/* This first context will be used as a return address when the exit point */ \
 	/*   scans all of the scope guards. */ \
-	jmp_buf *__skit_scope_fn_exit = NULL; \
-	char __skit_scope_guards_used = 0; \
+	/* Create a scope context and pointerize it so that macros as well as */ \
+	/*   other functions can use -> notation uniformly. */ \
+	skit_scope_context __skit_scope_ctx; \
+	skit_scope_context *skit_scope_ctx = &__skit_scope_ctx; \
 	/* Use (void) to silence misleading "warning: unused variable" messages from the compiler. */ \
-	(void)__skit_scope_fn_exit; \
-	(void)__skit_scope_guards_used; \
+	(void) __skit_scope_ctx; \
+	(void) skit_scope_ctx; \
+	__skit_scope_ctx.scope_fn_exit = NULL; \
+	__skit_scope_ctx.scope_guards_used = 0; \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_EXIT_HAS_USE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
 
 #define __SKIT_SCAN_SCOPE_GUARDS \
 		do { \
-			if ( __skit_scope_guards_used ) \
+			if ( skit_scope_ctx->scope_guards_used ) \
 			{ \
 				/* This setjmp tells the scan how to return to this point. */ \
-				if ( setjmp(*__skit_scope_fn_exit) == 0 )\
+				if ( setjmp(*skit_scope_ctx->scope_fn_exit) == 0 )\
 				{ \
 					/* Now scan all scope guards, executing their contents. */ \
 					/* Because of the above setjmp, the last scope guard's longjmp */ \
