@@ -109,6 +109,11 @@ static void unittest_exceptions()
 	printf("  exception_handling unittest passed!\n");
 }
 
+static void unittest_scope_fn_that_throws()
+{
+	USE_FEATURE_EMULATION;
+	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+}
 
 /* All scope unittest subfunctions should return 0. */
 static void unittest_scope_exit_normal(int *result)
@@ -131,7 +136,7 @@ SCOPE
 	SCOPE_EXIT_BEGIN
 		(*result)--;
 	END_SCOPE_EXIT
-	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+	CALL(unittest_scope_fn_that_throws());
 END_SCOPE
 
 /*
