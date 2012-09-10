@@ -4,6 +4,7 @@
 
 #include "survival_kit/macro.h"
 #include "survival_kit/feature_emulation/funcs.h"
+#include "survival_kit/feature_emulation/scope.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
 
 #if 0
@@ -57,13 +58,22 @@ Example usage:
 #define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
 
 #define THROW1(e) \
-	skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype)
+	do { \
+		__SKIT_SCAN_SCOPE_GUARDS; \
+		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype); \
+	} while(0)
 	
 #define THROW2(etype, emsg) \
-	skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg)
+	do { \
+		__SKIT_SCAN_SCOPE_GUARDS; \
+		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg); \
+	} while(0)
 
 #define THROW3(etype, emsg, ...) \
-	skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
+	do { \
+		__SKIT_SCAN_SCOPE_GUARDS; \
+		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__); \
+	} while(0)
 
 /* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part

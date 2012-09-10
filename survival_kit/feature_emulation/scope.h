@@ -93,9 +93,6 @@ goto, break, continue, or return; nor may they be entered with a goto.
 	/* SKIT_DECLARE_CHECK(Use_NSCOPE_and_NSCOPE_END_to_nest_SCOPE_statements,1); */ \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_END_SCOPE_WITHOUT_SCOPE_TXT, 0); \
-	/* Use (void) to silence misleading "warning: unused variable" messages from the compiler. */ \
-	char __skit_scope_guards_used = 0; \
-	(void)__skit_scope_guards_used;
 
 #if 0
 /* 
@@ -119,9 +116,11 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 #define USE_SCOPE_EMULATION \
 	/* This first context will be used as a return address when the exit point */ \
 	/*   scans all of the scope guards. */ \
+	jmp_buf *__skit_scope_fn_exit = NULL; \
+	char __skit_scope_guards_used = 0; \
 	/* Use (void) to silence misleading "warning: unused variable" messages from the compiler. */ \
-	jmp_buf *__skit_scope_fn_exit; \
 	(void)__skit_scope_fn_exit; \
+	(void)__skit_scope_guards_used; \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_EXIT_HAS_USE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
 	SKIT_DECLARE_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
@@ -138,10 +137,6 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 					/*   will automatically return execution just past this point. */ \
 					longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->scope_jmp_stack),1); \
 				} \
-			} \
-			else \
-			{ \
-				skit_jmp_fstack_pop(&skit_thread_ctx->scope_jmp_stack); \
 			} \
 		} while(0)
 
