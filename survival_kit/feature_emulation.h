@@ -241,6 +241,13 @@ that may cause things like unexpected null pointers or access violations.
 */
 #define __TRY_EXCEPTION_CLEANUP INT_MIN
 
+/* TODO: Maybe we should use different macro names since OpenVMS DECC already has a kind of TRY-CATCH structure. */
+#ifdef __DECC
+#undef TRY
+#undef CATCH
+#undef ENDTRY
+#endif
+
 /** NOTE: Do not attempt to branch out of a TRY-CATCH block.  Example:
 //    int foo, len;
 //    len = 10;
