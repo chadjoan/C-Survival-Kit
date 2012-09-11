@@ -200,14 +200,19 @@ static int unittest_scope_exit_RETURN(int *result)
 SCOPE
 	USE_FEATURE_EMULATION;
 	
-	*result = 2;
+	*result = 3;
 	SCOPE_EXIT((*result)--);
 	SCOPE_EXIT_BEGIN
 		(*result)--;
 	END_SCOPE_EXIT
 	
-	if ( 1 )
+	/* Make sure RETURN expands correctly next to if-statements. */
+	if ( 0 )
 		RETURN(0);
+	
+	(*result)--;
+	
+	RETURN(0);
 	
 	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 	

@@ -165,8 +165,8 @@ TODO: It should clean up TRY-CATCH stacks too, so that it can be called
 from TRY-CATCH blocks.
 */
 #define SKIT_RETURN_INTERNAL(return_expr) \
-	{ if ( SKIT_RETURN_HAS_USE_TXT ) \
 	{ \
+		(void)SKIT_RETURN_HAS_USE_TXT; \
 		SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT(SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR); \
 		(void)*SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR; \
 		\
@@ -176,7 +176,7 @@ from TRY-CATCH blocks.
 		\
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
 		return_expr; \
-	}}
+	}
 
 #define RETURN0()     SKIT_RETURN_INTERNAL(return)
 #define RETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
