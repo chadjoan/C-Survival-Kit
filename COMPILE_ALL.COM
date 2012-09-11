@@ -19,7 +19,6 @@ $ @'THIS_DIR'compile fstack_builtins
 $ @'THIS_DIR'compile jmp_stack setjmp
 $ @'THIS_DIR'compile jmp_fstack setjmp
 $ @'THIS_DIR'compile str
-$ @'THIS_DIR'compile compile_time_errors        feature_emulation
 $ @'THIS_DIR'compile generated_exception_defs   feature_emulation
 $ @'THIS_DIR'compile funcs                      feature_emulation
 $ @'THIS_DIR'compile types                      feature_emulation

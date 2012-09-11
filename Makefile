@@ -23,7 +23,6 @@ OBJECT_FILES= \
 	obj/setjmp/jmp_stack.o \
 	obj/setjmp/jmp_fstack.o \
 	obj/str.o \
-	obj/feature_emulation/compile_time_errors.o \
 	obj/feature_emulation/generated_exception_defs.o \
 	obj/feature_emulation/funcs.o \
 	obj/feature_emulation/types.o \
