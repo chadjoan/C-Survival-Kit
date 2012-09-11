@@ -216,7 +216,7 @@ that may cause things like unexpected null pointers or access violations.
 			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
-			__PROPOGATE_THROWN_EXCEPTIONS; \
+			__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 		} \
 		\
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
@@ -362,7 +362,7 @@ that may cause things like unexpected null pointers or access violations.
 					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 					SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
-					__PROPOGATE_THROWN_EXCEPTIONS; \
+					__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 				} \
 				SKIT_ASSERT(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
 			} /* default: { } */ \

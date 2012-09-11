@@ -141,7 +141,7 @@ static void skit_throw_exception_internal(
 	
 	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
 	
-	__PROPOGATE_THROWN_EXCEPTIONS;
+	__SKIT_PROPOGATE_THROWN_EXCEPTIONS;
 }
 	
 

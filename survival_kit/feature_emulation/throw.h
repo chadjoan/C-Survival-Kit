@@ -49,12 +49,12 @@ Example usage:
 #define THROW3(etype, emsg, ...) \
 		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
 
-/* __PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
+/* __SKIT_PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part
 // of this exception handling module.  It may change in the future if needed
 // to fix bugs or add new features.
 */
-#define __PROPOGATE_THROWN_EXCEPTIONS /* */ \
+#define __SKIT_PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
 		skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val); \
