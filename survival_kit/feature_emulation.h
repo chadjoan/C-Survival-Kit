@@ -277,6 +277,8 @@ that may cause things like unexpected null pointers or access violations.
 	SKIT_FEATURE_TRACE("%s, %d.236: TRY.start\n", __FILE__, __LINE__); \
 	SKIT_FEATURE_TRACE("type_jmp_stack_alloc\n"); \
 	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != __TRY_SAFE_EXIT ) { \
+		SKIT_COMPILE_TIME_CHECK(SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR,0); \
+		SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_TRY_PTR,0); \
 		SKIT_FEATURE_TRACE("%s, %d.236: TRY.if\n", __FILE__, __LINE__); \
 		do { \
 			SKIT_FEATURE_TRACE("%s, %d.238: TRY.do\n", __FILE__, __LINE__); \

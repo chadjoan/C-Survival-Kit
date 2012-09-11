@@ -78,6 +78,8 @@ goto, break, continue, or return; nor may they be entered with a goto.
 			if ( (skit_scope_ctx->exit_status) & (macro_arg_exit_status) ) \
 			{ \
 				SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_SCOPE_GUARDS_PTR,0); \
+				SKIT_COMPILE_TIME_CHECK(SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_PTR,0); \
+				SKIT_COMPILE_TIME_CHECK(SKIT_NO_BREAK_FROM_SCOPE_GUARDS_PTR,0); \
 				\
 				/* We set another jump point to catch any exceptions that might be \
 				thrown while in the scope guard.  This is important because exiting \

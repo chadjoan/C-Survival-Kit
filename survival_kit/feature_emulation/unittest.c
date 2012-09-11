@@ -89,7 +89,6 @@ static void unittest_exceptions()
 	ENDTRY
 	
 	
-	
 	TRY
 		while(1)
 		{
