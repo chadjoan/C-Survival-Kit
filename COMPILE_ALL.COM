@@ -12,17 +12,18 @@ $ !
 $ LIBRARY/CREATE=(GLO:600,BLO:500) OBJLIB:C_UTIL.OLB
 $ PURGE OBJLIB:C_UTIL.OLB
 $!
-$ @'THIS_DIR'compile misc
-$ @'THIS_DIR'compile cstr
-$ @'THIS_DIR'compile stack_builtins
-$ @'THIS_DIR'compile fstack_builtins
-$ @'THIS_DIR'compile jmp_stack setjmp
-$ @'THIS_DIR'compile jmp_fstack setjmp
-$ @'THIS_DIR'compile str
-$ @'THIS_DIR'compile generated_exception_defs   feature_emulation
-$ @'THIS_DIR'compile funcs                      feature_emulation
-$ @'THIS_DIR'compile types                      feature_emulation
-$ @'THIS_DIR'compile unittest                   feature_emulation
-$ @'THIS_DIR'compile sockn
-$ @'THIS_DIR'compile init
+$ @'THIS_DIR'compile survival_kit/misc
+$ @'THIS_DIR'compile survival_kit/cstr
+$ @'THIS_DIR'compile survival_kit/stack_builtins
+$ @'THIS_DIR'compile survival_kit/fstack_builtins
+$ @'THIS_DIR'compile survival_kit/setjmp/jmp_stack
+$ @'THIS_DIR'compile survival_kit/setjmp/jmp_fstack
+$ @'THIS_DIR'compile survival_kit/str
+$ @'THIS_DIR'compile survival_kit/feature_emulation/generated_exception_defs
+$ @'THIS_DIR'compile survival_kit/feature_emulation/funcs
+$ @'THIS_DIR'compile survival_kit/feature_emulation/types
+$ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
+$ @'THIS_DIR'compile survival_kit/sockn
+$ @'THIS_DIR'compile survival_kit/init
+$ @'THIS_DIR'compile tools_src/unittests
 $
