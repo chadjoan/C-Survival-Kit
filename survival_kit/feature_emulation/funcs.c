@@ -355,26 +355,6 @@ static char *skit_stack_to_str_internal(
 	skit_debug_fstack_walk(&skit_thread_ctx->debug_info_stack, 
 		&skit_stack_to_str_each, &ctx, stack_start, NULL);
 	
-#if 0
-	char *msg_pos = msg_buf;
-	ssize_t msg_rest_length = MSG_BUF_SIZE;
-	
-	/* FIRST: scan the unused stack for stack_end. */
-	int in_unused_stack = 0;
-	cur_node = skit_thread_ctx->debug_info_stack.unused.front;
-	while ( cur_node != NULL )
-	{
-		
-	}
-	/*   if it's there, then that will need to be printed backwards. */
-	/* SECOND: print the used stack.  If stack_end wasn't in unused land, then only print from stack_end. */
-	
-	cur_node = stack_end;
-	while ( cur_node != NULL )
-	{
-	}
-#endif
-	
 	return msg_buf;
 }
 

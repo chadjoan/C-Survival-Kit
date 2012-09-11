@@ -41,20 +41,6 @@ struct skit_thread_context_pos
 	ssize_t debug_info_pos;
 };
 
-#if 0
-#define SKIT_T_ELEM_TYPE jmp_buf
-#define SKIT_T_PREFIX jmp
-#include SKIT_T_STACK_HEADER
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-#define SKIT_T_ELEM_TYPE jmp_buf
-#define SKIT_T_PREFIX jmp
-#include SKIT_T_FREESTACK_HEADER
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-#endif
-
 #define SKIT_T_ELEM_TYPE skit_frame_info
 #define SKIT_T_PREFIX debug
 #include SKIT_T_STACK_HEADER

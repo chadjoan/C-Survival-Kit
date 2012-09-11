@@ -17,28 +17,11 @@ While this is the strictly more powerful way to throw exceptions, the more
 This macro expands to a statement and may not be nested inside expressions.
 Example usage:
 	RAISE(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
+
+TODO: regain this functionality.
 */
 #endif
 
-
-
-
-#if 0
-#define __SKIT_RAISE(e) \
-	do { \
-		SKIT_FEATURE_TRACE("%s, %d.136: THROW\n", __FILE__, __LINE__); \
-		(e); \
-		if ( skit_thread_ctx->exc_instance_stack.used.length <= 0 ) \
-			skit_new_exception(skit_thread_ctx, -1, "NULL was thrown."); \
-		skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc); \
-		skit_debug_info_store(&skit_thread_ctx->debug_info_stack.used.front.val, \
-			__LINE__,__FILE__,__func__); \
-		skit_thread_ctx->exc_instance_stack.used.front.val.frame_info \
-			= &skit_thread_ctx->debug_info_stack.used.front.val; \
-		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
-		__PROPOGATE_THROWN_EXCEPTIONS; \
-	} while (0)
-#endif
 
 /** 
 Creates an exception of the type given and then throws it.
