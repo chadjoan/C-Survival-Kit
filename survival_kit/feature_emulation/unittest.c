@@ -196,6 +196,23 @@ SCOPE
 	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 END_SCOPE
 
+static int unittest_scope_exit_RETURN(int *result)
+SCOPE
+	USE_FEATURE_EMULATION;
+	
+	*result = 2;
+	SCOPE_EXIT((*result)--);
+	SCOPE_EXIT_BEGIN
+		(*result)--;
+	END_SCOPE_EXIT
+	
+	if ( 1 )
+		RETURN(0);
+	
+	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+	
+END_SCOPE
+
 static void unittest_scope()
 {
 	USE_FEATURE_EMULATION;
@@ -209,6 +226,10 @@ static void unittest_scope()
 	
 	unittest_scope_failure_normal(&val);
 	SKIT_ASSERT_EQ(val,0,"%d");
+	
+	int ret = unittest_scope_exit_RETURN(&val);
+	SKIT_ASSERT_EQ(val,0,"%d");
+	SKIT_ASSERT_EQ(ret,0,"%d");
 	
 	TRY
 		unittest_scope_exit_exceptional(&val);

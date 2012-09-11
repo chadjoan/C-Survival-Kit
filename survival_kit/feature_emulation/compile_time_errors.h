@@ -12,6 +12,11 @@
 	The_builtin_return_statement_cannot_be_used_between_SCOPE_and_END_SCOPE__Use_RETURN_instead
 #define SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_TXT,_)
+
+#define SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT \
+	The_RETURN_statement_macro_cannot_be_used_in_scope_guards
+#define SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR \
+	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT,_)
 	
 #define SKIT_NO_GOTO_FROM_SCOPE_GUARDS_TXT \
 	goto_is_disallowed_from_scope_guards_because_leaving_SCOPE_guards_with_goto_can_be_disastrous
@@ -38,6 +43,9 @@
 #define SKIT_NO_GOTO_FROM_TRY_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_GOTO_FROM_TRY_TXT,_)
 
+#define SKIT_RETURN_HAS_USE_TXT \
+	This_RETURN_statement_macro_is_in_a_function_missing_a_USE_FEATURE_EMULATION_statement
+
 /* End of error message definitions. */
 
 
@@ -53,18 +61,20 @@ from compiling in the target blocks of code.
 They must also be no longer than 31 characters in length because of certain
 old linkers having a problem with that. */
 __attribute__ ((unused)) static char *SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR;
+__attribute__ ((unused)) static char *SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR;
 __attribute__ ((unused)) static char *SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR;
 __attribute__ ((unused)) static char *SKIT_NO_GOTO_FROM_SCOPE_GUARDS_PTR;
 __attribute__ ((unused)) static char *SKIT_NO_GOTO_FROM_TRY_PTR;
 __attribute__ ((unused)) static char *SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_PTR;
 __attribute__ ((unused)) static char *SKIT_NO_BREAK_FROM_SCOPE_GUARDS_PTR;
 
-__attribute__ ((unused)) static void SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_TXT  (char *ptr) { }
-__attribute__ ((unused)) static void SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT    (char *ptr) { }
-__attribute__ ((unused)) static void SKIT_NO_GOTO_FROM_SCOPE_GUARDS_TXT     (char *ptr) { }
-__attribute__ ((unused)) static void SKIT_NO_GOTO_FROM_TRY_TXT              (char *ptr) { }
-__attribute__ ((unused)) static void SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_TXT (char *ptr) { }
-__attribute__ ((unused)) static void SKIT_NO_BREAK_FROM_SCOPE_GUARDS_TXT    (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_TXT      (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT        (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_GOTO_FROM_SCOPE_GUARDS_TXT         (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_GOTO_FROM_TRY_TXT                  (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_TXT     (char *ptr) { }
+__attribute__ ((unused)) static void SKIT_NO_BREAK_FROM_SCOPE_GUARDS_TXT        (char *ptr) { }
 
 /* Try to catch some common mistakes by redefining keywords. */
 
@@ -146,6 +156,32 @@ break/continue statement.
 	} \
 	else { break; }} \
 	do {} while (0)
+
+/* 
+Define an alternative to return: RETURN.
+This louder brethren will do the scope-scanning necessary to allow it to be
+placed in SCOPE-END_SCOPE statements.
+TODO: It should clean up TRY-CATCH stacks too, so that it can be called
+from TRY-CATCH blocks.
+*/
+#define SKIT_RETURN_INTERNAL(return_expr) \
+	{ if ( SKIT_RETURN_HAS_USE_TXT ) \
+	{ \
+		SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT(SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR); \
+		(void)*SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR; \
+		\
+		/* Redefine this (again) as a pointer so that the builtin return will work from here. */ \
+		char *SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR = 0; \
+		(void)SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR; \
+		\
+		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
+		return_expr; \
+	}}
+
+#define RETURN0()     SKIT_RETURN_INTERNAL(return)
+#define RETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
+#define RETURN(...) MACRO_DISPATCHER1(RETURN, __VA_ARGS__)(__VA_ARGS__)
+	
 
 /* 
 This macro is used internally by macros to simplify the creation of error 

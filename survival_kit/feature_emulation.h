@@ -125,18 +125,13 @@ were used instead of SCOPE/END_SCOPE!
 		SKIT_ASSERT(skit_init_was_called()); \
 	}while(0); \
 	char Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
-	char *goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
-	char *goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
-	char *goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
+	SKIT_COMPILE_TIME_CHECK(SKIT_RETURN_HAS_USE_TXT, 1); \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
 	SKIT_ASSERT(skit_thread_init_was_called()); \
 	SKIT_ASSERT(skit_thread_ctx != NULL); \
 	USE_SCOPE_EMULATION; \
 	(void)skit_thread_ctx; \
 	(void)Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_TRY_CATCH_and_SCOPE; \
-	(void)goto_statements_are_not_allowed_in_SCOPE_EXIT_blocks; \
-	(void)goto_statements_are_not_allowed_in_SCOPE_SUCCESS_blocks; \
-	(void)goto_statements_are_not_allowed_in_SCOPE_FAILURE_blocks; \
 	do {} while(0)
 
 /* TODO: redefine 'break', 'continue', 'goto', and 'return' so that they always
