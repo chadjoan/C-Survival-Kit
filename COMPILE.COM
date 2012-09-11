@@ -4,17 +4,41 @@ $ THIS_DEV  = F$PARSE("''THIS_COM_FILE'",,,"DEVICE")
 $ THIS_DIR  = "''THIS_DEV'" + "''THIS_PATH'"
 $ NAKED_PATH = F$EXTRACT(1, F$LENGTH(THIS_PATH)-2, THIS_PATH)
 $ CFILE_NAME = F$PARSE("''P1'",,,"NAME")
-$ SOURCE_DIR = "''THIS_DEV'" + "[''NAKED_PATH'.survival_kit]"
+$ UNIX_PATH = "/''THIS_DEV'''NAKED_PATH'"
+$!
+$ ! VMS path to UNIX path conversion.
+$!
+$ TARGET_POS = F$LOCATE(":",UNIX_PATH)
+$ IF TARGET_POS .NE. F$LENGTH(UNIX_PATH)
+$ THEN
+$     UNIX_PATH[TARGET_POS,1] := "/"
+$ ENDIF
+$!
+$VMS2UNIX_DOT:
+$ TARGET_POS = F$LOCATE(".",UNIX_PATH)
+$ PATH_LEN = F$LENGTH(UNIX_PATH)
+$ IF TARGET_POS .NE. F$LENGTH(UNIX_PATH)
+$ THEN
+$     UNIX_PATH[TARGET_POS,1] := "/"
+$     GOTO VMS2UNIX_DOT
+$ ENDIF
+$!
+$ IF P2 .EQS. ""
+$ THEN
+$     SOURCE_DIR = "''THIS_DEV'" + "[''NAKED_PATH'.survival_kit]"
+$ ELSE
+$     SOURCE_DIR = "''THIS_DEV'" + "[''NAKED_PATH'.survival_kit.''P2']"
+$ ENDIF
 $ CFILE = "''SOURCE_DIR'" + "''CFILE_NAME'.C"
 $ WRITE SYS$OUTPUT "Compiling ''CFILE'"
 $!
 $! This definition makes the #include "survival_kit/foo.h" syntax possible.
-$ DEFINE /PROC /USER survival_kit 'SOURCE_DIR
+$! DEFINE /PROC /USER survival_kit 'SOURCE_DIR
 $!
 $ CC /OBJ=SYS$SCRATCH:'CFILE_NAME.OBJ -
     /LIS=SYS$SCRATCH:'CFILE_NAME.LIS - 
     /NESTED_INCLUDE_DIR=NONE -
-    /INCLUDE_DIR='THIS_DIR -
+    /INCLUDE_DIR=("''UNIX_PATH'/") -
     'CFILE 
 $!
 $! PORTABILITY: Converting the list file using CMD:STREAM_LF requires STREAM_LF to exist.

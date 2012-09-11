@@ -310,7 +310,7 @@ static int skit_stack_to_str_each(void *context, const skit_debug_stnode *node)
 	char *device;
 	char *directory;
 	char *name;
-	best_effort_vms_path_parse(fi.file_name, &device, &directory, &name);
+	best_effort_vms_path_parse(fi->file_name, &device, &directory, &name);
 #elif defined(__linux__)
 	const char *name = fi->file_name;
 #else

@@ -33,7 +33,7 @@ extern char *SKIT_NO_GOTO_FROM_TRY_PTR;
 /* unused is used to shut the compiler up when this module is included but calls
 to the error-catching functions never appear. */
 #ifndef __GNUC__
-#__attribute__(arg)
+#define __attribute__(arg)
 #endif
 
 __attribute__ ((unused)) static void SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_TXT(char *ptr) { }
