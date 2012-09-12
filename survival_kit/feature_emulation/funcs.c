@@ -372,6 +372,7 @@ char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char 
 	return result;
 }
 
+/* TODO: stack trace printing should block signals. */
 void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func )
 {
 	printf("Attempting to print stack trace.\n");

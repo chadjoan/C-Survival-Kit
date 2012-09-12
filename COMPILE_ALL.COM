@@ -23,6 +23,7 @@ $ @'THIS_DIR'compile survival_kit/feature_emulation/generated_exception_defs
 $ @'THIS_DIR'compile survival_kit/feature_emulation/funcs
 $ @'THIS_DIR'compile survival_kit/feature_emulation/types
 $ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
+$ @'THIS_DIR'compile survival_kit/signal_handling
 $ @'THIS_DIR'compile survival_kit/sockn
 $ @'THIS_DIR'compile survival_kit/init
 $ @'THIS_DIR'compile tools_src/unittests
