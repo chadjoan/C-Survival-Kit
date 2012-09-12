@@ -179,6 +179,28 @@ TODO: How do I make RETURN macros that acknowledge nested scopes?  They would ha
 	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
 
+/*
+WARNING: Do not expand this macro in any place besides the function with
+  the scope guards that will be scanned by this.
+Rationale: The __SKIT_SCAN_SCOPE_GUARDS macro expands to a statement that 
+includes a setjmp command that remembers the place where the 
+__SKIT_SCAN_SCOPE_GUARDS was.  It will then instruct the last scope guard 
+to longjmp to that macro later.  The implication is that if the 
+__SKIT_SCAN_SCOPE_GUARDS macro appears in a different function stack
+frame than the one that contains the scope guards, then it will longjmp
+back to a potentially obliterated stack frame.  
+Example call sequence:
+foo()      : Define some scopes.
+foo->bar() : __SKIT_SCAN_SCOPE_GUARDS (setjmp in bar(), then jump back to foo())
+foo()      : SCOPE_EXIT : call baz()
+foo->baz() : Do something.  Anything.  bar()'s stack frame is now trashed.
+foo()      : baz() returned normally.
+foo()      : SCOPE_EXIT finishes, longjmp back to __SKIT_SCAN_SCOPE_GUARDS in bar()
+foo->bar() : Access baz()'s data... CRASH!
+The solution is that bar() should have never invoked __SKIT_SCAN_SCOPE_GUARDS.
+foo() should have instead called __SKIT_SCAN_SCOPE_GUARDS right after bar() 
+returned.
+*/
 #define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) \
 		do { \
 			if ( skit_scope_ctx->scope_guards_used ) \

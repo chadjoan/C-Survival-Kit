@@ -41,18 +41,35 @@ Example usage:
 #define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
 
 #define THROW1(e) \
-		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype)
+	do { \
+		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype); \
+		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+	} while(0)
 	
 #define THROW2(etype, emsg) \
-		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype, emsg)
+	do { \
+		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg); \
+		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+	} while(0)
 
 #define THROW3(etype, emsg, ...) \
-		skit_throw_exception(skit_thread_ctx, skit_scope_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__)
+	do { \
+		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__); \
+		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+	} while(0)
 
 /* __SKIT_PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part
-// of this exception handling module.  It may change in the future if needed
+// of this feature emulation module.  It may change in the future if needed
 // to fix bugs or add new features.
+NOTE: Do not expand this macro in any function besides the one with the
+  scope guards that this will scan.  Scope guard scanning involves returning
+  to the point where the scan was initiated (and one such point is in this
+  exception propogation macro).  The method of return is a longjmp, and
+  placing it in any function called by the function with the scope guards
+  will cause a longjmp to an expired stack frame: bad news.
+  See the __SKIT_SCAN_SCOPE_GUARDS macro documentation in 
+  "survival_kit/feature_emulation/scope.h" for more details.
 */
 #define __SKIT_PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	do { \

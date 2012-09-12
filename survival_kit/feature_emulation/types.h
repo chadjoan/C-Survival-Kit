@@ -90,6 +90,13 @@ struct skit_thread_context
 	skit_exc_fstack   exc_instance_stack;
 };
 
+/* Implementation detail used to track scope guard scanning. */
+/*
+As a general rule of thumb this should NEVER be passed as an argument into
+other functions; at least not for the purpose of having a called function
+perform scope guard scanning.  See the __SKIT_SCAN_SCOPE_GUARDS macro
+in "survival_kit/feature_emulation/scope.h" for more details.
+*/
 typedef struct skit_scope_context skit_scope_context;
 struct skit_scope_context
 {

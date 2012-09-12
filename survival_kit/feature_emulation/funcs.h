@@ -49,9 +49,9 @@ The strategy then is to call an exception throwing function directly, without
 Due to the lack of the ability to include "survival_kit/feature_emulation/types.h"
   this definition is not allowed to use skit_thread_context* or anything that uses
   fstacks/stacks.  It obtains this information in the .c file by calling
-  skit_thread_context_get.  Beware: it also has no way of getting a skit_scope_ctx
-  variable and thus can't finalize scope guards.  Do not use this in a function
-  with scope guards.
+  skit_thread_context_get.  Beware: it also has no way of expanding the
+  __SKIT_SCAN_SCOPE_GUARDS macro and thus can't finalize scope guards.  
+  Do not use this in a function with scope guards.
 */
 void skit_throw_exception_no_ctx(
 	int line,
@@ -69,7 +69,6 @@ It also avoids making repeated calls to skit_thread_context_get.
 */
 void skit_throw_exception(
 	skit_thread_context *skit_thread_ctx,
-	skit_scope_context *skit_scope_ctx,
 	int line,
 	const char *file,
 	const char *func,
