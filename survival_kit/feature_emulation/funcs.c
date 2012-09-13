@@ -72,11 +72,12 @@ static void skit_fstack_reconcile_warn( ssize_t expected, ssize_t got, char *nam
 	fprintf(stderr,"  Expected size: %li\n", expected );
 	fprintf(stderr,"  Actual size:   %li\n", got );
 	fprintf(stderr,"  This may mean that a goto, break, continue, or return was made while inside\n");
-	fprintf(stderr,"  an STRY-SCATCH block or a SCOPE guard.  Jumping away from within a STRY-SCATCH\n");
-	fprintf(stderr,"  block or SCOPE guard with raw C primitives can lead to very buggy, bizarre,\n");
-	fprintf(stderr,"  and inconsistent runtime behavior.  Just don't do it.\n");
+	fprintf(stderr,"  an sTRY-sCATCH block or a sSCOPE guard.  Jumping away from within a\n");
+	fprintf(stderr,"  sTRY-sCATCH block or sSCOPE guard with raw C primitives can lead to \n");
+	fprintf(stderr,"  very buggy, bizarre, and inconsistent runtime behavior.\n");
+	fprintf(stderr,"  Just don't do it.\n");
 	/* TODO: there should be some non-primitive control constructs that should be mentioned here
-	 *   as a way of accomplishing desired logic in STRY-SCATCH statements. */
+	 *   as a way of accomplishing desired logic in sTRY-sCATCH statements. */
 	/* TODO: Although we can probably fix any problems the user creates for themselves, dieing might be better than warning. */
 	
 	printf("Printing stack trace:\n");
@@ -134,7 +135,7 @@ static void skit_throw_exception_internal(
 	exc->error_code = etype;
 	exc->error_text = skit_error_text_buffer;
 	
-	SKIT_FEATURE_TRACE("%s, %d.136: STHROW\n", file, line);
+	SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
 	skit_debug_info_store(fi, line, file, func);
 	exc->frame_info_node = skit_thread_ctx->debug_info_stack.used.front;
 	
@@ -332,8 +333,8 @@ static char *skit_stack_to_str_internal(
 	const skit_thread_context *skit_thread_ctx,
 	const skit_debug_stnode *stack_start)
 {
-	SKIT_ASSERT_NO_TRACE(skit_thread_ctx != NULL);
-	SKIT_ASSERT_NO_TRACE(stack_start != NULL);
+	sASSERT_NO_TRACE(skit_thread_ctx != NULL);
+	sASSERT_NO_TRACE(stack_start != NULL);
 	skit_stack_to_str_context ctx;
 	
 	ctx.msg_pos = msg_buf;
@@ -347,7 +348,7 @@ static char *skit_stack_to_str_internal(
 
 void skit_print_exception(skit_exception *e)
 {
-	SKIT_ASSERT(skit_thread_init_was_called());
+	sASSERT(skit_thread_init_was_called());
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
 	printf("%s\n",e->error_text);
 	printf("%s\n",skit_stack_to_str_internal(skit_thread_ctx, e->frame_info_node));

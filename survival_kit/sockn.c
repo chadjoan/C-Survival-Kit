@@ -27,7 +27,7 @@ ssize_t sendn(int sock, string text)
 
 void recvn(int sock, string *buf)
 {
-	USE_FEATURE_EMULATION;
+	SKIT_USE_FEATURE_EMULATION;
 
 	int64_t received = -1;
 	char buffer[4];
@@ -39,10 +39,10 @@ void recvn(int sock, string *buf)
 	
 	/* Receive message */
 	if ((received = recv(sock, buffer, 4, 0)) < 0)
-		STHROW(SOCKET_EXCEPTION,"recvn: Length information not received. recv() call failed with error code %d.", received);
+		sTHROW(SOCKET_EXCEPTION,"recvn: Length information not received. recv() call failed with error code %d.", received);
 	
 	if ( received < 4 )
-		STHROW(SOCKET_EXCEPTION,"recvn: Length information not received. Received %d bytes instead.", received);
+		sTHROW(SOCKET_EXCEPTION,"recvn: Length information not received. Received %d bytes instead.", received);
 
 	msg_length = ntohl(((uint32_t*)buffer)[0]);
 	buf = str_realloc(buf, msg_length);
@@ -56,7 +56,7 @@ void recvn(int sock, string *buf)
 		
 		/* Check for more data */
 		if ((received = recv(sock, msg_cursor, msg_end - msg_cursor, 0)) < 0)
-			STHROW(SOCKET_EXCEPTION,"recvn: Not enough bytes received to complete message.", received);
+			sTHROW(SOCKET_EXCEPTION,"recvn: Not enough bytes received to complete message.", received);
 		
 		if ( received == 0 )
 			break;

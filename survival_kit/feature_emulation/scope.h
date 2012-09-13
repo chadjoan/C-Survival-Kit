@@ -9,7 +9,7 @@ Like D's scope guards, these scope guards may not exit with a throw,
 goto, break, continue, or return; nor may they be entered with a goto. 
 
 ================================================================================
-SCOPE guard hygeine:
+sSCOPE guard hygeine:
 
 --------------------------------------------------------------------------------
 Do not exit scope guards with throw, return, break, continue, or goto 
@@ -19,16 +19,16 @@ statements.
 This version of resource cleanup:
 
 skit_stream *resource1 = skit_new_stream("foo.txt","w");
-SCOPE_EXIT(skit_stream_free(resource1));
+sSCOPE_EXIT(skit_stream_free(resource1));
 skit_stream *resource2 = skit_new_stream("bar.txt","w");
-SCOPE_EXIT(skit_stream_free(resource2));
+sSCOPE_EXIT(skit_stream_free(resource2));
 
 is preferred over this version:
 
 skit_stream *resource1 = skit_new_stream("foo.txt","w");
 skit_stream *resource2 = skit_new_stream("bar.txt","w");
-SCOPE_EXIT(skit_stream_free(resource1));
-SCOPE_EXIT(skit_stream_free(resource2));
+sSCOPE_EXIT(skit_stream_free(resource1));
+sSCOPE_EXIT(skit_stream_free(resource2));
 
 The reason is that if resource2's initialization throws an exception, then the
 former example will cleanup resource1 but the latter will not.
@@ -40,10 +40,10 @@ constructs like this:
   mytype *val = (mytype*)malloc(sizeof(mytype);
   if ( val != NULL )
   {
-      SCOPE_EXIT
+      sSCOPE_EXIT
           free(val));
           val = NULL;
-      END_SCOPE_EXIT
+      sEND_SCOPE_EXIT
   }
   ... code that uses val ...
 
@@ -76,16 +76,16 @@ The above D code is actually closer in meaning to this C code:
 
   mytype *val = (mytype*)malloc(sizeof(mytype);
   if ( val != NULL )
-  SCOPE
-      SCOPE_EXIT
+  sSCOPE
+      sSCOPE_EXIT
           free(val));
           val = NULL;
-      END_SCOPE_EXIT
-  END_SCOPE
+      sEND_SCOPE_EXIT
+  sEND_SCOPE
   ... code that segfaults when attempting to use val ...
 
 It would be a shame if this version were confused with the one where {} brackets
-were used instead of SCOPE/END_SCOPE!
+were used instead of sSCOPE/sEND_SCOPE!
 
 --------------------------------------------------------------------------------
 */
@@ -105,46 +105,46 @@ were used instead of SCOPE/END_SCOPE!
 /* These define messages that show at compile-time if the caller does something wrong. */
 /* They are wrapped in macros to make it easier to alter the text. */
 #define SKIT_SCOPE_EXIT_HAS_USE_TXT \
-	The_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_SCOPE_EXIT_statement
+	The_SKIT_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_sSCOPE_EXIT_statement
 
 #define SKIT_SCOPE_SUCCESS_HAS_USE_TXT \
-	The_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_SCOPE_SUCCESS_statement
+	The_SKIT_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_sSCOPE_SUCCESS_statement
 
 #define SKIT_SCOPE_FAILURE_HAS_USE_TXT \
-	The_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_SCOPE_FAILURE_statement
+	The_SKIT_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_sSCOPE_FAILURE_statement
 
 #define SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT \
-	Scope_guards_must_be_placed_between_SCOPE_and_END_SCOPE_statements
+	Scope_guards_must_be_placed_between_sSCOPE_and_sEND_SCOPE_statements
 
 #define SKIT_END_SCOPE_WITHOUT_SCOPE_TXT \
-	END_SCOPE_found_without_preceding_SCOPE
+	sEND_SCOPE_found_without_preceding_sSCOPE
 
 #define SKIT_NO_NESTING_SCOPES_TXT \
-	SCOPE_statement_blocks_may_not_be_nested_inside_each_other
+	sSCOPE_statement_blocks_may_not_be_nested_inside_each_other
 /* End of error message definitions. */
 
 
 
-#define SCOPE_GUARD_BEGIN(macro_arg_exit_status) \
+#define sSCOPE_GUARD_BEGIN(macro_arg_exit_status) \
 	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && SKIT_SCOPE_EXIT_HAS_USE_TXT ){ \
 		if ( !skit_scope_ctx->scope_guards_used ) \
 		{ \
 			/* Placing this fstack_alloc has been tricky. */ \
-			/* It can't go in the SCOPE statement because skit_thread_ctx isn't defined at that point. */ \
-			/* It can't go in the USE_FEATURE_EMULATION statement because it will unbalance */ \
+			/* It can't go in the sSCOPE statement because skit_thread_ctx isn't defined at that point. */ \
+			/* It can't go in the SKIT_USE_FEATURE_EMULATION statement because it will unbalance */ \
 			/*   the scope_jmp_stack if the caller never uses scope guards and never uses the */ \
-			/* special RETURN statement. */ \
+			/* special sRETURN statement. */ \
 			/* We can't execute it EVERY time a scope guard begins. */ \
 			/* What we CAN do is run the allocation just before the very first scope guard */ \
 			/*   is encountered. */ \
-			/* The existence of a scope guard will force SCOPE/END_SCOPE to be used and thus */ \
-			/*   also force usage of RETURN or STHROW statements that will properly unwind */ \
+			/* The existence of a scope guard will force sSCOPE/sEND_SCOPE to be used and thus */ \
+			/*   also force usage of sRETURN or sTHROW statements that will properly unwind */ \
 			/*   the scope_jmp_stack. */ \
 			skit_scope_ctx->scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
 			skit_scope_ctx->scope_guards_used = 1; \
 			\
 			/* We set a  jump point to catch any exceptions that might be */ \
-			/* thrown from a function that wasn't called with the CALL macro. */ \
+			/* thrown from a function that wasn't called with the sCALL macro. */ \
 			/* This is important because we'll need to ensure that the scope */ \
 			/*   guards get scanned during abnormal exit. */ \
 			int skit_jmp_code = setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)); \
@@ -168,17 +168,17 @@ were used instead of SCOPE/END_SCOPE!
 				if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) \
 				{
 
-#define END_SCOPE_GUARD \
+#define sEND_SCOPE_GUARD \
 				} \
 				else \
 				{ \
 					/* An exception was thrown! */ \
 					/* It is safe to write to stderr here because we are crashing no matter what. */ \
-					fprintf(stderr, "An exception was thrown in a SCOPE_EXIT block."); \
-					fprintf(stderr, "SCOPE_EXIT may not exit due to thrown exceptions."); \
+					fprintf(stderr, "An exception was thrown in a sSCOPE_EXIT block."); \
+					fprintf(stderr, "sSCOPE_EXIT may not exit due to thrown exceptions."); \
 					fprintf(stderr, "The exception thrown is as follows:\n"); \
 					skit_print_exception(&skit_thread_ctx->exc_instance_stack.used.front->val); \
-					SKIT_ASSERT(0); \
+					sASSERT(0); \
 				} \
 				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			} \
@@ -187,36 +187,36 @@ were used instead of SCOPE/END_SCOPE!
 	}
 
 
-#define SCOPE_EXIT_BEGIN    SCOPE_GUARD_BEGIN(SKIT_SCOPE_ANY_EXIT)
-#define SCOPE_SUCCESS_BEGIN SCOPE_GUARD_BEGIN(SKIT_SCOPE_SUCCESS_EXIT)
-#define SCOPE_FAILURE_BEGIN SCOPE_GUARD_BEGIN(SKIT_SCOPE_FAILURE_EXIT)
+#define sSCOPE_EXIT_BEGIN    sSCOPE_GUARD_BEGIN(SKIT_SCOPE_ANY_EXIT)
+#define sSCOPE_SUCCESS_BEGIN sSCOPE_GUARD_BEGIN(SKIT_SCOPE_SUCCESS_EXIT)
+#define sSCOPE_FAILURE_BEGIN sSCOPE_GUARD_BEGIN(SKIT_SCOPE_FAILURE_EXIT)
 
-#define END_SCOPE_EXIT    END_SCOPE_GUARD
-#define END_SCOPE_SUCCESS END_SCOPE_GUARD
-#define END_SCOPE_FAILURE END_SCOPE_GUARD
+#define sEND_SCOPE_EXIT    sEND_SCOPE_GUARD
+#define sEND_SCOPE_SUCCESS sEND_SCOPE_GUARD
+#define sEND_SCOPE_FAILURE sEND_SCOPE_GUARD
 
-#define SCOPE_EXIT(expr) \
+#define sSCOPE_EXIT(expr) \
 	do { \
-		SCOPE_EXIT_BEGIN \
+		sSCOPE_EXIT_BEGIN \
 			(expr); \
-		END_SCOPE_EXIT \
+		sEND_SCOPE_EXIT \
 	} while (0)
 
-#define SCOPE_FAILURE(expr) \
+#define sSCOPE_FAILURE(expr) \
 	do { \
-		SCOPE_FAILURE_BEGIN \
+		sSCOPE_FAILURE_BEGIN \
 			(expr); \
-		END_SCOPE_FAILURE \
+		sEND_SCOPE_FAILURE \
 	} while (0)
 
-#define SCOPE_SUCCESS(expr) \
+#define sSCOPE_SUCCESS(expr) \
 	do { \
-		SCOPE_SUCCESS_BEGIN \
+		sSCOPE_SUCCESS_BEGIN \
 			(expr); \
-		END_SCOPE_SUCCESS \
+		sEND_SCOPE_SUCCESS \
 	} while (0)
 
-#define SCOPE \
+#define sSCOPE \
 { \
 	SKIT_COMPILE_TIME_CHECK(SKIT_NO_NESTING_SCOPES_TXT,1); \
 	/* SKIT_COMPILE_TIME_CHECK(Use_NSCOPE_and_NSCOPE_END_to_nest_SCOPE_statements,1); */ \
@@ -240,10 +240,10 @@ instead of __skit_scope_exit_FOO
 #define NSCOPE(__skit_unique_nscope_id) \
 	NSCOPE_EXPAND(__skit_unique_nscope_id)
 
-TODO: How do I make RETURN macros that acknowledge nested scopes?  They would have to know to use __skit_scope_exit_3 instead of __skit_scope_fn_exit somehow.
+TODO: How do I make sRETURN macros that acknowledge nested scopes?  They would have to know to use __skit_scope_exit_3 instead of __skit_scope_fn_exit somehow.
 #endif
 
-#define USE_SCOPE_EMULATION \
+#define SKIT_USE_SCOPE_EMULATION \
 	/* This first context will be used as a return address when the exit point */ \
 	/*   scans all of the scope guards. */ \
 	/* Create a scope context and pointerize it so that macros as well as */ \
@@ -273,10 +273,10 @@ back to a potentially obliterated stack frame.
 Example call sequence:
 foo()      : Define some scopes.
 foo->bar() : __SKIT_SCAN_SCOPE_GUARDS (setjmp in bar(), then jump back to foo())
-foo()      : SCOPE_EXIT : call baz()
+foo()      : sSCOPE_EXIT : call baz()
 foo->baz() : Do something.  Anything.  bar()'s stack frame is now trashed.
 foo()      : baz() returned normally.
-foo()      : SCOPE_EXIT finishes, longjmp back to __SKIT_SCAN_SCOPE_GUARDS in bar()
+foo()      : sSCOPE_EXIT finishes, longjmp back to __SKIT_SCAN_SCOPE_GUARDS in bar()
 foo->bar() : Access baz()'s data... CRASH!
 The solution is that bar() should have never invoked __SKIT_SCAN_SCOPE_GUARDS.
 foo() should have instead called __SKIT_SCAN_SCOPE_GUARDS right after bar() 
@@ -302,8 +302,8 @@ returned.
 			} \
 		} while(0)
 
-#define END_SCOPE \
-	/* Check to make sure there is a corresponding SCOPE statement. */ \
+#define sEND_SCOPE \
+	/* Check to make sure there is a corresponding sSCOPE statement. */ \
 	if ( !SKIT_END_SCOPE_WITHOUT_SCOPE_TXT ) \
 	{ \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \

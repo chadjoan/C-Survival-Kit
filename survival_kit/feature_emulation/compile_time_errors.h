@@ -9,22 +9,22 @@
 /* These define messages that show at compile-time if the caller does something wrong. */
 /* They are wrapped in macros to make it easier to alter the text. */
 #define SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_TXT \
-	The_builtin_return_statement_cannot_be_used_between_SCOPE_and_END_SCOPE__Use_RETURN_instead
+	The_builtin_return_statement_cannot_be_used_between_sSCOPE_and_sEND_SCOPE__Use_sRETURN_instead
 #define SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_TXT,_)
 
 #define SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT \
-	The_RETURN_statement_macro_cannot_be_used_in_scope_guards
+	The_sRETURN_statement_macro_cannot_be_used_in_scope_guards
 #define SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT,_)
 	
 #define SKIT_NO_GOTO_FROM_SCOPE_GUARDS_TXT \
-	goto_is_disallowed_from_scope_guards_because_leaving_SCOPE_guards_with_goto_can_be_disastrous
+	goto_is_disallowed_from_scope_guards_because_leaving_sSCOPE_guards_with_goto_can_be_disastrous
 #define SKIT_NO_GOTO_FROM_SCOPE_GUARDS_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_GOTO_FROM_SCOPE_GUARDS_TXT,_)
 
 #define SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_TXT \
-	continue_is_disallowed_from_scope_guards_because_leaving_SCOPE_guards_with_continue_can_be_disastrous
+	continue_is_disallowed_from_scope_guards_because_leaving_sSCOPE_guards_with_continue_can_be_disastrous
 #define SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_TXT,_)
 
@@ -34,20 +34,20 @@
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BREAK_FROM_SCOPE_GUARDS_TXT,_)
 
 #define SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT \
-	The_builtin_return_statement_cannot_be_used_in_STRY_SCATCH_blocks__Use_RETURN_instead
+	The_builtin_return_statement_cannot_be_used_in_sTRY_sCATCH_blocks__Use_sRETURN_instead
 #define SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT,_)
 
 #define SKIT_NO_GOTO_FROM_TRY_TXT \
-	goto_is_disallowed_from_STRY_SCATCH_blocks_because_leaving_STRY_SCATCH_blocks_with_goto_can_be_disastrous
+	goto_is_disallowed_from_sTRY_sCATCH_blocks_because_leaving_sTRY_sCATCH_blocks_with_goto_can_be_disastrous
 #define SKIT_NO_GOTO_FROM_TRY_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_GOTO_FROM_TRY_TXT,_)
 
 #define SKIT_RETURN_HAS_USE_TXT \
-	This_RETURN_statement_macro_is_in_a_function_missing_a_USE_FEATURE_EMULATION_statement
+	This_sRETURN_statement_macro_is_in_a_function_missing_a_SKIT_USE_FEATURE_EMULATION_statement
 
 #define SKIT_USE_FEATURES_IN_FUNC_BODY \
-	Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_STRY_SCATCH_and_SCOPE
+	Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_sTRY_sCATCH_and_sSCOPE
 /* End of error message definitions. */
 
 
@@ -160,10 +160,10 @@ break/continue statement.
 	do {} while (0)
 
 /* 
-Define an alternative to return: RETURN.
+Define an alternative to return: sRETURN.
 This louder brethren will do the scope-scanning necessary to allow it to be
-placed in SCOPE-END_SCOPE statements.
-TODO: It should clean up STRY-SCATCH stacks too, so that it can be called
+placed in sSCOPE-sEND_SCOPE statements.
+TODO: It should clean up sTRY-sCATCH stacks too, so that it can be called
 from sTRY-sCATCH blocks.
 */
 #define SKIT_RETURN_INTERNAL(return_expr) \
@@ -180,9 +180,9 @@ from sTRY-sCATCH blocks.
 		return_expr; \
 	}
 
-#define RETURN0()     SKIT_RETURN_INTERNAL(return)
-#define RETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
-#define RETURN(...) MACRO_DISPATCHER1(RETURN, __VA_ARGS__)(__VA_ARGS__)
+#define sRETURN0()     SKIT_RETURN_INTERNAL(return)
+#define sRETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
+#define sRETURN(...) MACRO_DISPATCHER1(sRETURN, __VA_ARGS__)(__VA_ARGS__)
 	
 
 /* 

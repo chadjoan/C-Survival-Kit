@@ -22,7 +22,7 @@ void skit_cstr_thread_init()
 
 static char *skit_int_to_fmt(int64_t val, const char *fmt)
 {
-	SKIT_ASSERT(skit_thread_init_was_called());
+	sASSERT(skit_thread_init_was_called());
 	char *str_buf = (char*)pthread_getspecific(skit_cstr_scratch_buf_key);
 	if ( snprintf(str_buf, SKIT_SCRATCH_BUF_SIZE, fmt, val) == -1 )
 	{

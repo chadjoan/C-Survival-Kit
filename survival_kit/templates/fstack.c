@@ -30,32 +30,32 @@ void skit_throw_exception_no_ctx(
 
 void SKIT_T(fstack_init)( SKIT_T(fstack) *stack )
 {
-	SKIT_ASSERT(stack != NULL);
+	sASSERT(stack != NULL);
 	SKIT_T(stack_init)(&(stack->unused));
 	SKIT_T(stack_init)(&(stack->used));
 }
 
 void SKIT_T(fstack_grow)( SKIT_T(fstack) *stack, void *node )
 {
-	SKIT_ASSERT(stack != NULL);
-	SKIT_ASSERT(node != NULL);
+	sASSERT(stack != NULL);
+	sASSERT(node != NULL);
 	SKIT_T(stack_push)(&(stack->unused), (SKIT_T(stnode)*)node);
 }
 
 void SKIT_T(fstack_shrink)( SKIT_T(fstack) *stack, int num_nodes )
 {
-	SKIT_ASSERT(stack != NULL);
+	sASSERT(stack != NULL);
 	/* SKIT_T(stack_push)(&(stack->unused), (SKIT_T(stnode)*)node); */
 	skit_die("fstack_shrink(*stack,num_nodes) is not implemented.");
 }
 
 SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *stack )
 {
-	SKIT_ASSERT(stack != NULL);
+	sASSERT(stack != NULL);
 	if ( stack->unused.length == 0 )
 	{
 #		if defined(SKIT_T_DIE_ON_ERROR)
-			SKIT_ASSERT_MSG(0, "Attempt to push a value in a " SKIT_T_STR(fstack) " that has no free nodes.");
+			sASSERT_MSG(0, "Attempt to push a value in a " SKIT_T_STR(fstack) " that has no free nodes.");
 #		else
 			skit_throw_exception_no_ctx( __LINE__, __FILE__, __func__,
 				OUT_OF_BOUNDS,"Attempt to push a value in a freelist that has no free nodes.");
@@ -69,8 +69,8 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_push)( SKIT_T(fstack) *stack )
 
 SKIT_T_ELEM_TYPE *SKIT_T(fstack_alloc)( SKIT_T(fstack) *stack, void *allocate(size_t)  )
 {
-	SKIT_ASSERT(stack != NULL);
-	SKIT_ASSERT(allocate != NULL);
+	sASSERT(stack != NULL);
+	sASSERT(allocate != NULL);
 	
 	if ( stack->unused.length == 0 )
 	{
@@ -88,7 +88,7 @@ SKIT_T_ELEM_TYPE *SKIT_T(fstack_alloc)( SKIT_T(fstack) *stack, void *allocate(si
 
 SKIT_T_ELEM_TYPE *SKIT_T(fstack_pop)( SKIT_T(fstack) *stack )
 {
-	SKIT_ASSERT(stack != NULL);
+	sASSERT(stack != NULL);
 	
 	SKIT_T(stnode) *result = SKIT_T(stack_pop)(&(stack->used));
 	SKIT_T(stack_push)(&(stack->unused),result);

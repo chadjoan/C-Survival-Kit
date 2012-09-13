@@ -12,11 +12,11 @@ Evaluates the given expression while creating a stack entry at this point
 in the code.  The whole purpose of doing this is to provide better debug
 info in stack traces.  It is tolerable to forget to use this when calling
 into other functions because the exception handling mechanism will still
-be able to return to the nearest enclosing STRY-SCATCH.  Wrapping function
+be able to return to the nearest enclosing sTRY-sCATCH.  Wrapping function
 calls in this macro is desirable though, because the calling file, line,
 and function name will be absent from stack traces if this is not used.
 */
-#define CALL(expr) /* */ \
+#define sCALL(expr) /* */ \
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
@@ -27,7 +27,7 @@ and function name will be absent from stack traces if this is not used.
 		/* This ensures that we can end up where we started in this call, */ \
 		/*   even if the callee messes up the jmp_stack. */ \
 		/* The jmp_stack could be messed up if someone tries to jump */ \
-		/*   execution out of an STRY-SCATCH or scope guard block */ \
+		/*   execution out of an sTRY-sCATCH or scope guard block */ \
 		/*   (using break/continue/goto/return) and somehow manages to succeed, */ \
 		/*   thus preventing pop calls that are supposed to match push calls. */ \
 		\
@@ -37,10 +37,10 @@ and function name will be absent from stack traces if this is not used.
 		\
 		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"); \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) { \
-			SKIT_FEATURE_TRACE("%s, %d.182: CALL.setjmp\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.40: sCALL.setjmp\n", __FILE__, __LINE__); \
 			(expr); \
 		} else { \
-			SKIT_FEATURE_TRACE("%s, %d.186: CALL.longjmp\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.43: sCALL.longjmp\n", __FILE__, __LINE__); \
 			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
@@ -51,7 +51,7 @@ and function name will be absent from stack traces if this is not used.
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 		\
-		SKIT_FEATURE_TRACE("%s, %d.190: CALL.success\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.54: sCALL.success\n", __FILE__, __LINE__); \
 	} while (0)
 
 #endif

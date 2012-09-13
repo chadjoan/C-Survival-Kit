@@ -37,7 +37,7 @@ The double (or more) argument version accepts an exception type as the first
   format string with substitution values given in subsequent arguments.
 This macro expands to a statement and may not be nested inside expressions.
 
-It is named STHROW instead of THROW because other libraries may define their
+It is named sTHROW instead of THROW because other libraries may define their
 own exception handling with a macro by that name.  By default, any definitions
 for THROW will be undefined by this file as a way to prevent a potentially
 dangerous typo.  To allow the use of other THROW macros, #define the 
@@ -45,13 +45,13 @@ SKIT_ALLOW_OTHER_TRY_CATCH macro symbol before #including this file.
 See "survival_kit/feature_emulation/try_catch.h" for more naming documentation.
 
 Example usage:
-	STHROW(GENERIC_EXCEPTION); // Use the exception type's default message.
-	STHROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
-	STHROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
+	sTHROW(GENERIC_EXCEPTION); // Use the exception type's default message.
+	sTHROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
+	sTHROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
 */
-#define STHROW(...) MACRO_DISPATCHER3(STHROW, __VA_ARGS__)(__VA_ARGS__)
+#define sTHROW(...) MACRO_DISPATCHER3(sTHROW, __VA_ARGS__)(__VA_ARGS__)
 
-#define STHROW1(e) \
+#define sTHROW1(e) \
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
@@ -59,7 +59,7 @@ Example usage:
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
-#define STHROW2(etype, emsg) \
+#define sTHROW2(etype, emsg) \
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
@@ -67,7 +67,7 @@ Example usage:
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 
-#define STHROW3(etype, emsg, ...) \
+#define sTHROW3(etype, emsg, ...) \
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \

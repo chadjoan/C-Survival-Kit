@@ -19,11 +19,11 @@
 /* GENERIC exceptions are the root of all catchable exceptions. */
 /* @define_exception(GENERIC_EXCEPTION, "An exception was thrown.") */
 /* @define_exception(BREAK_IN_TRY_CATCH : GENERIC_EXCEPTION,
-"Code has attempted to use a 'break' statement from within a STRY-SCATCH block.\n"
+"Code has attempted to use a 'break' statement from within a sTRY-sCATCH block.\n"
 "This could easily corrupt program execution and corrupt debugging data.\n"
 "Do not do this, ever!") */
 /* @define_exception(CONTINUE_IN_TRY_CATCH : GENERIC_EXCEPTION,
-"Code has attempted to use a 'continue' statement from within a STRY-SCATCH block.\n"
+"Code has attempted to use a 'continue' statement from within a sTRY-sCATCH block.\n"
 "This could easily corrupt program execution and corrupt debugging data.\n"
 "Do not do this, ever!" ) */
 
@@ -35,16 +35,16 @@ that may cause things like unexpected null pointers or access violations.
 /* @define_exception(FATAL_EXCEPTION, "A fatal exception was thrown.") */
 
 /** Place this at the top of function bodies that use language feature emulation. */
-#define USE_FEATURE_EMULATION \
+#define SKIT_USE_FEATURE_EMULATION \
 	do { \
-		SKIT_ASSERT(skit_init_was_called()); \
+		sASSERT(skit_init_was_called()); \
 	}while(0); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_USE_FEATURES_IN_FUNC_BODY, 0); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_RETURN_HAS_USE_TXT, 1); \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
-	SKIT_ASSERT(skit_thread_init_was_called()); \
-	SKIT_ASSERT(skit_thread_ctx != NULL); \
-	USE_SCOPE_EMULATION; \
+	sASSERT(skit_thread_init_was_called()); \
+	sASSERT(skit_thread_ctx != NULL); \
+	SKIT_USE_SCOPE_EMULATION; \
 	(void)skit_thread_ctx; \
 	do {} while(0)
 

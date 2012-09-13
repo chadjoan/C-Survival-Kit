@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h> /* getpid() */
 
-#include "survival_kit/feature_emulation.h" /* For CALL; it's important for unittesting. */
+#include "survival_kit/feature_emulation.h" /* For sCALL; it's important for unittesting. */
 #include "survival_kit/feature_emulation/funcs.h" /* For skit_print_stack_trace() */
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/assert.h"
@@ -40,7 +40,7 @@ static void skit_sigaction( int sig, const struct sigaction *act, struct sigacti
 		#else
 		#	error "This requires porting."
 		#endif
-		SKIT_ASSERT_MSG( success == 0, buf );
+		sASSERT_MSG( success == 0, buf );
 	}
 }
 
@@ -99,7 +99,7 @@ void skit_push_tracing_sig_handler()
 	old_action = pthread_getspecific(skit_signal_save_key);
 	if ( old_action != NULL )
 	{
-		SKIT_ASSERT_MSG(0,
+		sASSERT_MSG(0,
 			"skit_push_tracing_sig_handler() was called more than once without popping first.\n"
 			"This is currently unimplmented.\n");
 	}
@@ -119,7 +119,7 @@ void skit_pop_tracing_sig_handler()
 	old_action = pthread_getspecific(skit_signal_save_key);
 	if ( old_action == NULL )
 	{
-		SKIT_ASSERT_MSG(0,
+		sASSERT_MSG(0,
 			"skit_pop_tracing_sig_handler() was called without a corresponding call to\n"
 			"  skit_push_tracing_sig_handler.\n");
 	}
@@ -131,9 +131,9 @@ void skit_pop_tracing_sig_handler()
 void skit_unittest_signal_subfunc2()
 {
 	/* NOTE: it would be possible to get more specific debugging
-	information by wrapping the dereference in a CALL statement:
+	information by wrapping the dereference in a sCALL statement:
 	    int explode;
-	    CALL(explode = *ptr);
+	    sCALL(explode = *ptr);
 	This is understandably inconvenient, especially when it is unknown
 	  in advance which dereferences could be problematic.
 	*/
@@ -145,17 +145,17 @@ void skit_unittest_signal_subfunc2()
 
 void skit_unittest_signal_subfunc()
 {
-	USE_FEATURE_EMULATION;
-	CALL(skit_unittest_signal_subfunc2());
+	SKIT_USE_FEATURE_EMULATION;
+	sCALL(skit_unittest_signal_subfunc2());
 }
 
 void skit_unittest_signal_handling()
 {
-	USE_FEATURE_EMULATION;
+	SKIT_USE_FEATURE_EMULATION;
 	printf("\n");
 	printf("The unittester will now trigger a segfault by dereferencing NULL.\n");
 	printf("This signal should get handled and print a stacktrace.\n");
 	skit_push_tracing_sig_handler();
-	CALL(skit_unittest_signal_subfunc());
+	sCALL(skit_unittest_signal_subfunc());
 	printf("This should never get printed.\n");
 }
