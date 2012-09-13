@@ -58,6 +58,7 @@ TODO: sFINALLY
 #include <setjmp.h>
 #include <limits.h> /* For INT_MIN and the like. */
 
+#include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"

@@ -12,6 +12,7 @@ $ !
 $ LIBRARY/CREATE=(GLO:600,BLO:500) OBJLIB:C_UTIL.OLB
 $ PURGE OBJLIB:C_UTIL.OLB
 $!
+$ @'THIS_DIR'compile survival_kit/memory
 $ @'THIS_DIR'compile survival_kit/misc
 $ @'THIS_DIR'compile survival_kit/cstr
 $ @'THIS_DIR'compile survival_kit/stack_builtins

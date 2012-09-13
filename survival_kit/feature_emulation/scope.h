@@ -93,6 +93,7 @@ were used instead of sSCOPE/sEND_SCOPE!
 #include <setjmp.h>
 #include <unistd.h>
 
+#include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"

@@ -7,7 +7,8 @@
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/throw.h"
-#include "survival_kit/misc.h"
+#include "survival_kit/misc.h" /* skit_die */
+#include "survival_kit/memory.h"
 #include "survival_kit/init.h"
 #include "survival_kit/assert.h"
 

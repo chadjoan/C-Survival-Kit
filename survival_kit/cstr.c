@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include "survival_kit/init.h"
 #include "survival_kit/assert.h"
-#include "survival_kit/misc.h"
+#include "survival_kit/memory.h"
 #include "survival_kit/cstr.h"
 
 #define SKIT_SCRATCH_BUF_SIZE 256

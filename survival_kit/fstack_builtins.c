@@ -1,18 +1,19 @@
 
+#include <setjmp.h>
+#include <assert.h>
+
+#include <stdio.h>
+
 /* Make sure SKIT_T_HEADER isn't defined when #include'ing this. */
 #include "survival_kit/stack_builtins.h"
 
 #define SKIT_T_HEADER "survival_kit/templates/fstack.c"
 #include "survival_kit/fstack_builtins.h"
 
-#include "survival_kit/misc.h"
+#include "survival_kit/memory.h"
 #include "survival_kit/cstr.h"
 
 #include "survival_kit/setjmp/jmp_fstack.h"
-#include <setjmp.h>
-#include <assert.h>
-
-#include <stdio.h>
 
 typedef struct skit_fstack_unittest_context skit_fstack_unittest_context;
 struct skit_fstack_unittest_context

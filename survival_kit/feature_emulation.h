@@ -1,7 +1,6 @@
 #ifndef SKIT_FEATURE_EMULATION_INCLUDED
 #define SKIT_FEATURE_EMULATION_INCLUDED
 
-#include "survival_kit/misc.h"
 #include "survival_kit/assert.h"
 #include "survival_kit/init.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"

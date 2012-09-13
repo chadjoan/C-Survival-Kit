@@ -49,16 +49,6 @@ void skit_die(char *mess, ...)
 	/*lib$signal(EXIT_FAILURE);*/ /* This produced too much spam when exiting after a bunch of setjmp/longjmps. */
 }
 
-void *skit_malloc(size_t size)
-{
-	return malloc(size);
-}
-
-void skit_free(void *mem)
-{
-	free(mem);
-}
-
 void skit_print_mem(void *ptr, int size)
 {
 	#define LINE_SIZE 8
