@@ -57,6 +57,7 @@ void skit_print_stack_trace_func( uint32_t line, const char *file, const char *f
 		} \
 	} while(0)
 
+/* TODO: These should use strcmp. */
 #define sASSERT_EQS( lhs, rhs ) \
 	do { \
 		if ( (lhs) != (rhs) ) { \

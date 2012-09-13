@@ -7,13 +7,14 @@
 
 #include "survival_kit/misc.h"
 #include "survival_kit/sockn.h"
-#include "survival_kit/str.h"
+#include "survival_kit/string.h"
 #include "survival_kit/feature_emulation.h"
 
 
-ssize_t sendn(int sock, string text)
+ssize_t sendn(int sock, skit_string text)
 {
-	uint32_t length_nwb = htonl(text.length);
+	ssize_t text_len = skit_string_len(text);
+	uint32_t length_nwb = htonl(text_len);
 	ssize_t n_bytes_sent = 0;
 	
 	n_bytes_sent = send(sock, &length_nwb, 4, 0);
@@ -21,11 +22,11 @@ ssize_t sendn(int sock, string text)
 		return 0;
 	}
 	
-	n_bytes_sent = send(sock, text.ptr, text.length, 0);
+	n_bytes_sent = send(sock, text.chars, text_len, 0);
 	return n_bytes_sent;
 }
 
-void recvn(int sock, string *buf)
+void recvn(int sock, skit_loaf *buf)
 {
 	SKIT_USE_FEATURE_EMULATION;
 
@@ -33,9 +34,9 @@ void recvn(int sock, string *buf)
 	char buffer[4];
 	size_t msg_length = 0;
 	
-	char *msg_start = NULL;
-	char *msg_cursor = NULL;
-	char *msg_end = NULL;
+	skit_utf8c *msg_start = NULL;
+	skit_utf8c *msg_cursor = NULL;
+	skit_utf8c *msg_end = NULL;
 	
 	/* Receive message */
 	if ((received = recv(sock, buffer, 4, 0)) < 0)
@@ -45,9 +46,9 @@ void recvn(int sock, string *buf)
 		sTHROW(SOCKET_EXCEPTION,"recvn: Length information not received. Received %d bytes instead.", received);
 
 	msg_length = ntohl(((uint32_t*)buffer)[0]);
-	buf = str_realloc(buf, msg_length);
+	buf = skit_loaf_resize(buf, msg_length);
 	
-	msg_start = buf->ptr;
+	msg_start = buf->chars;
 	msg_cursor = msg_start;
 	msg_end = msg_start + msg_length;
 	
@@ -89,11 +90,11 @@ ssize_t sendnf(int sock, char *fmtstr, ...)
 	va_start(vl, fmtstr);
 	response_length = vsnprintf(response,1024,fmtstr,vl);
 	va_end(vl);
-	string sendme = str_literal(response);
-	n_bytes_sent = sendn(sock, sendme);
+	skit_loaf sendme = skit_loaf_copy_lit(response);
+	n_bytes_sent = sendn(sock, sendme.as_string);
 	if (n_bytes_sent != response_length) {
 		skit_die("Failed to send bytes to client");
 	}
-	str_delete(&sendme);
+	skit_loaf_free(&sendme);
 	return n_bytes_sent;
 }

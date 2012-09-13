@@ -8,6 +8,11 @@ void *skit_malloc(size_t size)
 	return malloc(size);
 }
 
+void *skit_realloc(void *ptr, size_t size)
+{
+	return realloc(ptr, size);
+}
+
 void skit_free(void *mem)
 {
 	free(mem);

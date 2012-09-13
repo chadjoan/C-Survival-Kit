@@ -1,13 +1,13 @@
 #ifndef SOCKN_INCLUDED
 #define SOCKN_INCLUDED
 
-#include "survival_kit/str.h"
+#include "survival_kit/string.h"
 
 /* Sends 'text' over 'sock'.  The length of 'text' will become the first 
 4 bytes of the message, stored in network-byte-order.  Use recvn to
 receive a message sent with sendn.
 Returns the number of bytes sent, or 0 if there is a failure. */
-ssize_t sendn(int sock, string text);
+ssize_t sendn(int sock, skit_string text);
 
 /* 
 Receives a message of arbitrary length from 'sock'.  The length is 
@@ -26,7 +26,7 @@ on it later.
 Returns a string with a NULL ptr if there was an error reading the message 
 length.  
 */
-void recvn(int sock, string *buf);
+void recvn(int sock, skit_loaf *buf);
 
 ssize_t sendnf(int sock, char *fmtstr, ...);
 

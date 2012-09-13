@@ -19,12 +19,12 @@ $ @'THIS_DIR'compile survival_kit/stack_builtins
 $ @'THIS_DIR'compile survival_kit/fstack_builtins
 $ @'THIS_DIR'compile survival_kit/setjmp/jmp_stack
 $ @'THIS_DIR'compile survival_kit/setjmp/jmp_fstack
-$ @'THIS_DIR'compile survival_kit/str
 $ @'THIS_DIR'compile survival_kit/feature_emulation/generated_exception_defs
 $ @'THIS_DIR'compile survival_kit/feature_emulation/funcs
 $ @'THIS_DIR'compile survival_kit/feature_emulation/types
 $ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
 $ @'THIS_DIR'compile survival_kit/signal_handling
+$ @'THIS_DIR'compile survival_kit/string
 $ @'THIS_DIR'compile survival_kit/sockn
 $ @'THIS_DIR'compile survival_kit/init
 $ @'THIS_DIR'compile tools_src/unittests
