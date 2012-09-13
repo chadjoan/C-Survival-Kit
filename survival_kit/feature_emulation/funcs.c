@@ -23,7 +23,7 @@ static void skit_thread_context_init( skit_thread_context *ctx )
 	
 	/* 16kB has GOT to be enough.  Riiight? */
 	ctx->error_text_buffer_size = 16384;
-	ctx->error_text_buffer = (char*)malloc(ctx->error_text_buffer_size);
+	ctx->error_text_buffer = (char*)skit_malloc(ctx->error_text_buffer_size);
 	if ( ctx->error_text_buffer == NULL )
 		ctx->error_text_buffer_size = 0;
 	
@@ -122,6 +122,17 @@ void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, co
 	dst->func_name = func;
 }
 
+void skit_finalize_exception( skit_exception *exc )
+{
+	if ( exc->error_text != NULL )
+	{
+		skit_free(exc->error_text);
+		exc->error_text = NULL;
+	}
+	exc->error_len = 0;
+	exc->error_code = 0;
+	exc->frame_info_node = NULL;
+}
 
 static void skit_throw_exception_internal(
 	skit_thread_context *skit_thread_ctx,
@@ -135,10 +146,26 @@ static void skit_throw_exception_internal(
 	skit_exception *exc = skit_exc_fstack_alloc(&skit_thread_ctx->exc_instance_stack, &skit_malloc);
 	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
 
-	vsnprintf(skit_thread_ctx->error_text_buffer, skit_thread_ctx->error_text_buffer_size, fmtMsg, var_args);
+	int error_len = vsnprintf(
+		skit_thread_ctx->error_text_buffer,
+		skit_thread_ctx->error_text_buffer_size, fmtMsg, var_args);
 	
+	/* vsnprintf can return lengths greater than the buffer.  In these cases, truncation occured. */
+	if ( error_len >= (skit_thread_ctx->error_text_buffer_size) )
+		error_len = skit_thread_ctx->error_text_buffer_size - 1;
+	
+	/* TODO: it might be nice to have a pre-allocated thread-local buffer 
+	for exception messages.  It would need to support multiple exception
+	messages at once and grow if there is not enough space.  This would
+	make it less likely that we do a dynamic allocation.  Not sure how
+	important this is though, since out-of-memory errors would (ideally)
+	cause the program to call skit_die, which would not allocate an
+	exception.  OTOH, if we want OOM to be catchable, then this should 
+	be considered or at least special-cased for OOM exceptions. */
 	exc->error_code = etype;
-	exc->error_text = skit_thread_ctx->error_text_buffer;
+	exc->error_text = (char*)skit_malloc(error_len+1); /* +1 to make room for the \0 at the end. */
+	strcpy(exc->error_text, skit_thread_ctx->error_text_buffer);
+	exc->error_len = error_len;
 	
 	SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
 	skit_debug_info_store(fi, line, file, func);
@@ -282,10 +309,6 @@ static void best_effort_vms_path_parse(
 }
 #endif
 
-/* TODO: use skit_malloc instead of global/static stuff. */
-#define MSG_BUF_SIZE 32768
-static char msg_buf[MSG_BUF_SIZE];
-
 typedef struct skit_stack_to_str_context skit_stack_to_str_context;
 struct skit_stack_to_str_context
 {
@@ -342,24 +365,30 @@ static char *skit_stack_to_str_internal(
 	sASSERT_NO_TRACE(stack_start != NULL);
 	skit_stack_to_str_context ctx;
 	
-	ctx.msg_pos = msg_buf;
-	ctx.msg_rest_length = MSG_BUF_SIZE;
+	
+	ctx.msg_pos = skit_thread_ctx->error_text_buffer;
+	ctx.msg_rest_length = skit_thread_ctx->error_text_buffer_size;
 	
 	skit_debug_fstack_walk(&skit_thread_ctx->debug_info_stack, 
 		&skit_stack_to_str_each, &ctx, stack_start, NULL);
 	
-	return msg_buf;
+	return skit_thread_ctx->error_text_buffer;
 }
 
 void skit_print_exception(skit_exception *e)
 {
 	sASSERT(skit_thread_init_was_called());
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
-	printf("%s\n",e->error_text);
+	if ( e->error_text != NULL )
+		printf("%s\n",e->error_text);
+	else
+		printf("skit internal error: Exception error text is NULL!\n");
 	printf("%s\n",skit_stack_to_str_internal(skit_thread_ctx, e->frame_info_node));
 }
 
-char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
+static char skit_no_init_no_trace_msg[] = "No stack trace available because neither skit_init nor skit_thread_init were called.\n";
+
+const char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
 {
 	char *result = NULL;
 	if ( skit_thread_init_was_called() )
@@ -372,8 +401,7 @@ char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char 
 	}
 	else
 	{
-		strcpy( msg_buf, "No stack trace available because neither skit_init nor skit_thread_init were called.\n" );
-		result = msg_buf;
+		result = skit_no_init_no_trace_msg;
 	}
 	return result;
 }
@@ -382,6 +410,6 @@ char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char 
 void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func )
 {
 	printf("Attempting to print stack trace.\n");
-	char *result = skit_stack_trace_to_str_expr(line,file,func);
+	const char *result = skit_stack_trace_to_str_expr(line,file,func);
 	printf("Stack trace:\n%s\n", result);
 }

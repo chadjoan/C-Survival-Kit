@@ -31,6 +31,7 @@ skit_thread_context *skit_thread_context_get();
 void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
+void skit_finalize_exception( skit_exception *exc );
 
 /*
 This skit_throw_exception_no_ctx definition is used to break macro recursion.
@@ -79,14 +80,15 @@ void skit_throw_exception(
 /** Prints the given exception to stdout. */
 void skit_print_exception(skit_exception *e);
 
-/** Prints the current stack trace to a string and returns it.
-// For now, this uses statically allocated memory for the returned string.
-// It will eventually allocate dynamic memory for the string and the caller
-// will be responsible for free'ing the string.
-// TODO: dynamically allocate the string.
+/** 
+Prints the current stack trace to a string and returns it.
+In order to prevent dynamic allocation, this will use a thread-local buffer 
+for storing the string.  This buffer may be overwritten by other calls to
+skit_* functions, so be sure to copy it to somewhere else before calling
+those functions.
 */
 #define skit_stack_trace_to_str() skit_stack_trace_to_str_expr(__LINE__,__FILE__,__func__)
-char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
+const char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func );
 
 /** Prints the current stack trace to stdout. */
 /* These definitions are duplicated in "survival_kit/assert.h" to prevent macro recursion. */

@@ -61,6 +61,7 @@ struct skit_exception
 	/* Implementation note: keep this small, it will be returned by-value from functions a lot. */
 	skit_err_code error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
 	char *error_text;    /** READ ONLY: a description for the error. */
+	size_t error_len;    /** READ ONLY: the length of error_text, minus the trailing nul character. */
 	skit_debug_stnode *frame_info_node; /** Points to the point in the frame info stack where the exception happened. */
 };
 

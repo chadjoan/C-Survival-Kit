@@ -96,6 +96,7 @@ exception allocated in the code that threw the exception.
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR,0); \
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_TRY_PTR,0); \
 		SKIT_FEATURE_TRACE("%s, %d.98: sTRY.if\n", __FILE__, __LINE__); \
+		int __skit_prev_exception_stack_size = 0; \
 		do { \
 			SKIT_FEATURE_TRACE("%s, %d.100: sTRY.do\n", __FILE__, __LINE__); \
 			SKIT_FEATURE_TRACE("exc_jmp_stack_alloc\n"); \
@@ -111,9 +112,11 @@ exception allocated in the code that threw the exception.
 				/*   case after leaving any part of the sTRY-sCATCH-sEND_TRY and only free   */ \
 				/*   exceptions if there actually are any.                               */ \
 				SKIT_FEATURE_TRACE("%s, %d.113: sTRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
-				while (skit_thread_ctx->exc_instance_stack.used.length > 0) \
+				/* Cleanup any exceptions thrown during ONLY THIS sTRY-sCATCH. */ \
+				while (skit_thread_ctx->exc_instance_stack.used.length > __skit_prev_exception_stack_size) \
 				{ \
-					skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
+					skit_exception *exc = skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
+					skit_finalize_exception(exc); \
 				} \
 				SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
@@ -144,6 +147,7 @@ exception allocated in the code that threw the exception.
 				case 0: \
 					/* Normal/successful case. */ \
 					SKIT_FEATURE_TRACE("%s, %d.146: sTRY: case 0:\n", __FILE__, __LINE__); \
+					__skit_prev_exception_stack_size = skit_thread_ctx->exc_instance_stack.used.length;
 
 /** */
 #define sCATCH(__error_code, exc_name) /* */ \
