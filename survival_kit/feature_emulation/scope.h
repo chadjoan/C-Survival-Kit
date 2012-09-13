@@ -3,9 +3,91 @@ This module defines scope guards that allow the cleanup of resources to be
 placed next to the acquisition of resources without necessarily executing the
 two at the same time.  This greatly simplifies resource management in a number
 of cases.
+
 It is inspired by D's scope guards: http://dlang.org/statement.html#ScopeGuardStatement
 Like D's scope guards, these scope guards may not exit with a throw, 
 goto, break, continue, or return; nor may they be entered with a goto. 
+
+================================================================================
+SCOPE guard hygeine:
+
+--------------------------------------------------------------------------------
+Do not exit scope guards with throw, return, break, continue, or goto 
+statements.
+
+--------------------------------------------------------------------------------
+This version of resource cleanup:
+
+skit_stream *resource1 = skit_new_stream("foo.txt","w");
+SCOPE_EXIT(skit_stream_free(resource1));
+skit_stream *resource2 = skit_new_stream("bar.txt","w");
+SCOPE_EXIT(skit_stream_free(resource2));
+
+is preferred over this version:
+
+skit_stream *resource1 = skit_new_stream("foo.txt","w");
+skit_stream *resource2 = skit_new_stream("bar.txt","w");
+SCOPE_EXIT(skit_stream_free(resource1));
+SCOPE_EXIT(skit_stream_free(resource2));
+
+The reason is that if resource2's initialization throws an exception, then the
+former example will cleanup resource1 but the latter will not.
+
+--------------------------------------------------------------------------------
+Since scope guards are implemented with setjmp/longjmp, it is possible to write
+constructs like this:
+
+  mytype *val = (mytype*)malloc(sizeof(mytype);
+  if ( val != NULL )
+  {
+      SCOPE_EXIT
+          free(val));
+          val = NULL;
+      END_SCOPE_EXIT
+  }
+  ... code that uses val ...
+
+This is highly discouraged.  Consider what the similar-looking D code would do:
+
+  mytype* val = cast(mytype*)malloc(mytype.sizeof);
+  if ( val != null )
+  {
+      scope(exit)
+      {
+          free(val);
+          val = null;
+      }
+  }
+  ... code that segfaults when attempting to use val ...
+
+The scope(exit)'s enclosing scope is the if-statement.  When the if statement
+exits, the scope(exit) statement is immediately executed.  Anything that happens
+after the if-statement will see a null value for the 'val' variable.  
+
+The C code will not do the same thing, because the C code's scope guard is only
+defined when it is /executed/ and not when it is /compiled/.  This is actually
+strange behavior and may cause bugs if the code is ever ported to other
+languages or frameworks.  The recommended way to accomplish this is to throw
+an exception if the malloc call returns NULL.  This can be made convenient
+by wrapping the allocation in a function that handles the error detection and
+exception throwing.
+
+The above D code is actually closer in meaning to this C code:
+
+  mytype *val = (mytype*)malloc(sizeof(mytype);
+  if ( val != NULL )
+  SCOPE
+      SCOPE_EXIT
+          free(val));
+          val = NULL;
+      END_SCOPE_EXIT
+  END_SCOPE
+  ... code that segfaults when attempting to use val ...
+
+It would be a shame if this version were confused with the one where {} brackets
+were used instead of SCOPE/END_SCOPE!
+
+--------------------------------------------------------------------------------
 */
 
 #include <setjmp.h>
@@ -44,8 +126,7 @@ goto, break, continue, or return; nor may they be entered with a goto.
 
 
 #define SCOPE_GUARD_BEGIN(macro_arg_exit_status) \
-	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && \
-	   The_USE_FEATURE_EMULATION_statement_must_be_in_the_same_scope_as_a_SCOPE_EXIT_statement ){ \
+	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && SKIT_SCOPE_EXIT_HAS_USE_TXT ){ \
 		if ( !skit_scope_ctx->scope_guards_used ) \
 		{ \
 			/* Placing this fstack_alloc has been tricky. */ \
@@ -57,7 +138,7 @@ goto, break, continue, or return; nor may they be entered with a goto.
 			/* What we CAN do is run the allocation just before the very first scope guard */ \
 			/*   is encountered. */ \
 			/* The existence of a scope guard will force SCOPE/END_SCOPE to be used and thus */ \
-			/*   also force usage of RETURN or THROW statements that will properly unwind */ \
+			/*   also force usage of RETURN or STHROW statements that will properly unwind */ \
 			/*   the scope_jmp_stack. */ \
 			skit_scope_ctx->scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
 			skit_scope_ctx->scope_guards_used = 1; \
@@ -227,4 +308,6 @@ returned.
 	{ \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
 	} \
+	SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
+	(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 }

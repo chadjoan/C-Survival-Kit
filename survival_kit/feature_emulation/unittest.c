@@ -1,5 +1,5 @@
 
-/* #include "survival_kit/feature_emulation/unittest.h" */
+#include "survival_kit/feature_emulation/unittest.h"
 #include "survival_kit/feature_emulation.h"
 
 /* Unittesting functions. */
@@ -15,7 +15,7 @@ static int baz()
 static float qux()
 {
 	USE_FEATURE_EMULATION;
-	THROW(GENERIC_EXCEPTION,"qux does throw!\n");
+	STHROW(GENERIC_EXCEPTION,"qux does throw!\n");
 	printf("qux should not print this.\n");
 	return 0.0;
 }
@@ -42,68 +42,68 @@ static void unittest_exceptions()
 	if( !exception_is_a(BREAK_IN_TRY_CATCH, GENERIC_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if(  exception_is_a(FATAL_EXCEPTION, GENERIC_EXCEPTION) )    skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	
-	TRY
+	STRY
 		CALL(baz());
 		printf("No exception thrown.\n");
-	CATCH(GENERIC_EXCEPTION, e)
+	SCATCH(GENERIC_EXCEPTION, e)
 		skit_print_exception(e);
-	ENDTRY
+	END_STRY
 	
 	printf("------\n");
 	
-	TRY
-		TRY
-			printf("Nested TRY-TRY-CATCH test.\n");
-		CATCH(GENERIC_EXCEPTION, e)
+	STRY
+		STRY
+			printf("Nested STRY-STRY-SCATCH test.\n");
+		SCATCH(GENERIC_EXCEPTION, e)
 			skit_print_exception(e);
-		ENDTRY
+		END_STRY
 		
 		CALL(foo());
 		printf("No exception thrown.\n");
-	CATCH(GENERIC_EXCEPTION, e)
-		TRY
-			printf("Nested CATCH-TRY-CATCH test.\n");
-		CATCH(GENERIC_EXCEPTION, e2)
+	SCATCH(GENERIC_EXCEPTION, e)
+		STRY
+			printf("Nested SCATCH-STRY-SCATCH test.\n");
+		SCATCH(GENERIC_EXCEPTION, e2)
 			printf("This shouldn't happen.\n");
 			UNUSED(e2);
 			/* skit_print_exception(e2);*/
-		ENDTRY
+		END_STRY
 		
 		skit_print_exception(e);
-	ENDTRY
+	END_STRY
 	
-	TRY
+	STRY
 		while(1)
 		{
-			TRY
+			STRY
 				printf("I'm in a loop.\n");
 				printf("Now to bail without stopping first!\n");
 				break;
-			CATCH(GENERIC_EXCEPTION,e)
+			SCATCH(GENERIC_EXCEPTION,e)
 				UNUSED(e);
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
-			ENDTRY
+			END_STRY
 		}
-	CATCH(BREAK_IN_TRY_CATCH, e)
+	SCATCH(BREAK_IN_TRY_CATCH, e)
 		skit_print_exception(e);
-	ENDTRY
+	END_STRY
 	
 	
-	TRY
+	STRY
 		while(1)
 		{
-			TRY
+			STRY
 				printf("I'm in a loop (again).\n");
 				printf("Now to bail without stopping first!\n");
 				continue;
-			CATCH(GENERIC_EXCEPTION,e)
+			SCATCH(GENERIC_EXCEPTION,e)
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
 				UNUSED(e);
-			ENDTRY
+			END_STRY
 		}
-	CATCH(CONTINUE_IN_TRY_CATCH, e)
+	SCATCH(CONTINUE_IN_TRY_CATCH, e)
 		skit_print_exception(e);
-	ENDTRY
+	END_STRY
 	
 	printf("  exception_handling unittest passed!\n");
 }
@@ -111,7 +111,7 @@ static void unittest_exceptions()
 static void unittest_scope_fn_that_throws()
 {
 	USE_FEATURE_EMULATION;
-	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+	STHROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 }
 
 /* All scope unittest subfunctions should return 0. */
@@ -170,7 +170,7 @@ SCOPE
 	SCOPE_FAILURE_BEGIN
 		(*result)--;
 	END_SCOPE_FAILURE
-	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+	STHROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 END_SCOPE
 
 static void unittest_scope_success_normal(int *result)
@@ -193,7 +193,7 @@ SCOPE
 	SCOPE_SUCCESS_BEGIN
 		(*result)--;
 	END_SCOPE_SUCCESS
-	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+	STHROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 END_SCOPE
 
 static int unittest_scope_exit_RETURN(int *result)
@@ -214,7 +214,7 @@ SCOPE
 	
 	RETURN(0);
 	
-	THROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
+	STHROW(GENERIC_EXCEPTION,"Testing scope statements: this should never print.\n");
 	
 END_SCOPE
 
@@ -236,29 +236,29 @@ static void unittest_scope()
 	SKIT_ASSERT_EQ(val,0,"%d");
 	SKIT_ASSERT_EQ(ret,0,"%d");
 	
-	TRY
+	STRY
 		unittest_scope_exit_exceptional(&val);
-	CATCH(GENERIC_EXCEPTION,e)
+	SCATCH(GENERIC_EXCEPTION,e)
 		SKIT_ASSERT_EQ(val,0,"%d");
-	ENDTRY
+	END_STRY
 	
-	TRY
+	STRY
 		unittest_scope_exit_exceptional_call(&val);
-	CATCH(GENERIC_EXCEPTION,e)
+	SCATCH(GENERIC_EXCEPTION,e)
 		SKIT_ASSERT_EQ(val,0,"%d");
-	ENDTRY
+	END_STRY
 	
-	TRY
+	STRY
 		unittest_scope_success_exceptional(&val);
-	CATCH(GENERIC_EXCEPTION,e)
+	SCATCH(GENERIC_EXCEPTION,e)
 		SKIT_ASSERT_EQ(val,0,"%d");
-	ENDTRY
+	END_STRY
 	
-	TRY
+	STRY
 		unittest_scope_failure_exceptional(&val);
-	CATCH(GENERIC_EXCEPTION,e)
+	SCATCH(GENERIC_EXCEPTION,e)
 		SKIT_ASSERT_EQ(val,0,"%d");
-	ENDTRY
+	END_STRY
 
 	printf("  scope unittest passed!\n");
 }

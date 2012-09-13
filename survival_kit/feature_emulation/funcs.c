@@ -72,11 +72,11 @@ static void skit_fstack_reconcile_warn( ssize_t expected, ssize_t got, char *nam
 	fprintf(stderr,"  Expected size: %li\n", expected );
 	fprintf(stderr,"  Actual size:   %li\n", got );
 	fprintf(stderr,"  This may mean that a goto, break, continue, or return was made while inside\n");
-	fprintf(stderr,"  a TRY-CATCH block or a SCOPE guard.  Jumping away from within a TRY-CATCH\n");
+	fprintf(stderr,"  an STRY-SCATCH block or a SCOPE guard.  Jumping away from within a STRY-SCATCH\n");
 	fprintf(stderr,"  block or SCOPE guard with raw C primitives can lead to very buggy, bizarre,\n");
 	fprintf(stderr,"  and inconsistent runtime behavior.  Just don't do it.\n");
 	/* TODO: there should be some non-primitive control constructs that should be mentioned here
-	 *   as a way of accomplishing desired logic in TRY-CATCH statements. */
+	 *   as a way of accomplishing desired logic in STRY-SCATCH statements. */
 	/* TODO: Although we can probably fix any problems the user creates for themselves, dieing might be better than warning. */
 	
 	printf("Printing stack trace:\n");
@@ -134,7 +134,7 @@ static void skit_throw_exception_internal(
 	exc->error_code = etype;
 	exc->error_text = skit_error_text_buffer;
 	
-	SKIT_FEATURE_TRACE("%s, %d.136: THROW\n", file, line);
+	SKIT_FEATURE_TRACE("%s, %d.136: STHROW\n", file, line);
 	skit_debug_info_store(fi, line, file, func);
 	exc->frame_info_node = skit_thread_ctx->debug_info_stack.used.front;
 	

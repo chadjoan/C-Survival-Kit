@@ -34,18 +34,20 @@
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BREAK_FROM_SCOPE_GUARDS_TXT,_)
 
 #define SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT \
-	The_builtin_return_statement_cannot_be_used_in_TRY_CATCH_blocks__Use_RETURN_instead
+	The_builtin_return_statement_cannot_be_used_in_STRY_SCATCH_blocks__Use_RETURN_instead
 #define SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT,_)
 
 #define SKIT_NO_GOTO_FROM_TRY_TXT \
-	goto_is_disallowed_from_TRY_CATCH_blocks_because_leaving_TRY_CATCH_blocks_with_goto_can_be_disastrous
+	goto_is_disallowed_from_STRY_SCATCH_blocks_because_leaving_STRY_SCATCH_blocks_with_goto_can_be_disastrous
 #define SKIT_NO_GOTO_FROM_TRY_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_GOTO_FROM_TRY_TXT,_)
 
 #define SKIT_RETURN_HAS_USE_TXT \
 	This_RETURN_statement_macro_is_in_a_function_missing_a_USE_FEATURE_EMULATION_statement
 
+#define SKIT_USE_FEATURES_IN_FUNC_BODY \
+	Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_STRY_SCATCH_and_SCOPE
 /* End of error message definitions. */
 
 
@@ -161,8 +163,8 @@ break/continue statement.
 Define an alternative to return: RETURN.
 This louder brethren will do the scope-scanning necessary to allow it to be
 placed in SCOPE-END_SCOPE statements.
-TODO: It should clean up TRY-CATCH stacks too, so that it can be called
-from TRY-CATCH blocks.
+TODO: It should clean up STRY-SCATCH stacks too, so that it can be called
+from sTRY-sCATCH blocks.
 */
 #define SKIT_RETURN_INTERNAL(return_expr) \
 	{ \

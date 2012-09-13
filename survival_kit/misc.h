@@ -2,6 +2,8 @@
 #ifndef SKIT_MISC_INCLUDED
 #define SKIT_MISC_INCLUDED
 
+#include <stdlib.h>
+
 /* Implementation details. */
 /* TODO: these should be stored in thread-local storage. */
 #define SKIT_ERROR_BUFFER_SIZE 1024

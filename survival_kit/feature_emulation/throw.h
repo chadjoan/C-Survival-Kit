@@ -3,6 +3,7 @@
 #define SKIT_THROW_INCLUDED
 
 #include "survival_kit/macro.h"
+#include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/scope.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
@@ -22,10 +23,12 @@ TODO: regain this functionality.
 */
 #endif
 
+#if defined(THROW) && !defined(SKIT_ALLOW_OTHER_TRY_CATCH)
+#undef THROW
+#endif
 
 /** 
 Creates an exception of the type given and then throws it.
-This is a more concise variant of the THROW macro.
 The single argument version accepts an exception type as the first argument
   and uses the default message for that exception type.
   (TODO: The single arg version is not implemented yet.)
@@ -33,27 +36,41 @@ The double (or more) argument version accepts an exception type as the first
   argument and a message as its second argument.  The message may be a C
   format string with substitution values given in subsequent arguments.
 This macro expands to a statement and may not be nested inside expressions.
-Example usage:
-	THROW(GENERIC_EXCEPTION); // Use the exception type's default message.
-	THROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
-	THROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
-*/
-#define THROW(...) MACRO_DISPATCHER3(THROW, __VA_ARGS__)(__VA_ARGS__)
 
-#define THROW1(e) \
+It is named STHROW instead of THROW because other libraries may define their
+own exception handling with a macro by that name.  By default, any definitions
+for THROW will be undefined by this file as a way to prevent a potentially
+dangerous typo.  To allow the use of other THROW macros, #define the 
+SKIT_ALLOW_OTHER_TRY_CATCH macro symbol before #including this file.
+See "survival_kit/feature_emulation/try_catch.h" for more naming documentation.
+
+Example usage:
+	STHROW(GENERIC_EXCEPTION); // Use the exception type's default message.
+	STHROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
+	STHROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
+*/
+#define STHROW(...) MACRO_DISPATCHER3(STHROW, __VA_ARGS__)(__VA_ARGS__)
+
+#define STHROW1(e) \
 	do { \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
-#define THROW2(etype, emsg) \
+#define STHROW2(etype, emsg) \
 	do { \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 
-#define THROW3(etype, emsg, ...) \
+#define STHROW3(etype, emsg, ...) \
 	do { \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		skit_throw_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
