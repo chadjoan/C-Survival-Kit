@@ -11,22 +11,24 @@
 #  define HAVE_LINUX_BACKTRACE
 #endif
 
+#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/misc.h"
-
-char skit_error_text_buffer[SKIT_ERROR_BUFFER_SIZE];
 
 void skit_die(char *mess, ...)
 {
+	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
+	
 	va_list vl;
 	va_start(vl, mess);
-	vsnprintf(skit_error_text_buffer, SKIT_ERROR_BUFFER_SIZE, mess, vl);
+	vsnprintf(skit_thread_ctx->error_text_buffer, skit_thread_ctx->error_text_buffer_size, mess, vl);
 	va_end(vl);
 	
 	fprintf(stderr,"\n");
 	fprintf(stderr,"ERROR: skit_die was called.\n");
 	fprintf(stderr,"Message:\n");
 	
-	fprintf(stderr,"%s\n",skit_error_text_buffer);
+	fprintf(stderr,"%s\n",skit_thread_ctx->error_text_buffer);
 	fprintf(stderr,"\n");
 	
 	fprintf(stderr,"perror value:\n");

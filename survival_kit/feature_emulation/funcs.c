@@ -21,6 +21,12 @@ static void skit_thread_context_init( skit_thread_context *ctx )
 	skit_debug_fstack_init(&ctx->debug_info_stack);
 	skit_exc_fstack_init(&ctx->exc_instance_stack);
 	
+	/* 16kB has GOT to be enough.  Riiight? */
+	ctx->error_text_buffer_size = 16384;
+	ctx->error_text_buffer = (char*)malloc(ctx->error_text_buffer_size);
+	if ( ctx->error_text_buffer == NULL )
+		ctx->error_text_buffer_size = 0;
+	
 	if( setjmp( *skit_jmp_fstack_alloc(&ctx->exc_jmp_stack, &skit_malloc) ) != 0 )
 	{
 		/* Uncaught exception(s)!  We're going down! */
@@ -129,11 +135,10 @@ static void skit_throw_exception_internal(
 	skit_exception *exc = skit_exc_fstack_alloc(&skit_thread_ctx->exc_instance_stack, &skit_malloc);
 	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
 
-	/* TODO: BUG: skit_error_text_buffer is global data.  Not thread safe and prevents more than one exception at a time from working. */
-	vsnprintf(skit_error_text_buffer, SKIT_ERROR_BUFFER_SIZE, fmtMsg, var_args);
+	vsnprintf(skit_thread_ctx->error_text_buffer, skit_thread_ctx->error_text_buffer_size, fmtMsg, var_args);
 	
 	exc->error_code = etype;
-	exc->error_text = skit_error_text_buffer;
+	exc->error_text = skit_thread_ctx->error_text_buffer;
 	
 	SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
 	skit_debug_info_store(fi, line, file, func);

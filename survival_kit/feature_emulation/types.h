@@ -88,6 +88,8 @@ struct skit_thread_context
 	skit_jmp_fstack   scope_jmp_stack;
 	skit_debug_fstack debug_info_stack;
 	skit_exc_fstack   exc_instance_stack;
+	char *error_text_buffer;
+	int error_text_buffer_size;
 };
 
 /* Implementation detail used to track scope guard scanning. */
