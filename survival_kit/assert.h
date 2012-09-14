@@ -2,6 +2,7 @@
 #ifndef SKIT_ASSERT_INCLUDED
 #define SKIT_ASSERT_INCLUDED
 
+#include <string.h>
 #include <inttypes.h>
 #include "survival_kit/misc.h" /* for skit_die */
 
@@ -60,7 +61,7 @@ void skit_print_stack_trace_func( uint32_t line, const char *file, const char *f
 /* TODO: These should use strcmp. */
 #define sASSERT_EQS( lhs, rhs ) \
 	do { \
-		if ( (lhs) != (rhs) ) { \
+		if ( strcmp((lhs),(rhs)) != 0 ) { \
 			skit_print_stack_trace(); \
 			skit_die( \
 				"%s: at line %d in function %s: sASSERT_EQS(" #lhs "," #rhs ") failed.\n" \
@@ -72,9 +73,9 @@ void skit_print_stack_trace_func( uint32_t line, const char *file, const char *f
 		} \
 	} while(0)
 
-#define sASSERT_NEQS( lhs, rhs ) \
+#define sASSERT_NES( lhs, rhs ) \
 	do { \
-		if ( (lhs) == (rhs) ) { \
+		if ( strcmp((lhs),(rhs)) == 0 ) { \
 			skit_print_stack_trace(); \
 			skit_die( \
 				"%s: at line %d in function %s: sASSERT_NEQS(" #lhs "," #rhs ") failed.\n" \
@@ -100,7 +101,7 @@ void skit_print_stack_trace_func( uint32_t line, const char *file, const char *f
 		} \
 	} while(0)
 
-#define sASSERT_NEQ( lhs, rhs, fmt ) \
+#define sASSERT_NE( lhs, rhs, fmt ) \
 	do { \
 		if ( (lhs) == (rhs) )  { \
 			skit_print_stack_trace(); \

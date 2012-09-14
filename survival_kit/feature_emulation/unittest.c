@@ -275,5 +275,6 @@ void skit_unittest_features()
 	unittest_exceptions();
 	unittest_scope();
 	printf("  features unittest passed!\n");
+	printf("\n");
 }
 /* End unittests. */

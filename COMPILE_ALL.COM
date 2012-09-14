@@ -24,6 +24,7 @@ $ @'THIS_DIR'compile survival_kit/feature_emulation/funcs
 $ @'THIS_DIR'compile survival_kit/feature_emulation/types
 $ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
 $ @'THIS_DIR'compile survival_kit/signal_handling
+$ @'THIS_DIR'compile survival_kit/math
 $ @'THIS_DIR'compile survival_kit/string
 $ @'THIS_DIR'compile survival_kit/sockn
 $ @'THIS_DIR'compile survival_kit/init

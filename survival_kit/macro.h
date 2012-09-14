@@ -1,5 +1,5 @@
-#ifndef UTIL_MACRO_INCLUDED
-#define UTIL_MACRO_INCLUDED
+#ifndef SKIT_MACRO_INCLUDED
+#define SKIT_MACRO_INCLUDED
 
 /* TODO: examples in this module need to end up in unittests. */
 /**
@@ -69,34 +69,6 @@ assert( MAX3(1,2,3) == 3 );
 	MACRO_DISPATCHER__(func, nargs)
 #define MACRO_DISPATCHER__(func, nargs) \
 	func ## nargs
-
-/**
-MAX finds the maximum among its arguments.
-Limitation: currently only supports up to 8 arguments.
-*/
-#define MAX(...) MACRO_DISPATCHER(MAX, __VA_ARGS__)(__VA_ARGS__)
-#define MAX1(a) a
-#define MAX2(a, b) ((a)>(b)?(a):(b))
-#define MAX3(a, b, c) MAX2(MAX2(a, b), c)
-#define MAX4(a, b, c, d) MAX2(MAX2(a, b), MAX2(c, d))
-#define MAX5(a, b, c, d, e) MAX2(MAX4(a,b,c,d),e)
-#define MAX6(a, b, c, d, e, f) MAX2(MAX4(a,b,c,d),MAX2(e,f))
-#define MAX7(a, b, c, d, e, f, g) MAX2(MAX4(a,b,c,d),MAX3(e,f,g))
-#define MAX8(a, b, c, d, e, f, g, h) MAX2(MAX4(a,b,c,d),MAX4(e,f,g,h))
-
-/**
-MIN finds the minimum among its arguments.
-Limitation: currently only supports up to 8 arguments.
-*/
-#define MIN(...) MACRO_DISPATCHER(MIN, __VA_ARGS__)(__VA_ARGS__)
-#define MIN1(a) a
-#define MIN2(a, b) ((a)<(b)?(a):(b))
-#define MIN3(a, b, c) MIN2(MIN2(a, b), c)
-#define MIN4(a, b, c, d) MIN2(MIN2(a, b), MIN2(c, d))
-#define MIN5(a, b, c, d, e) MIN2(MIN4(a,b,c,d),e)
-#define MIN6(a, b, c, d, e, f) MIN2(MIN4(a,b,c,d),MIN2(e,f))
-#define MIN7(a, b, c, d, e, f, g) MIN2(MIN4(a,b,c,d),MIN3(e,f,g))
-#define MIN8(a, b, c, d, e, f, g, h) MIN2(MIN4(a,b,c,d),MIN4(e,f,g,h))
 
 /**
 Specialization of MACRO_DISPATCHER.

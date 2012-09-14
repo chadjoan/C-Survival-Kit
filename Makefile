@@ -28,6 +28,7 @@ OBJECT_FILES= \
 	obj/feature_emulation/types.o \
 	obj/feature_emulation/unittest.o \
 	obj/signal_handling.o \
+	obj/math.o \
 	obj/string.o \
 	obj/sockn.o \
 	obj/init.o
