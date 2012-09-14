@@ -11,9 +11,9 @@
 #include "survival_kit/feature_emulation.h"
 
 
-ssize_t sendn(int sock, skit_string text)
+ssize_t sendn(int sock, skit_slice text)
 {
-	ssize_t text_len = skit_string_len(text);
+	ssize_t text_len = skit_slice_len(text);
 	uint32_t length_nwb = htonl(text_len);
 	ssize_t n_bytes_sent = 0;
 	
@@ -91,7 +91,7 @@ ssize_t sendnf(int sock, char *fmtstr, ...)
 	response_length = vsnprintf(response,1024,fmtstr,vl);
 	va_end(vl);
 	skit_loaf sendme = skit_loaf_copy_cstr(response);
-	n_bytes_sent = sendn(sock, sendme.as_string);
+	n_bytes_sent = sendn(sock, sendme.as_slice);
 	if (n_bytes_sent != response_length) {
 		skit_die("Failed to send bytes to client");
 	}

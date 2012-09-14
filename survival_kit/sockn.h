@@ -7,7 +7,7 @@
 4 bytes of the message, stored in network-byte-order.  Use recvn to
 receive a message sent with sendn.
 Returns the number of bytes sent, or 0 if there is a failure. */
-ssize_t sendn(int sock, skit_string text);
+ssize_t sendn(int sock, skit_slice text);
 
 /* 
 Receives a message of arbitrary length from 'sock'.  The length is 
