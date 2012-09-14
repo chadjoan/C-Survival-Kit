@@ -21,6 +21,60 @@ typedef uint32_t skit_utf32c;
 typedef ssize_t  skit_string_meta;
 
 /**
+This string module uses a distinction between complete a complete string
+(called a "loaf") and a reference to part of the string (a "slice").  This
+allows the caller to avoid string allocations by passing around slices
+whenever possible and using only the original string to manage memory.
+
+Originally, this design had a type system like so:
+(1) skit_slice, which is a skit_string
+(2) skit_loaf, which is a skit_string
+(3) skit_loaf and skit_slice cannot be (safely) cast between each other.
+
+To move contents between loaves and slices, it is necessary to use functions
+that perform memory management in order to do allocations (hopefully as
+infrequently as possible).  
+
+The pattern emerged that skit_slices and skit_strings were essentially
+capable of exactly the same things.  There was no functional difference
+between the two types; instead there was only an artificial difference created
+by the type definitions.
+
+As a result, the skit_string type was removed.  Instead, this type system
+is used:
+(1) A skit_loaf is a skit_slice (of itself).
+(2) A skit_slice is the most general type: it can do fewer operations, but
+        never requires any allocations except when moving data into loaves
+        or C strings.
+
+The movement of data between loaves and slices is still determined by the
+choice of string manipulation functions.
+
+At this point it would be possible to rename all loaves and call them "strings"
+instead, but this results in a language ambiguity where slices are a kind of
+string (in the English sense) but loaves are a kind of slice (in the semantics
+defined in C code).  This is undesirable, so loaves are called loaves.  
+Although there is no skit_string type, documention and any discussion may 
+refer to either as a string in the English and programming jargon sense of
+the term.
+
+The end result is an unambiguous terminology and the ability to avoid string
+allocations unless it is strictly necessary.
+
+Other notes:
+- In general slices are used in arguments whenever possible.  loaves can be
+    easily converted into slices using their '.as_slice' member, so slice
+    arguments can effectively receive either string type.
+- Functions in this module will not accept NULL values, unless explicitly
+    stated otherwise.  Passing NULL values into skit_ string handling functions
+    will quickly lead to assertion crashes.
+- It is usually a bad idea to pass a skit_loaf into a function as a value
+    type.  Either pass it as a pointer or pass it's '.as_slice' value.  Passing
+    a skit_loaf as a pointer is a way of communicating to the called function
+    that ownership of the loaf is being (temporarily) transferred.
+*/
+
+/**
 This is a windowed reference to characters in another string.
 
 Slices do not own the memory used to store the string they represent;
@@ -192,6 +246,99 @@ Example:
 	skit_loaf_free(&newb);
 */
 skit_loaf skit_slice_join(skit_slice str1, skit_slice str2);
+
+/**
+
+If the caller has ownership of the original loaf that 'buffer' is allocated
+from, then calling skit_slice_alloc_using(...) may be considerably more 
+convenient and safe, since that function will upsize the buffer as needed to 
+prevent buf_slice running over the edge of the buffer.
+*/
+skit_slice skit_slice_grow_using(skit_slice buffer, skit_slice buf_slice, ssize_t nbytes)
+{
+	skit_slice result;
+	ssize_t plen;
+	ssize_t clen;
+	skit_utf8c *lbound;
+	skit_utf8c *rbound;
+	sASSERT(buffer.chars != NULL);
+	sASSERT(buf_slice.chars != NULL);
+	
+	plen = skit_slice_len(buffer);
+	clen = skit_slice_len(buf_slice);
+	lbound = buffer.chars;
+	rbound = buffer.chars + plen;
+	sASSERT_MSG(lbound <= buf_slice.chars && buf_slice.chars <= rbound, "The buf_slice given is not a substring of the given buffer.");
+	sASSERT_MSG(buf_slice.chars + clen + nbytes <= rbound, "Attempt to grow outside of the buffer string's allocated size.");
+	
+	/* Lots of checking just to ensure we can do this: */
+	result = buf_slice;
+	skit_slice_setlen(result, clen + nbytes);
+	
+	return result;
+}
+
+/**
+This function increases the size of 'buf_slice' by making it a larger slice of
+the given 'buffer'.  If 'buffer' is not large enough to handle the new size,
+then it will use skit_loaf_resize to increase its size by an implementation-
+defined amount that will make it at least large enough.
+
+It is assumed that 'buf_slice' is a slice of 'buffer'.  If this is not true,
+then call this function will cause an assertion to be triggered.
+
+This function is similar to skit_slice_grow_using, with the difference being
+that skit_slice_grow_using will not expand 'buffer' as needed.  
+The only disadvantage of using skit_slice_alloc_using is that it requires
+the caller to own the original reference to 'buffer'.
+*/
+skit_slice skit_slice_alloc_using(skit_loaf *buffer, skit_slice buf_slice, ssize_t nbytes)
+{
+	skit_slice result;
+	ssize_t plen;
+	ssize_t clen;
+	skit_utf8c *rbound;
+	sASSERT(buffer != NULL);
+	
+	plen = skit_slice_len(buffer);
+	clen = skit_slice_len(buf_slice);
+	rbound = buffer.chars + plen;
+	
+	if ( buf_slice.chars + clen + nbytes > rbound )
+	{
+		ssize_t new_len = plen;
+		if ( new_len <= 1 )
+			new_len = 2;
+		
+		rbound = buffer.chars + new_len;
+		while ( buf_slice.chars + clen + nbytes > rbound )
+		{
+			new_len *= 2;
+			rbound = buffer.chars + new_len;
+		}
+		
+		buffer = skit_loaf_resize( buffer, new_len );
+	}
+	
+	result = skit_slice_grow_using(*buffer.as_slice, buf_slice, nbytes);
+	
+}
+
+skit_slice skit_slice_append_alloc_using(skit_loaf *buffer, skit_slice buf_slice, skit_slice suffix)
+{
+	skit_slice result;
+	ssize_t slen;
+	ssize_t clen;
+	/* We don't need to check buffer and buf_slice because skit_slice_grow_using will do that. */
+	sASSERT(suffix.chars != NULL);
+	
+	slen = skit_slice_len(suffix);
+	clen = skit_slice_len(buf_slice);
+	result = skit_slice_alloc_using(buffer, buf_slice, slen);
+	memcpy((void*)(result.chars + clen), (void*)suffix.chars, slen);
+	
+	return result;
+}
 
 /**
 Duplicates the given 'slice'.
