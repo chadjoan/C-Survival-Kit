@@ -70,18 +70,20 @@ skit_string skit_string_null()
 
 skit_slice skit_slice_null()
 {
-	skit_string result = skit_string_null();
-	result.meta |= META_SLICE_BIT; /* set the slice bit. */
-	return skit_string_as_slice(result);
+	skit_slice result;
+	result.as_string = skit_string_null();
+	result.as_string.meta |= META_SLICE_BIT; /* set the slice bit. */
+	return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 skit_loaf skit_loaf_null()
 {
-	skit_string result = skit_string_null();
-	/* result.meta &= ~META_SLICE_BIT; // clear the slice bit -- already handled by skit_string_null() */
-	return skit_string_as_loaf(result);
+	skit_loaf result;
+	result.as_string = skit_string_null();
+	/* result.as_string.meta &= ~META_SLICE_BIT; // clear the slice bit -- already handled by skit_string_null() */
+	return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -215,18 +217,24 @@ static void skit_string_is_slice_test()
 
 skit_loaf skit_string_as_loaf(skit_string str)
 {
+	skit_loaf result = skit_loaf_null();
 	sASSERT(skit_string_check_init(str));
 	sASSERT(skit_string_is_loaf(str));
-	return (skit_loaf)str;
+	result.chars = str.chars;
+	result.as_string.meta = str.meta;
+	return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 skit_slice skit_string_as_slice(skit_string str)
 {
+	skit_slice result = skit_slice_null();
 	sASSERT(skit_string_check_init(str));
 	sASSERT(skit_string_is_slice(str));
-	return (skit_slice)str;
+	result.chars = str.chars;
+	result.as_string.meta = str.meta;
+	return result;
 }
 
 /* ------------------------------------------------------------------------- */
