@@ -90,7 +90,7 @@ ssize_t sendnf(int sock, char *fmtstr, ...)
 	va_start(vl, fmtstr);
 	response_length = vsnprintf(response,1024,fmtstr,vl);
 	va_end(vl);
-	skit_loaf sendme = skit_loaf_copy_lit(response);
+	skit_loaf sendme = skit_loaf_copy_cstr(response);
 	n_bytes_sent = sendn(sock, sendme.as_string);
 	if (n_bytes_sent != response_length) {
 		skit_die("Failed to send bytes to client");

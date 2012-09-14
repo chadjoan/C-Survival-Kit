@@ -91,12 +91,12 @@ skit_loaf_len on the resulting loaf will return 0.
 skit_loaf skit_string_new();
 
 /**
-Dynamically allocates a loaf with the same length as the given literal and
-then copies the literal into the loaf.
+Dynamically allocates a loaf with the same length as the given nul-terminated
+C string and then copies the C string into the loaf.
 The allocation will be performed with skit_malloc.
-A nul character will be placed loaf.chars[strlen(literal)].
+A nul character will be placed loaf.chars[strlen(cstr)].
 */
-skit_loaf skit_loaf_copy_lit(const char *literal);
+skit_loaf skit_loaf_copy_cstr(const char *cstr);
 
 /**
 Dynamically allocates a loaf of the given 'length' using skit_malloc.
@@ -141,11 +141,11 @@ int skit_slice_check_init(skit_slice slice);
 /**
 Creates a slice of the given nul-terminated C string.
 Example:
-	skit_slice slice = skit_slice_of_lit("foo");
+	skit_slice slice = skit_slice_of_cstr("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
 	sASSERT_EQS((char*)slice.chars, "foo");
 */
-skit_slice skit_slice_of_lit(const char *literal);
+skit_slice skit_slice_of_cstr(const char *cstr);
 
 /**
 Returns 1 if the given 'str' is actually a loaf.
@@ -192,7 +192,7 @@ Resizes the given 'loaf' to the given 'length'.
 This will call skit_realloc to adjust the underlying memory size.
 'loaf' will be altered in-place, and the result will also be returned.
 Example:
-	skit_loaf loaf = skit_loaf_copy_lit("Hello world!");
+	skit_loaf loaf = skit_loaf_copy_cstr("Hello world!");
 	skit_loaf_resize(&loaf, 5);
 	sASSERT_EQS("Hello", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
@@ -204,8 +204,8 @@ skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length);
 Appends 'str2' onto the end of 'loaf1'.
 The additional memory needed is created using realloc. 
 Example:
-	skit_loaf loaf = skit_loaf_copy_lit("Hello");
-	skit_loaf_append(&loaf, skit_slice_of_lit(" world!").as_string);
+	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
+	skit_loaf_append(&loaf, skit_slice_of_cstr(" world!").as_string);
 	sASSERT_EQS("Hello world!", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
 */
@@ -221,7 +221,7 @@ slices and loafs.
 It has the disadvantage of requiring more dynamic allocation.
 The caller must eventually free the returned skit_loaf entity.
 Example:
-	skit_loaf  orig  = skit_loaf_copy_lit("Hello world!");
+	skit_loaf  orig  = skit_loaf_copy_cstr("Hello world!");
 	skit_slice slice = skit_slice_of(orig.as_string, 0, 6);
 	skit_loaf  newb  = skit_string_join(slice.as_string, orig.as_string);
 	sASSERT_EQS("Hello Hello world!", skit_loaf_as_cstr(newb));
@@ -235,11 +235,11 @@ Duplicates the given string 'str'.
 This is the recommended way to obtain a loaf when given a slice.
 This function allocates memory, so be sure to clean up as needed.
 Example:
-	skit_loaf foo = skit_loaf_copy_lit("foo");
+	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo);
 	skit_loaf bar = skit_string_dup(slice.as_string);
 	sASSERT(foo.chars != bar.chars);
-	skit_loaf_assign_lit(&bar, "bar");
+	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQS(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQS(skit_loaf_as_cstr(bar), "bar");
 	skit_loaf_free(&foo);
@@ -249,15 +249,16 @@ skit_loaf skit_string_dup(skit_string str);
 
 /**
 Replaces the contents of the given loaf with a copy of the text in the given
-literal.  It will use skit_loaf_resize to handle any necessary memory resizing.
+nul-terminated C string.  It will use skit_loaf_resize to handle any necessary
+memory resizing.
 Example:
-	skit_loaf loaf = skit_loaf_copy_lit("Hello");
+	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
 	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello" );
-	skit_loaf_assign_lit(&loaf, "Hello world!");
+	skit_loaf_assign_cstr(&loaf, "Hello world!");
 	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello world!" );
 	skit_loaf_free(&loaf);
 */
-skit_loaf *skit_loaf_assign_lit(skit_loaf *loaf, const char *literal);
+skit_loaf *skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
 
 /**
 Takes a slice of the given string.
@@ -271,7 +272,7 @@ assertion to trigger and crash the caller.
 As a convenience, passing negative indices will count from the right
 side of the array, and passing SKIT_EOT as the second index will slice to
 the very end of the array:
-	skit_loaf loaf = skit_loaf_copy_lit("foobar");
+	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
 	skit_string str = loaf.as_string;
 	skit_slice slice1 = skit_slice_of(str, 3, -1);
 	skit_slice slice2 = skit_slice_of(str, 3, SKIT_EOT);
@@ -317,8 +318,8 @@ This will return a slice of 'str1' whose contents are the common prefix.
 If there is no common prefix between the two strings, then a zero-length slice
 pointing at the beginning of str1 will be returned.
 Example:
-	skit_loaf loaf1 = skit_loaf_copy_lit("foobar");
-	skit_loaf loaf2 = skit_loaf_copy_lit("foobaz");
+	skit_loaf loaf1 = skit_loaf_copy_cstr("foobar");
+	skit_loaf loaf2 = skit_loaf_copy_cstr("foobaz");
 	skit_string str1 = loaf1.as_string;
 	skit_string str2 = loaf2.as_string;
 	skit_slice prefix = skit_string_common_prefix(str1, str2);
@@ -342,11 +343,11 @@ Performs an asciibetical comparison of the two strings.
 +-------+--------------------------------------+
 
 Example:
-	skit_loaf bigstr = skit_loaf_copy_lit("Big string!");
-	skit_loaf lilstr = skit_loaf_copy_lit("lil str.");
-	skit_loaf aaa = skit_loaf_copy_lit("aaa");
-	skit_loaf bbb = skit_loaf_copy_lit("bbb");
-	skit_loaf aaab = skit_loaf_copy_lit("aaab");
+	skit_loaf bigstr = skit_loaf_copy_cstr("Big string!");
+	skit_loaf lilstr = skit_loaf_copy_cstr("lil str.");
+	skit_loaf aaa = skit_loaf_copy_cstr("aaa");
+	skit_loaf bbb = skit_loaf_copy_cstr("bbb");
+	skit_loaf aaab = skit_loaf_copy_cstr("aaab");
 	skit_slice aaa_slice = skit_slice_of(aaab.as_string,0,3);
 	sASSERT(skit_string_ascii_cmp(lilstr.as_string, bigstr.as_string) < 0); 
 	sASSERT(skit_string_ascii_cmp(bigstr.as_string, lilstr.as_string) > 0);
@@ -364,8 +365,8 @@ int skit_string_ascii_cmp(const skit_string str1, const skit_string str2);
 /**
 Convenient asciibetical comparison functions.
 Example:
-	skit_loaf aaa = skit_loaf_copy_lit("aaa");
-	skit_loaf bbb = skit_loaf_copy_lit("bbb");
+	skit_loaf aaa = skit_loaf_copy_cstr("aaa");
+	skit_loaf bbb = skit_loaf_copy_cstr("bbb");
 	skit_string alphaLo = aaa.as_string;
 	skit_string alphaHi = bbb.as_string;
 	
@@ -404,14 +405,14 @@ int skit_string_nes(const skit_string str1, const skit_string str2);
 Trim whitespace from 'str'.
 Always returns a slice. 
 Example:
-	skit_loaf loaf = skit_loaf_copy_lit("  foo \n");
+	skit_loaf loaf = skit_loaf_copy_cstr("  foo \n");
 	skit_string str = loaf.as_string;
 	skit_string slice1 = skit_slice_ltrim(str).as_string;
 	skit_string slice2 = skit_slice_rtrim(str).as_string;
 	skit_string slice3 = skit_slice_trim (str).as_string;
-	sASSERT( skit_string_eqs(slice1, skit_slice_of_lit("foo \n").as_string) );
-	sASSERT( skit_string_eqs(slice2, skit_slice_of_lit("  foo").as_string) );
-	sASSERT( skit_string_eqs(slice3, skit_slice_of_lit("foo").as_string) );
+	sASSERT( skit_string_eqs(slice1, skit_slice_of_cstr("foo \n").as_string) );
+	sASSERT( skit_string_eqs(slice2, skit_slice_of_cstr("  foo").as_string) );
+	sASSERT( skit_string_eqs(slice3, skit_slice_of_cstr("foo").as_string) );
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_slice_ltrim(const skit_string str);
@@ -422,12 +423,12 @@ skit_slice skit_slice_trim(const skit_string str);
 Truncate 'nchars' from the left or right side of 'str'.
 Always returns a slice. 
 Example:
-	skit_loaf loaf = skit_loaf_copy_lit("foobar");
+	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
 	skit_string str = loaf.as_string;
 	skit_string slice1 = skit_slice_ltruncate(str,3).as_string;
 	skit_string slice2 = skit_slice_rtruncate(str,3).as_string;
-	sASSERT( skit_string_eqs(slice1, skit_slice_of_lit("bar").as_string) );
-	sASSERT( skit_string_eqs(slice2, skit_slice_of_lit("foo").as_string) );
+	sASSERT( skit_string_eqs(slice1, skit_slice_of_cstr("bar").as_string) );
+	sASSERT( skit_string_eqs(slice2, skit_slice_of_cstr("foo").as_string) );
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_slice_ltruncate(const skit_string str, size_t nchars);

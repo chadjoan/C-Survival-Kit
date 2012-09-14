@@ -99,12 +99,12 @@ skit_loaf skit_string_new()
 
 /* ------------------------------------------------------------------------- */
 
-skit_loaf skit_loaf_copy_lit(const char *literal)
+skit_loaf skit_loaf_copy_cstr(const char *cstr)
 {
-	size_t length = strlen(literal);
+	size_t length = strlen(cstr);
 	skit_loaf result = skit_loaf_null();
 	result.chars = (skit_utf8c*)skit_malloc(length+1);
-	strcpy((char*)result.chars, literal);
+	strcpy((char*)result.chars, cstr);
 	skit_string_setlen(&result.as_string, length);
 	sASSERT(skit_loaf_check_init(result));
 	return result;
@@ -162,21 +162,21 @@ static void skit_string_check_init_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_slice_of_lit(const char *literal)
+skit_slice skit_slice_of_cstr(const char *cstr)
 {
 	skit_slice result = skit_slice_null();
-	ssize_t length = strlen(literal);
-	result.chars = (skit_utf8c*)literal;
+	ssize_t length = strlen(cstr);
+	result.chars = (skit_utf8c*)cstr;
 	skit_string_setlen(&result.as_string, length);
 	return result;
 }
 
-static void skit_slice_of_lit_test()
+static void skit_slice_of_cstr_test()
 {
-	skit_slice slice = skit_slice_of_lit("foo");
+	skit_slice slice = skit_slice_of_cstr("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
 	sASSERT_EQS((char*)slice.chars, "foo");
-	printf("  skit_slice_of_lit_test passed.\n");
+	printf("  skit_slice_of_cstr_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -254,7 +254,7 @@ skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length)
 
 static void skit_loaf_resize_test()
 {
-	skit_loaf loaf = skit_loaf_copy_lit("Hello world!");
+	skit_loaf loaf = skit_loaf_copy_cstr("Hello world!");
 	skit_loaf_resize(&loaf, 5);
 	sASSERT_EQS("Hello", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
@@ -288,8 +288,8 @@ skit_loaf *skit_loaf_append(skit_loaf *loaf1, skit_string str2)
 
 static void skit_loaf_append_test()
 {
-	skit_loaf loaf = skit_loaf_copy_lit("Hello");
-	skit_loaf_append(&loaf, skit_slice_of_lit(" world!").as_string);
+	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
+	skit_loaf_append(&loaf, skit_slice_of_cstr(" world!").as_string);
 	sASSERT_EQS("Hello world!", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_append_test passed.\n");
@@ -320,7 +320,7 @@ skit_loaf skit_string_join(skit_string str1, skit_string str2)
 
 static void skit_string_join_test()
 {
-	skit_loaf  orig  = skit_loaf_copy_lit("Hello world!");
+	skit_loaf  orig  = skit_loaf_copy_cstr("Hello world!");
 	skit_slice slice = skit_slice_of(orig.as_string, 0, 6);
 	skit_loaf  newb  = skit_string_join(slice.as_string, orig.as_string);
 	sASSERT_EQS("Hello Hello world!", skit_loaf_as_cstr(newb));
@@ -347,11 +347,11 @@ skit_loaf skit_string_dup(skit_string str)
 
 static void skit_string_dup_test()
 {
-	skit_loaf foo = skit_loaf_copy_lit("foo");
+	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_string, 0, 0);
 	skit_loaf bar = skit_string_dup(slice.as_string);
 	sASSERT(foo.chars != bar.chars);
-	skit_loaf_assign_lit(&bar, "bar");
+	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQS(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQS(skit_loaf_as_cstr(bar), "bar");
 	skit_loaf_free(&foo);
@@ -361,22 +361,22 @@ static void skit_string_dup_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_loaf *skit_loaf_assign_lit(skit_loaf *loaf, const char *literal)
+skit_loaf *skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
 {
-	ssize_t length = strlen(literal);
+	ssize_t length = strlen(cstr);
 	skit_loaf_resize(loaf, length);
-	strcpy((char*)loaf->chars, literal);
+	strcpy((char*)loaf->chars, cstr);
 	return loaf;
 }
 
-static void skit_loaf_assign_lit_test()
+static void skit_loaf_assign_cstr_test()
 {
-	skit_loaf loaf = skit_loaf_copy_lit("Hello");
+	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
 	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello" );
-	skit_loaf_assign_lit(&loaf, "Hello world!");
+	skit_loaf_assign_cstr(&loaf, "Hello world!");
 	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello world!" );
 	skit_loaf_free(&loaf);
-	printf("  skit_loaf_assign_lit_test passed.\n");
+	printf("  skit_loaf_assign_cstr_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -408,7 +408,7 @@ skit_slice skit_slice_of(skit_string str, ssize_t index1, ssize_t index2)
 
 static void skit_slice_of_test()
 {
-	skit_loaf loaf = skit_loaf_copy_lit("foobar");
+	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
 	skit_string str = loaf.as_string;
 	skit_slice slice1 = skit_slice_of(str, 3, -1);
 	skit_slice slice2 = skit_slice_of(str, 3, SKIT_EOT);
@@ -489,8 +489,8 @@ skit_slice skit_string_common_prefix(const skit_string str1, const skit_string s
 
 static void skit_string_common_prefix_test()
 {
-	skit_loaf loaf1 = skit_loaf_copy_lit("foobar");
-	skit_loaf loaf2 = skit_loaf_copy_lit("foobaz");
+	skit_loaf loaf1 = skit_loaf_copy_cstr("foobar");
+	skit_loaf loaf2 = skit_loaf_copy_cstr("foobaz");
 	skit_string str1 = loaf1.as_string;
 	skit_string str2 = loaf2.as_string;
 	skit_slice prefix = skit_string_common_prefix(str1, str2);
@@ -535,11 +535,11 @@ int skit_string_ascii_cmp(const skit_string str1, const skit_string str2)
 
 static void skit_string_ascii_cmp_test()
 {
-	skit_loaf bigstr = skit_loaf_copy_lit("Big string!");
-	skit_loaf lilstr = skit_loaf_copy_lit("lil str.");
-	skit_loaf aaa = skit_loaf_copy_lit("aaa");
-	skit_loaf bbb = skit_loaf_copy_lit("bbb");
-	skit_loaf aaab = skit_loaf_copy_lit("aaab");
+	skit_loaf bigstr = skit_loaf_copy_cstr("Big string!");
+	skit_loaf lilstr = skit_loaf_copy_cstr("lil str.");
+	skit_loaf aaa = skit_loaf_copy_cstr("aaa");
+	skit_loaf bbb = skit_loaf_copy_cstr("bbb");
+	skit_loaf aaab = skit_loaf_copy_cstr("aaab");
 	skit_slice aaa_slice = skit_slice_of(aaab.as_string,0,3);
 	sASSERT(skit_string_ascii_cmp(lilstr.as_string, bigstr.as_string) < 0); 
 	sASSERT(skit_string_ascii_cmp(bigstr.as_string, lilstr.as_string) > 0);
@@ -605,8 +605,8 @@ int skit_string_nes(const skit_string str1, const skit_string str2)
 
 static void skit_string_comparison_ops_test()
 {
-	skit_loaf aaa = skit_loaf_copy_lit("aaa");
-	skit_loaf bbb = skit_loaf_copy_lit("bbbb");
+	skit_loaf aaa = skit_loaf_copy_cstr("aaa");
+	skit_loaf bbb = skit_loaf_copy_cstr("bbbb");
 	skit_string alphaLo = aaa.as_string;
 	skit_string alphaHi = bbb.as_string;
 	
@@ -687,14 +687,14 @@ skit_slice skit_slice_trim(const skit_string str)
 
 static void skit_slice_trim_test()
 {
-	skit_loaf loaf = skit_loaf_copy_lit("  foo \n");
+	skit_loaf loaf = skit_loaf_copy_cstr("  foo \n");
 	skit_string str = loaf.as_string;
 	skit_string slice1 = skit_slice_ltrim(str).as_string;
 	skit_string slice2 = skit_slice_rtrim(str).as_string;
 	skit_string slice3 = skit_slice_trim (str).as_string;
-	sASSERT( skit_string_eqs(slice1, skit_slice_of_lit("foo \n").as_string) );
-	sASSERT( skit_string_eqs(slice2, skit_slice_of_lit("  foo").as_string) );
-	sASSERT( skit_string_eqs(slice3, skit_slice_of_lit("foo").as_string) );
+	sASSERT( skit_string_eqs(slice1, skit_slice_of_cstr("foo \n").as_string) );
+	sASSERT( skit_string_eqs(slice2, skit_slice_of_cstr("  foo").as_string) );
+	sASSERT( skit_string_eqs(slice3, skit_slice_of_cstr("foo").as_string) );
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_trim_test passed.\n");
 }
@@ -747,12 +747,12 @@ skit_slice skit_slice_rtruncate(const skit_string str, size_t nchars)
 
 static void skit_slice_truncate_test()
 {
-	skit_loaf loaf = skit_loaf_copy_lit("foobar");
+	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
 	skit_string str = loaf.as_string;
 	skit_string slice1 = skit_slice_ltruncate(str,3).as_string;
 	skit_string slice2 = skit_slice_rtruncate(str,3).as_string;
-	sASSERT( skit_string_eqs(slice1, skit_slice_of_lit("bar").as_string) );
-	sASSERT( skit_string_eqs(slice2, skit_slice_of_lit("foo").as_string) );
+	sASSERT( skit_string_eqs(slice1, skit_slice_of_cstr("bar").as_string) );
+	sASSERT( skit_string_eqs(slice2, skit_slice_of_cstr("foo").as_string) );
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_truncate_test passed.\n");
 }
@@ -765,14 +765,14 @@ void skit_string_unittest()
 	printf("skit_string_unittest()\n");
 	skit_string_len_test();
 	skit_string_check_init_test();
-	skit_slice_of_lit_test();
+	skit_slice_of_cstr_test();
 	skit_string_is_loaf_test();
 	skit_string_is_slice_test();
 	skit_loaf_resize_test();
 	skit_loaf_append_test();
 	skit_string_join_test();
 	skit_string_dup_test();
-	skit_loaf_assign_lit_test();
+	skit_loaf_assign_cstr_test();
 	skit_slice_of_test();
 	skit_loaf_free_test();
 	skit_string_common_prefix_test();
