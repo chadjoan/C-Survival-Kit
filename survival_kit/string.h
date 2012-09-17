@@ -248,97 +248,63 @@ Example:
 skit_loaf skit_slice_join(skit_slice str1, skit_slice str2);
 
 /**
+This resizes 'buf_slice' to 'new_buf_slice_length' by growing or shrinking it
+within the given 'buffer'.  If 'buffer' is not large enough to handle 
+the new size, then it will use skit_loaf_resize to increase its size by an 
+implementation-defined amount that will make it at least large enough.
 
-If the caller has ownership of the original loaf that 'buffer' is allocated
-from, then calling skit_slice_alloc_using(...) may be considerably more 
-convenient and safe, since that function will upsize the buffer as needed to 
-prevent buf_slice running over the edge of the buffer.
+It is assumed that 'buf_slice' is already a slice of 'buffer'.  If this is 
+not true, then call this function will cause an assertion to be triggered.
+
+If a buffer resize was necessary to fit the new slice, and assuming the
+resize allocated more than enough memory, then a 0-byte (C string 
+nul-terminating character) will be placed after the end of the new slice 
+in addition to the usual nul character after the end of the loaf. 
+
+Example:
+	skit_loaf buffer = skit_loaf_alloc(5);
+	skit_slice slice1 = skit_slice_of(buffer.as_slice, 2, 4);
+	skit_slice slice2 = skit_slice_buffered_resize(&buffer, slice1, 5);
+	sASSERT_EQ(skit_loaf_len(buffer), 6, "%d");
+	sASSERT_EQ(skit_slice_len(slice1), 2, "%d");
+	sASSERT_EQ(skit_slice_len(slice2), 5, "%d");
+	sASSERT_EQ(slice2.chars[5], '\0', "%d");
+	skit_loaf_free(&buffer);
 */
-skit_slice skit_slice_grow_using(skit_slice buffer, skit_slice buf_slice, ssize_t nbytes)
-{
-	skit_slice result;
-	ssize_t plen;
-	ssize_t clen;
-	skit_utf8c *lbound;
-	skit_utf8c *rbound;
-	sASSERT(buffer.chars != NULL);
-	sASSERT(buf_slice.chars != NULL);
-	
-	plen = skit_slice_len(buffer);
-	clen = skit_slice_len(buf_slice);
-	lbound = buffer.chars;
-	rbound = buffer.chars + plen;
-	sASSERT_MSG(lbound <= buf_slice.chars && buf_slice.chars <= rbound, "The buf_slice given is not a substring of the given buffer.");
-	sASSERT_MSG(buf_slice.chars + clen + nbytes <= rbound, "Attempt to grow outside of the buffer string's allocated size.");
-	
-	/* Lots of checking just to ensure we can do this: */
-	result = buf_slice;
-	skit_slice_setlen(result, clen + nbytes);
-	
-	return result;
-}
+skit_slice skit_slice_buffered_resize(
+	skit_loaf  *buffer,
+	skit_slice buf_slice,
+	ssize_t    new_buf_slice_length);
 
-/**
-This function increases the size of 'buf_slice' by making it a larger slice of
-the given 'buffer'.  If 'buffer' is not large enough to handle the new size,
-then it will use skit_loaf_resize to increase its size by an implementation-
-defined amount that will make it at least large enough.
+/** 
+Appends a slice 'suffix' to the given slice 'buf_slice'.  'buf_slice' is assumed
+to be a slice of 'buffer', thus 'buf_slice' will grow by becoming a larger
+slice of 'buffer'.  If 'buffer' is not large enough to contain the growth, then
+it will be resized with the semantics described in 
+skit_slice_buffered_resize(...).
 
-It is assumed that 'buf_slice' is a slice of 'buffer'.  If this is not true,
-then call this function will cause an assertion to be triggered.
+This operation will overwrite the contents in 'buffer' immediately following
+'buf_slice' with a copy of the contents of 'suffix'.
 
-This function is similar to skit_slice_grow_using, with the difference being
-that skit_slice_grow_using will not expand 'buffer' as needed.  
-The only disadvantage of using skit_slice_alloc_using is that it requires
-the caller to own the original reference to 'buffer'.
+If a buffer resize was necessary to fit the new slice, and assuming the
+resize allocated more than enough memory, then a 0-byte (C string 
+nul-terminating character) will be placed after the end of the new slice 
+in addition to the usual nul character after the end of the loaf. 
+
+Example:
+	skit_loaf  buffer = skit_loaf_alloc(5);
+	skit_slice accumulator = skit_slice_of(buffer.as_slice, 0, 0);
+	skit_slice_buffered_append(&buffer, accumulator, skit_slice_of_cstr("foo"));
+	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
+	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
+	skit_slice_buffered_append(&buffer, accumulator, skit_slice_of_cstr("bar"));
+	sASSERT_EQS(skit_loaf_as_cstr(buffer), "foobar");
+	skit_loaf_free(&buffer);
 */
-skit_slice skit_slice_alloc_using(skit_loaf *buffer, skit_slice buf_slice, ssize_t nbytes)
-{
-	skit_slice result;
-	ssize_t plen;
-	ssize_t clen;
-	skit_utf8c *rbound;
-	sASSERT(buffer != NULL);
-	
-	plen = skit_slice_len(buffer);
-	clen = skit_slice_len(buf_slice);
-	rbound = buffer.chars + plen;
-	
-	if ( buf_slice.chars + clen + nbytes > rbound )
-	{
-		ssize_t new_len = plen;
-		if ( new_len <= 1 )
-			new_len = 2;
-		
-		rbound = buffer.chars + new_len;
-		while ( buf_slice.chars + clen + nbytes > rbound )
-		{
-			new_len *= 2;
-			rbound = buffer.chars + new_len;
-		}
-		
-		buffer = skit_loaf_resize( buffer, new_len );
-	}
-	
-	result = skit_slice_grow_using(*buffer.as_slice, buf_slice, nbytes);
-	
-}
-
-skit_slice skit_slice_append_alloc_using(skit_loaf *buffer, skit_slice buf_slice, skit_slice suffix)
-{
-	skit_slice result;
-	ssize_t slen;
-	ssize_t clen;
-	/* We don't need to check buffer and buf_slice because skit_slice_grow_using will do that. */
-	sASSERT(suffix.chars != NULL);
-	
-	slen = skit_slice_len(suffix);
-	clen = skit_slice_len(buf_slice);
-	result = skit_slice_alloc_using(buffer, buf_slice, slen);
-	memcpy((void*)(result.chars + clen), (void*)suffix.chars, slen);
-	
-	return result;
-}
+skit_slice skit_slice_buffered_append(
+	skit_loaf  *buffer,
+	skit_slice buf_slice,
+	skit_slice suffix);
 
 /**
 Duplicates the given 'slice'.

@@ -293,6 +293,94 @@ static void skit_slice_join_test()
 
 /* ------------------------------------------------------------------------- */
 
+skit_slice skit_slice_buffered_resize(
+	skit_loaf  *buffer,
+	skit_slice buf_slice,
+	ssize_t    new_buf_slice_length)
+{
+	skit_slice result;
+	ssize_t buffer_length;
+	ssize_t buf_slice_length;
+	skit_utf8c *rbound;
+	skit_utf8c *lbound;
+	skit_utf8c *new_rbound;
+	sASSERT(buffer != NULL);
+	sASSERT(buffer->chars != NULL);
+	sASSERT(buf_slice.chars != NULL);
+	
+	buffer_length    = skit_loaf_len(*buffer);
+	buf_slice_length = skit_slice_len(buf_slice);
+	lbound = buffer->chars;
+	rbound = lbound + buffer_length;
+	sASSERT_MSG(lbound <= buf_slice.chars && buf_slice.chars <= rbound, 
+		"The buf_slice given is not a substring of the given buffer.");
+	
+	new_rbound = buf_slice.chars + new_buf_slice_length;
+	if ( new_rbound > rbound )
+	{
+		ssize_t new_buffer_length = new_rbound - buffer->chars;
+		
+		/* Resize to (new_buffer_length * 1.5) */
+		new_buffer_length = (new_buffer_length * 3) / 2;
+		skit_loaf_resize( buffer, new_buffer_length );
+	}
+	
+	result = skit_slice_null();
+	result.chars = buf_slice.chars;
+	skit_slice_setlen(&result, new_buf_slice_length);
+	return result;
+}
+
+static void skit_slice_buffered_resize_test()
+{
+	skit_loaf buffer = skit_loaf_alloc(5);
+	skit_slice slice1 = skit_slice_of(buffer.as_slice, 2, 4);
+	skit_slice slice2 = skit_slice_buffered_resize(&buffer, slice1, 5);
+	sASSERT(skit_loaf_len(buffer) >= 6);
+	sASSERT_EQ(skit_slice_len(slice1), 2, "%d");
+	sASSERT_EQ(skit_slice_len(slice2), 5, "%d");
+	sASSERT_EQ(slice2.chars[5], '\0', "%d");
+	skit_loaf_free(&buffer);
+	printf("  skit_slice_buffered_resize_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_slice_buffered_append(
+	skit_loaf  *buffer,
+	skit_slice buf_slice,
+	skit_slice suffix)
+{
+	skit_slice result;
+	ssize_t suffix_length;
+	ssize_t buf_slice_length;
+	/* We don't need to check buffer and buf_slice because skit_slice_buffered_resize will do that. */
+	sASSERT(suffix.chars != NULL);
+	
+	suffix_length = skit_slice_len(suffix);
+	buf_slice_length = skit_slice_len(buf_slice);
+	result = skit_slice_buffered_resize(buffer, buf_slice, buf_slice_length + suffix_length);
+	memcpy((void*)(result.chars + buf_slice_length), (void*)suffix.chars, suffix_length);
+	
+	return result;
+}
+
+static void skit_slice_buffered_append_test()
+{
+	skit_loaf  buffer = skit_loaf_alloc(5);
+	skit_slice accumulator = skit_slice_of(buffer.as_slice, 0, 0);
+	accumulator = skit_slice_buffered_append(&buffer, accumulator, skit_slice_of_cstr("foo"));
+	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
+	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
+	accumulator = skit_slice_buffered_append(&buffer, accumulator, skit_slice_of_cstr("bar"));
+	sASSERT_EQS(skit_loaf_as_cstr(buffer), "foobar");
+	sASSERT(skit_loaf_len(buffer) >= 6);
+	skit_loaf_free(&buffer);
+	printf("  skit_slice_buffered_append_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 skit_loaf skit_slice_dup(skit_slice slice)
 {
 	size_t length;
@@ -732,6 +820,8 @@ void skit_string_unittest()
 	skit_loaf_resize_test();
 	skit_loaf_append_test();
 	skit_slice_join_test();
+	skit_slice_buffered_resize_test();
+	skit_slice_buffered_append_test();
 	skit_slice_dup_test();
 	skit_loaf_assign_cstr_test();
 	skit_slice_of_test();
