@@ -172,6 +172,18 @@ int skit_slice_check_init(skit_slice slice);
 int skit_loaf_check_init (skit_loaf loaf);
 
 /**
+Like skit_slice_of_cstr, but only takes a slice with 'length' characters
+in it.
+This can avoid an O(n) string scan if the caller already knows the desired
+length of the given C string.
+Example:
+	skit_slice slice = skit_slice_of_cstrn("foo",3);
+	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+*/
+skit_slice skit_slice_of_cstrn(const char *cstr, int length );
+
+/**
 Creates a slice of the given nul-terminated C string.
 Example:
 	skit_slice slice = skit_slice_of_cstr("foo");
@@ -181,14 +193,18 @@ Example:
 skit_slice skit_slice_of_cstr(const char *cstr);
 
 /**
-This macro is shorthand for skit_slice_of_cstr.
-It provides a concise way making C-style strings compatible with skit_slices.
+This macro is shorthand for skit_slice_of_cstr, with the additional limitation
+that it can only handle string literals.  It may, as a form of optimization,
+invoke sizeof(cstr) to avoid computing strlen like skit_slice_cstr does.
+It provides a concise way making C-style string literals compatible with
+skit_slices.
 Example:
 	skit_slice slice = sSLICE("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
 	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
 */
-#define sSLICE(cstr) (skit_slice_of_cstr((cstr)))
+#define sSLICE(cstr) (skit_slice_of_cstrn((cstr), sizeof((cstr))-1))
+/* subtract 1 because sizeof(x) includes the nul byte. */
 
 /**
 Returns 1 if the given 'slice' is actually a loaf.

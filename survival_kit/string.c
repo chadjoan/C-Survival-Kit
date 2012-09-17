@@ -150,13 +150,37 @@ static void skit_slice_check_init_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_slice_of_cstr(const char *cstr)
+/**
+Like skit_slice_of_cstr, but only takes a slice with 'length' characters
+in it.
+This can avoid an O(n) string scan if the caller already knows the desired
+length of the given C string.
+Example:
+	skit_slice slice = skit_slice_of_cstrn("foo",3);
+	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+*/
+skit_slice skit_slice_of_cstrn(const char *cstr, int length )
 {
 	skit_slice result = skit_slice_null();
-	ssize_t length = strlen(cstr);
 	result.chars = (skit_utf8c*)cstr;
 	skit_slice_setlen(&result, length);
 	return result;
+}
+
+static void skit_slice_of_cstrn_test()
+{
+	skit_slice slice = skit_slice_of_cstrn("foo",3);
+	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+	printf("  skit_slice_of_cstrn_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_slice_of_cstr(const char *cstr)
+{
+	return skit_slice_of_cstrn(cstr, strlen(cstr));
 }
 
 static void skit_slice_of_cstr_test()
@@ -819,6 +843,7 @@ void skit_string_unittest()
 	printf("skit_slice_unittest()\n");
 	skit_slice_len_test();
 	skit_slice_check_init_test();
+	skit_slice_of_cstrn_test();
 	skit_slice_of_cstr_test();
 	skit_slice_is_loaf_test();
 	skit_loaf_resize_test();
