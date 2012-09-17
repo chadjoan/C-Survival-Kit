@@ -154,6 +154,11 @@ Example:
 ssize_t skit_loaf_len (skit_loaf loaf);
 ssize_t skit_slice_len(skit_slice slice);
 
+/**
+This macro is shorthand for calling skit_slice_len.
+*/
+#define sSLEN(slice) (skit_slice_len((slice)))
+
 /** 
 These functions will return 0 if the given loaf/slice is uninitialized.
 They will return 1 if there is a high probability that it is initialized.
