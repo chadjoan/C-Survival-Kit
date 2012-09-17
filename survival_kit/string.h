@@ -181,6 +181,16 @@ Example:
 skit_slice skit_slice_of_cstr(const char *cstr);
 
 /**
+This macro is shorthand for skit_slice_of_cstr.
+It provides a concise way making C-style strings compatible with skit_slices.
+Example:
+	skit_slice slice = sSLICE("foo");
+	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+*/
+#define sSLICE(cstr) (skit_slice_of_cstr((cstr)))
+
+/**
 Returns 1 if the given 'slice' is actually a loaf.
 Returns 0 otherwise.
 Example:
@@ -222,7 +232,7 @@ Appends 'str2' onto the end of 'loaf1'.
 The additional memory needed is created using realloc. 
 Example:
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
-	skit_loaf_append(&loaf, skit_slice_of_cstr(" world!"));
+	skit_loaf_append(&loaf, sSLICE(" world!"));
 	sASSERT_EQ_CSTR("Hello world!", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
 */
@@ -294,10 +304,10 @@ in addition to the usual nul character after the end of the loaf.
 Example:
 	skit_loaf  buffer = skit_loaf_alloc(5);
 	skit_slice accumulator = skit_slice_of(buffer.as_slice, 0, 0);
-	skit_slice_buffered_append(&buffer, &accumulator, skit_slice_of_cstr("foo"));
+	skit_slice_buffered_append(&buffer, &accumulator, sSLICE("foo"));
 	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
 	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
-	skit_slice_buffered_append(&buffer, &accumulator, skit_slice_of_cstr("bar"));
+	skit_slice_buffered_append(&buffer, &accumulator, sSLICE("bar"));
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(buffer), "foobar");
 	sASSERT_GE(skit_loaf_len(buffer), 6, "%d");
 	skit_loaf_free(&buffer);
@@ -446,10 +456,10 @@ This will return a slice of 'str1' whose contents are the common prefix.
 If there is no common prefix between the two strings, then a zero-length slice
 pointing at the beginning of str1 will be returned.
 Example:
-	skit_slice slice1 = skit_slice_of_cstr("foobar");
-	skit_slice slice2 = skit_slice_of_cstr("foobaz");
+	skit_slice slice1 = sSLICE("foobar");
+	skit_slice slice2 = sSLICE("foobaz");
 	skit_slice prefix = skit_slice_common_prefix(slice1, slice2);
-	sASSERT_EQS(prefix, skit_slice_of_cstr("fooba"));
+	sASSERT_EQS(prefix, sSLICE("fooba"));
 */
 skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2);
 
@@ -465,10 +475,10 @@ Performs an asciibetical comparison of the two strings.
 +-------+--------------------------------------+
 
 Example:
-	skit_slice bigstr = skit_slice_of_cstr("Big string!");
-	skit_slice lilstr = skit_slice_of_cstr("lil str.");
-	skit_slice aaa = skit_slice_of_cstr("aaa");
-	skit_slice bbb = skit_slice_of_cstr("bbb");
+	skit_slice bigstr = sSLICE("Big string!");
+	skit_slice lilstr = sSLICE("lil str.");
+	skit_slice aaa = sSLICE("aaa");
+	skit_slice bbb = sSLICE("bbb");
 	skit_loaf aaab = skit_loaf_copy_cstr("aaab");
 	skit_slice aaa_slice = skit_slice_of(aaab.as_slice,0,3);
 	sASSERT(skit_slice_ascii_cmp(lilstr, bigstr) < 0); 
@@ -484,8 +494,8 @@ int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2);
 /**
 Convenient asciibetical comparison functions.
 Example:
-	skit_slice alphaLo = skit_slice_of_cstr("aaa");
-	skit_slice alphaHi = skit_slice_of_cstr("bbb");
+	skit_slice alphaLo = sSLICE("aaa");
+	skit_slice alphaHi = sSLICE("bbb");
 	
 	sASSERT(!skit_slice_ges(alphaLo,alphaHi)); // alphaLo >= alphaHi
 	sASSERT( skit_slice_ges(alphaHi,alphaLo)); // alphaHi >= alphaLo
@@ -524,9 +534,9 @@ Example:
 	skit_slice slice1 = skit_slice_ltrim(slice0);
 	skit_slice slice2 = skit_slice_rtrim(slice0);
 	skit_slice slice3 = skit_slice_trim (slice0);
-	sASSERT_EQS( slice1, skit_slice_of_cstr("foo \n") );
-	sASSERT_EQS( slice2, skit_slice_of_cstr("  foo") );
-	sASSERT_EQS( slice3, skit_slice_of_cstr("foo") );
+	sASSERT_EQS( slice1, sSLICE("foo \n") );
+	sASSERT_EQS( slice2, sSLICE("  foo") );
+	sASSERT_EQS( slice3, sSLICE("foo") );
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_slice_ltrim(const skit_slice slice);
@@ -541,8 +551,8 @@ Example:
 	skit_slice slice0 = loaf.as_slice;
 	skit_slice slice1 = skit_slice_ltruncate(slice0,3);
 	skit_slice slice2 = skit_slice_rtruncate(slice0,3);
-	sASSERT_EQS( slice1, skit_slice_of_cstr("bar") );
-	sASSERT_EQS( slice2, skit_slice_of_cstr("foo") );
+	sASSERT_EQS( slice1, sSLICE("bar") );
+	sASSERT_EQS( slice2, sSLICE("foo") );
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_slice_ltruncate(const skit_slice slice, size_t nchars);
