@@ -123,7 +123,7 @@ ssize_t skit_loaf_len (skit_loaf loaf)   { return skit_slice_len(loaf.as_slice);
 static void skit_slice_len_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
-	sASSERT(skit_loaf_len(loaf) == 10);
+	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
 	printf("  skit_slice_len_test passed.\n");
 }
 
@@ -163,7 +163,7 @@ static void skit_slice_of_cstr_test()
 {
 	skit_slice slice = skit_slice_of_cstr("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQS((char*)slice.chars, "foo");
+	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
 	printf("  skit_slice_of_cstr_test passed.\n");
 }
 
@@ -218,7 +218,7 @@ static void skit_loaf_resize_test()
 {
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello world!");
 	skit_loaf_resize(&loaf, 5);
-	sASSERT_EQS("Hello", skit_loaf_as_cstr(loaf));
+	sASSERT_EQ_CSTR("Hello", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_resize_test passed.\n");
 }
@@ -252,7 +252,7 @@ static void skit_loaf_append_test()
 {
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
 	skit_loaf_append(&loaf, skit_slice_of_cstr(" world!"));
-	sASSERT_EQS("Hello world!", skit_loaf_as_cstr(loaf));
+	sASSERT_EQ_CSTR("Hello world!", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_append_test passed.\n");
 }
@@ -285,7 +285,7 @@ static void skit_slice_concat_test()
 	skit_loaf  orig  = skit_loaf_copy_cstr("Hello world!");
 	skit_slice slice = skit_slice_of(orig.as_slice, 0, 6);
 	skit_loaf  newb  = skit_slice_concat(slice, orig.as_slice);
-	sASSERT_EQS("Hello Hello world!", skit_loaf_as_cstr(newb));
+	sASSERT_EQ_CSTR("Hello Hello world!", skit_loaf_as_cstr(newb));
 	skit_loaf_free(&orig);
 	skit_loaf_free(&newb);
 	printf("  skit_slice_concat_test passed.\n");
@@ -349,7 +349,6 @@ skit_slice *skit_slice_buffered_append(
 	skit_slice *buf_slice,
 	skit_slice suffix)
 {
-	skit_slice result;
 	ssize_t suffix_length;
 	ssize_t buf_slice_length;
 	/* We don't need to check buffer->chars and buf_slice->chars because 
@@ -373,8 +372,8 @@ static void skit_slice_buffered_append_test()
 	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
 	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
 	skit_slice_buffered_append(&buffer, &accumulator, skit_slice_of_cstr("bar"));
-	sASSERT_EQS(skit_loaf_as_cstr(buffer), "foobar");
-	sASSERT(skit_loaf_len(buffer) >= 6);
+	sASSERT_EQ_CSTR(skit_loaf_as_cstr(buffer), "foobar");
+	sASSERT_GE(skit_loaf_len(buffer), 6, "%d");
 	skit_loaf_free(&buffer);
 	printf("  skit_slice_buffered_append_test passed.\n");
 }
@@ -400,10 +399,10 @@ static void skit_slice_dup_test()
 	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
 	skit_loaf bar = skit_slice_dup(slice);
-	sASSERT(foo.chars != bar.chars);
+	sASSERT_NE(foo.chars, bar.chars, "%p");
 	skit_loaf_assign_cstr(&bar, "bar");
-	sASSERT_EQS(skit_loaf_as_cstr(foo), "foo");
-	sASSERT_EQS(skit_loaf_as_cstr(bar), "bar");
+	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
+	sASSERT_EQ_CSTR(skit_loaf_as_cstr(bar), "bar");
 	skit_loaf_free(&foo);
 	skit_loaf_free(&bar);
 	printf("  skit_slice_dup_test passed.\n");
@@ -422,9 +421,9 @@ skit_loaf *skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
 static void skit_loaf_assign_cstr_test()
 {
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
-	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello" );
+	sASSERT_EQ_CSTR( skit_loaf_as_cstr(loaf), "Hello" );
 	skit_loaf_assign_cstr(&loaf, "Hello world!");
-	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello world!" );
+	sASSERT_EQ_CSTR( skit_loaf_as_cstr(loaf), "Hello world!" );
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_assign_cstr_test passed.\n");
 }
@@ -462,10 +461,8 @@ static void skit_slice_of_test()
 	skit_slice slice0 = loaf.as_slice;
 	skit_slice slice1 = skit_slice_of(slice0, 3, -1);
 	skit_slice slice2 = skit_slice_of(slice0, 3, SKIT_EOT);
-	char *cstr1 = skit_slice_dup_as_cstr(slice1);
-	char *cstr2 = skit_slice_dup_as_cstr(slice2);
-	sASSERT_EQS(cstr1, "ba");
-	sASSERT_EQS(cstr2, "bar");
+	sASSERT_EQS(slice1, skit_slice_of_cstr("ba"));
+	sASSERT_EQS(slice2, skit_slice_of_cstr("bar"));
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_of_test passed.\n");
 }
@@ -511,6 +508,30 @@ static void skit_loaf_free_test()
 	printf("  skit_loaf_free_test passed.\n");
 }
 
+/* ------------------------------------------------------------------------- */
+
+char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size )
+{
+	snprintf(buffer, buf_size, "%%.%lds", skit_slice_len(slice) );
+	return buffer;
+}
+
+static void skit_slice_get_printf_formatter_test()
+{
+	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
+	skit_slice slice = skit_slice_of(loaf.as_slice, 0, 3);
+	char newstr_buf[128];
+	char fmt_str[64];
+	char fmt_buf[32];
+	skit_slice_get_printf_formatter(slice, fmt_buf, sizeof(fmt_buf) );
+	sASSERT_EQ_CSTR( "%.3s", fmt_buf );
+	snprintf(fmt_str, sizeof(fmt_str), "Slice is '%s'.", fmt_buf);
+	sASSERT_EQ_CSTR(fmt_str, "Slice is '%.3s'.");
+	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, slice.chars);
+	sASSERT_EQ_CSTR(newstr_buf, "Slice is 'foo'.");
+	skit_loaf_free(&loaf);
+}
+
 /* ========================================================================= */
 /* ------------------------- string misc functions ------------------------- */
 
@@ -539,16 +560,10 @@ skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2
 
 static void skit_slice_common_prefix_test()
 {
-	skit_loaf loaf1 = skit_loaf_copy_cstr("foobar");
-	skit_loaf loaf2 = skit_loaf_copy_cstr("foobaz");
-	skit_slice str1 = loaf1.as_slice;
-	skit_slice str2 = loaf2.as_slice;
-	skit_slice prefix = skit_slice_common_prefix(str1, str2);
-	char *cstr = skit_slice_dup_as_cstr(prefix);
-	sASSERT_EQS(cstr, "fooba");
-	skit_free(cstr);
-	skit_loaf_free(&loaf1);
-	skit_loaf_free(&loaf2);
+	skit_slice slice1 = skit_slice_of_cstr("foobar");
+	skit_slice slice2 = skit_slice_of_cstr("foobaz");
+	skit_slice prefix = skit_slice_common_prefix(slice1, slice2);
+	sASSERT_EQS(prefix, skit_slice_of_cstr("fooba"));
 	printf("  skit_slice_common_prefix_test passed.\n");
 }
 
@@ -585,31 +600,23 @@ int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
 
 static void skit_slice_ascii_cmp_test()
 {
-	skit_loaf bigstr = skit_loaf_copy_cstr("Big string!");
-	skit_loaf lilstr = skit_loaf_copy_cstr("lil str.");
-	skit_loaf aaa = skit_loaf_copy_cstr("aaa");
-	skit_loaf bbb = skit_loaf_copy_cstr("bbb");
+	skit_slice bigstr = skit_slice_of_cstr("Big string!");
+	skit_slice lilstr = skit_slice_of_cstr("lil str.");
+	skit_slice aaa = skit_slice_of_cstr("aaa");
+	skit_slice bbb = skit_slice_of_cstr("bbb");
 	skit_loaf aaab = skit_loaf_copy_cstr("aaab");
 	skit_slice aaa_slice = skit_slice_of(aaab.as_slice,0,3);
-	sASSERT(skit_slice_ascii_cmp(lilstr.as_slice, bigstr.as_slice) < 0); 
-	sASSERT(skit_slice_ascii_cmp(bigstr.as_slice, lilstr.as_slice) > 0);
-	sASSERT(skit_slice_ascii_cmp(bigstr.as_slice, bigstr.as_slice) == 0);
-	sASSERT(skit_slice_ascii_cmp(aaa.as_slice, bbb.as_slice) < 0);
-	sASSERT(skit_slice_ascii_cmp(bbb.as_slice, aaa.as_slice) > 0);
-	sASSERT(skit_slice_ascii_cmp(aaa.as_slice, aaa_slice) == 0);
-	skit_loaf_free(&bigstr);
-	skit_loaf_free(&lilstr);
-	skit_loaf_free(&aaa);
-	skit_loaf_free(&bbb);
+	sASSERT(skit_slice_ascii_cmp(lilstr, bigstr) < 0); 
+	sASSERT(skit_slice_ascii_cmp(bigstr, lilstr) > 0);
+	sASSERT(skit_slice_ascii_cmp(bigstr, bigstr) == 0);
+	sASSERT(skit_slice_ascii_cmp(aaa, bbb) < 0);
+	sASSERT(skit_slice_ascii_cmp(bbb, aaa) > 0);
+	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
+	skit_loaf_free(&aaab);
 	printf("  skit_slice_ascii_cmp_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
-
-/**
-Convenient asciibetical comparison functions.
-Example:
-*/
 
 int skit_slice_ges(const skit_slice str1, const skit_slice str2)
 {
@@ -655,34 +662,29 @@ int skit_slice_nes(const skit_slice str1, const skit_slice str2)
 
 static void skit_slice_comparison_ops_test()
 {
-	skit_loaf aaa = skit_loaf_copy_cstr("aaa");
-	skit_loaf bbb = skit_loaf_copy_cstr("bbbb");
-	skit_slice alphaLo = aaa.as_slice;
-	skit_slice alphaHi = bbb.as_slice;
+	skit_slice alphaLo = skit_slice_of_cstr("aaa");
+	skit_slice alphaHi = skit_slice_of_cstr("bbb");
 	
-	sASSERT(!skit_slice_ges(alphaLo,alphaHi)); /* alphaLo >= alphaHi */
-	sASSERT( skit_slice_ges(alphaHi,alphaLo)); /* alphaHi >= alphaLo */
-	sASSERT( skit_slice_ges(alphaHi,alphaHi)); /* alphaHi >= alphaHi */
-	sASSERT(!skit_slice_gts(alphaLo,alphaHi)); /* alphaLo >  alphaHi */
-	sASSERT( skit_slice_gts(alphaHi,alphaLo)); /* alphaHi >  alphaLo */
-	sASSERT(!skit_slice_gts(alphaHi,alphaHi)); /* alphaHi >  alphaHi */
-
-	sASSERT( skit_slice_les(alphaLo,alphaHi)); /* alphaLo <= alphaHi */
-	sASSERT(!skit_slice_les(alphaHi,alphaLo)); /* alphaHi <= alphaLo */
-	sASSERT( skit_slice_les(alphaHi,alphaHi)); /* alphaHi <= alphaHi */
-	sASSERT( skit_slice_lts(alphaLo,alphaHi)); /* alphaLo <  alphaHi */
-	sASSERT(!skit_slice_lts(alphaHi,alphaLo)); /* alphaHi <  alphaLo */
-	sASSERT(!skit_slice_lts(alphaHi,alphaHi)); /* alphaHi <  alphaHi */
-
-	sASSERT(!skit_slice_eqs(alphaLo,alphaHi)); /* alphaLo == alphaHi */
-	sASSERT(!skit_slice_eqs(alphaHi,alphaLo)); /* alphaHi == alphaLo */
-	sASSERT( skit_slice_eqs(alphaHi,alphaHi)); /* alphaHi == alphaHi */
-	sASSERT( skit_slice_nes(alphaLo,alphaHi)); /* alphaLo != alphaHi */
-	sASSERT( skit_slice_nes(alphaHi,alphaLo)); /* alphaHi != alphaLo */
-	sASSERT(!skit_slice_nes(alphaHi,alphaHi)); /* alphaHi != alphaHi */
+	sASSERT(!skit_slice_ges(alphaLo,alphaHi)); // alphaLo >= alphaHi
+	sASSERT( skit_slice_ges(alphaHi,alphaLo)); // alphaHi >= alphaLo
+	sASSERT( skit_slice_ges(alphaHi,alphaHi)); // alphaHi >= alphaHi
+	sASSERT(!skit_slice_gts(alphaLo,alphaHi)); // alphaLo >  alphaHi
+	sASSERT( skit_slice_gts(alphaHi,alphaLo)); // alphaHi >  alphaLo
+	sASSERT(!skit_slice_gts(alphaHi,alphaHi)); // alphaHi >  alphaHi
 	
-	skit_loaf_free(&aaa);
-	skit_loaf_free(&bbb);
+	sASSERT( skit_slice_les(alphaLo,alphaHi)); // alphaLo <= alphaHi
+	sASSERT(!skit_slice_les(alphaHi,alphaLo)); // alphaHi <= alphaLo
+	sASSERT( skit_slice_les(alphaHi,alphaHi)); // alphaHi <= alphaHi
+	sASSERT( skit_slice_lts(alphaLo,alphaHi)); // alphaLo <  alphaHi
+	sASSERT(!skit_slice_lts(alphaHi,alphaLo)); // alphaHi <  alphaLo
+	sASSERT(!skit_slice_lts(alphaHi,alphaHi)); // alphaHi <  alphaHi
+	
+	sASSERT(!skit_slice_eqs(alphaLo,alphaHi)); // alphaLo == alphaHi
+	sASSERT(!skit_slice_eqs(alphaHi,alphaLo)); // alphaHi == alphaLo
+	sASSERT( skit_slice_eqs(alphaHi,alphaHi)); // alphaHi == alphaHi
+	sASSERT( skit_slice_nes(alphaLo,alphaHi)); // alphaLo != alphaHi
+	sASSERT( skit_slice_nes(alphaHi,alphaLo)); // alphaHi != alphaLo
+	sASSERT(!skit_slice_nes(alphaHi,alphaHi)); // alphaHi != alphaHi
 	printf("  skit_slice_comparison_ops_test passed.\n");
 }
 
@@ -742,9 +744,9 @@ static void skit_slice_trim_test()
 	skit_slice slice1 = skit_slice_ltrim(slice0);
 	skit_slice slice2 = skit_slice_rtrim(slice0);
 	skit_slice slice3 = skit_slice_trim (slice0);
-	sASSERT( skit_slice_eqs(slice1, skit_slice_of_cstr("foo \n")) );
-	sASSERT( skit_slice_eqs(slice2, skit_slice_of_cstr("  foo")) );
-	sASSERT( skit_slice_eqs(slice3, skit_slice_of_cstr("foo")) );
+	sASSERT_EQS( slice1, skit_slice_of_cstr("foo \n") );
+	sASSERT_EQS( slice2, skit_slice_of_cstr("  foo") );
+	sASSERT_EQS( slice3, skit_slice_of_cstr("foo") );
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_trim_test passed.\n");
 }
@@ -801,8 +803,8 @@ static void skit_slice_truncate_test()
 	skit_slice slice0 = loaf.as_slice;
 	skit_slice slice1 = skit_slice_ltruncate(slice0,3);
 	skit_slice slice2 = skit_slice_rtruncate(slice0,3);
-	sASSERT( skit_slice_eqs(slice1, skit_slice_of_cstr("bar")) );
-	sASSERT( skit_slice_eqs(slice2, skit_slice_of_cstr("foo")) );
+	sASSERT_EQS( slice1, skit_slice_of_cstr("bar") );
+	sASSERT_EQS( slice2, skit_slice_of_cstr("foo") );
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_truncate_test passed.\n");
 }
@@ -826,6 +828,7 @@ void skit_string_unittest()
 	skit_loaf_assign_cstr_test();
 	skit_slice_of_test();
 	skit_loaf_free_test();
+	skit_slice_get_printf_formatter_test();
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();
 	skit_slice_comparison_ops_test();
