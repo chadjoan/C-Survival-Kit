@@ -510,9 +510,11 @@ static void skit_loaf_free_test()
 
 /* ------------------------------------------------------------------------- */
 
-char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size )
+char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size, int enquote )
 {
-	snprintf(buffer, buf_size, "%%.%lds", skit_slice_len(slice) );
+	snprintf(buffer, buf_size,
+		(enquote ? "'%%.%lds'" : "%%.%lds"),
+		skit_slice_len(slice) );
 	return buffer;
 }
 
@@ -523,13 +525,13 @@ static void skit_slice_get_printf_formatter_test()
 	char newstr_buf[128];
 	char fmt_str[64];
 	char fmt_buf[32];
-	skit_slice_get_printf_formatter(slice, fmt_buf, sizeof(fmt_buf) );
-	sASSERT_EQ_CSTR( "%.3s", fmt_buf );
-	snprintf(fmt_str, sizeof(fmt_str), "Slice is '%s'.", fmt_buf);
+	skit_slice_get_printf_formatter(slice, fmt_buf, sizeof(fmt_buf), 1 );
+	sASSERT_EQ_CSTR( "'%.3s'", fmt_buf );
+	snprintf(fmt_str, sizeof(fmt_str), "Slice is %s.", fmt_buf);
 	sASSERT_EQ_CSTR(fmt_str, "Slice is '%.3s'.");
 	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, slice.chars);
 	sASSERT_EQ_CSTR(newstr_buf, "Slice is 'foo'.");
-	skit_loaf_free(&loaf);
+	printf("  skit_slice_get_printf_formatter_test passed.\n");
 }
 
 /* ========================================================================= */

@@ -409,15 +409,15 @@ Example:
 	char newstr_buf[128];
 	char fmt_str[64];
 	char fmt_buf[32];
-	skit_slice_get_printf_formatter(slice, fmt_buf, sizeof(fmt_buf) );
-	sASSERT_EQ_CSTR( "%.3s", fmt_buf );
-	snprintf(fmt_str, sizeof(fmt_str), "Slice is '%s'.", fmt_buf);
+	skit_slice_get_printf_formatter(slice, fmt_buf, sizeof(fmt_buf), 1 );
+	sASSERT_EQ_CSTR( "'%.3s'", fmt_buf );
+	snprintf(fmt_str, sizeof(fmt_str), "Slice is %s.", fmt_buf);
 	sASSERT_EQ_CSTR(fmt_str, "Slice is '%.3s'.");
 	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, slice.chars);
 	sASSERT_EQ_CSTR(newstr_buf, "Slice is 'foo'.");
 	skit_loaf_free(&loaf);
 */
-char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size );
+char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size, int enquote );
 
 /* Internal use.  Please do not call directly. */
 #define sASSERT_SLICE( assert_name, comparison, lhs, rhs ) \
@@ -429,8 +429,8 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 		sASSERT_COMPLICATED( \
 			assert_name, \
 			comparison, \
-			skit_slice_get_printf_formatter( lhs, lfmt, sizeof(lfmt) ), \
-			skit_slice_get_printf_formatter( rhs, rfmt, sizeof(rfmt) ), \
+			skit_slice_get_printf_formatter( lhs, lfmt, sizeof(lfmt), 1 ), \
+			skit_slice_get_printf_formatter( rhs, rfmt, sizeof(rfmt), 1 ), \
 			lhs.chars, \
 			rhs.chars); \
 	} while(0)

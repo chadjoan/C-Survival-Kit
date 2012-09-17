@@ -60,12 +60,12 @@ void skit_print_stack_trace_func( uint32_t line, const char *file, const char *f
 #define sASSERT_GT( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_GT", lhs > rhs,  (fmt), (fmt), lhs, rhs)
 #define sASSERT_LT( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_LT", lhs < rhs,  (fmt), (fmt), lhs, rhs)
 
-#define sASSERT_EQ_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_EQ_CSTR", strcmp(lhs,rhs) == 0, "%s", "%s", lhs, rhs)
-#define sASSERT_NE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_NE_CSTR", strcmp(lhs,rhs) != 0, "%s", "%s", lhs, rhs)
-#define sASSERT_GE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_GE_CSTR", strcmp(lhs,rhs) >= 0, "%s", "%s", lhs, rhs)
-#define sASSERT_LE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_LE_CSTR", strcmp(lhs,rhs) <= 0, "%s", "%s", lhs, rhs)
-#define sASSERT_GT_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_GT_CSTR", strcmp(lhs,rhs) > 0, "%s", "%s", lhs, rhs)
-#define sASSERT_LT_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_LT_CSTR", strcmp(lhs,rhs) < 0, "%s", "%s", lhs, rhs)
+#define sASSERT_EQ_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_EQ_CSTR", strcmp(lhs,rhs) == 0, "'%s'", "'%s'", lhs, rhs)
+#define sASSERT_NE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_NE_CSTR", strcmp(lhs,rhs) != 0, "'%s'", "'%s'", lhs, rhs)
+#define sASSERT_GE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_GE_CSTR", strcmp(lhs,rhs) >= 0, "'%s'", "'%s'", lhs, rhs)
+#define sASSERT_LE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_LE_CSTR", strcmp(lhs,rhs) <= 0, "'%s'", "'%s'", lhs, rhs)
+#define sASSERT_GT_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_GT_CSTR", strcmp(lhs,rhs) > 0,  "'%s'", "'%s'", lhs, rhs)
+#define sASSERT_LT_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_LT_CSTR", strcmp(lhs,rhs) < 0,  "'%s'", "'%s'", lhs, rhs)
 
 
 
