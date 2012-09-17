@@ -240,12 +240,12 @@ The caller must eventually free the returned skit_loaf entity.
 Example:
 	skit_loaf  orig  = skit_loaf_copy_cstr("Hello world!");
 	skit_slice slice = skit_slice_of(orig.as_slice, 0, 6);
-	skit_loaf  newb  = skit_slice_join(slice, orig.as_slice);
+	skit_loaf  newb  = skit_slice_concat(slice, orig.as_slice);
 	sASSERT_EQS("Hello Hello world!", skit_loaf_as_cstr(newb));
 	skit_loaf_free(&orig);
 	skit_loaf_free(&newb);
 */
-skit_loaf skit_slice_join(skit_slice str1, skit_slice str2);
+skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2);
 
 /**
 This resizes 'buf_slice' to 'new_buf_slice_length' by growing or shrinking it

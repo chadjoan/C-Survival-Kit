@@ -259,7 +259,7 @@ static void skit_loaf_append_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_loaf skit_slice_join(skit_slice str1, skit_slice str2)
+skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2)
 {
 	size_t len1;
 	size_t len2;
@@ -280,15 +280,15 @@ skit_loaf skit_slice_join(skit_slice str1, skit_slice str2)
 	return result;
 }
 
-static void skit_slice_join_test()
+static void skit_slice_concat_test()
 {
 	skit_loaf  orig  = skit_loaf_copy_cstr("Hello world!");
 	skit_slice slice = skit_slice_of(orig.as_slice, 0, 6);
-	skit_loaf  newb  = skit_slice_join(slice, orig.as_slice);
+	skit_loaf  newb  = skit_slice_concat(slice, orig.as_slice);
 	sASSERT_EQS("Hello Hello world!", skit_loaf_as_cstr(newb));
 	skit_loaf_free(&orig);
 	skit_loaf_free(&newb);
-	printf("  skit_slice_join_test passed.\n");
+	printf("  skit_slice_concat_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -819,7 +819,7 @@ void skit_string_unittest()
 	skit_slice_is_loaf_test();
 	skit_loaf_resize_test();
 	skit_loaf_append_test();
-	skit_slice_join_test();
+	skit_slice_concat_test();
 	skit_slice_buffered_resize_test();
 	skit_slice_buffered_append_test();
 	skit_slice_dup_test();
