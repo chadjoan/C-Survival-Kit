@@ -263,17 +263,17 @@ in addition to the usual nul character after the end of the loaf.
 
 Example:
 	skit_loaf buffer = skit_loaf_alloc(5);
-	skit_slice slice1 = skit_slice_of(buffer.as_slice, 2, 4);
-	skit_slice slice2 = skit_slice_buffered_resize(&buffer, slice1, 5);
-	sASSERT_EQ(skit_loaf_len(buffer), 6, "%d");
-	sASSERT_EQ(skit_slice_len(slice1), 2, "%d");
-	sASSERT_EQ(skit_slice_len(slice2), 5, "%d");
-	sASSERT_EQ(slice2.chars[5], '\0', "%d");
+	skit_slice slice = skit_slice_of(buffer.as_slice, 2, 4);
+	sASSERT_EQ(skit_slice_len(slice), 2, "%d");
+	skit_slice_buffered_resize(&buffer, &slice, 5);
+	sASSERT(skit_loaf_len(buffer) >= 6);
+	sASSERT_EQ(skit_slice_len(slice), 5, "%d");
+	sASSERT_EQ(slice.chars[5], '\0', "%d");
 	skit_loaf_free(&buffer);
 */
-skit_slice skit_slice_buffered_resize(
+skit_slice *skit_slice_buffered_resize(
 	skit_loaf  *buffer,
-	skit_slice buf_slice,
+	skit_slice *buf_slice,
 	ssize_t    new_buf_slice_length);
 
 /** 
@@ -294,16 +294,17 @@ in addition to the usual nul character after the end of the loaf.
 Example:
 	skit_loaf  buffer = skit_loaf_alloc(5);
 	skit_slice accumulator = skit_slice_of(buffer.as_slice, 0, 0);
-	skit_slice_buffered_append(&buffer, accumulator, skit_slice_of_cstr("foo"));
+	skit_slice_buffered_append(&buffer, &accumulator, skit_slice_of_cstr("foo"));
 	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
 	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
-	skit_slice_buffered_append(&buffer, accumulator, skit_slice_of_cstr("bar"));
+	skit_slice_buffered_append(&buffer, &accumulator, skit_slice_of_cstr("bar"));
 	sASSERT_EQS(skit_loaf_as_cstr(buffer), "foobar");
+	sASSERT(skit_loaf_len(buffer) >= 6);
 	skit_loaf_free(&buffer);
 */
-skit_slice skit_slice_buffered_append(
+skit_slice *skit_slice_buffered_append(
 	skit_loaf  *buffer,
-	skit_slice buf_slice,
+	skit_slice *buf_slice,
 	skit_slice suffix);
 
 /**
