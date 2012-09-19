@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #if defined(__DECC) && defined(__VMS)
 #  include <lib$routines.h> /* lib$signal */
@@ -31,9 +32,12 @@ void skit_die(char *mess, ...)
 	fprintf(stderr,"%s\n",skit_thread_ctx->error_text_buffer);
 	fprintf(stderr,"\n");
 	
-	fprintf(stderr,"perror value:\n");
-	perror("");
-	fprintf(stderr,"\n");
+	if ( errno != 0 )
+	{
+		fprintf(stderr,"perror value:\n");
+		perror("");
+		fprintf(stderr,"\n");
+	}
 	
 #ifdef HAVE_LINUX_BACKTRACE
 	fprintf(stderr,"backtrace:\n");
