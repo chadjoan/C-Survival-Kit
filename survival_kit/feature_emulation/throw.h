@@ -92,14 +92,18 @@ NOTE: Do not expand this macro in any function besides the one with the
 	do { \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
 		skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val); \
-		SKIT_FEATURE_TRACE("%s, %d.117 in %s: __PROPOGATE\n", __FILE__, __LINE__,__func__); \
+		SKIT_FEATURE_TRACE("%s, %d.95 in %s: __PROPOGATE\n", __FILE__, __LINE__,__func__); \
 		/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */ \
 		if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) \
+		{ \
+			SKIT_FEATURE_TRACE("%s, %d.99 in %s: __PROPOGATE longjmp.\n", __FILE__, __LINE__,__func__); \
 			longjmp( \
 				skit_thread_ctx->exc_jmp_stack.used.front->val, \
 				exc->error_code); \
+		} \
 		else \
 		{ \
+			SKIT_FEATURE_TRACE("%s, %d.106 in %s: __PROPOGATE failing.\n", __FILE__, __LINE__,__func__); \
 			skit_print_exception(exc); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
 			skit_die("Exception thrown with no handlers left in the stack."); \
 		} \

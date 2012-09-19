@@ -2,7 +2,7 @@
 #ifndef SKIT_JMP_FLIST_INCLUDED
 #define SKIT_JMP_FLIST_INCLUDED
 
-#include "survival_kit/setjmp/jmp_stack.h"
+#include "survival_kit/feature_emulation/setjmp/jmp_stack.h"
 
 #include <setjmp.h>
 

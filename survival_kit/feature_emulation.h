@@ -44,6 +44,7 @@ that may cause things like unexpected null pointers or access violations.
 	sASSERT(skit_thread_init_was_called()); \
 	sASSERT(skit_thread_ctx != NULL); \
 	SKIT_USE_SCOPE_EMULATION; \
+	SKIT_USE_TRY_CATCH_EMULATION; \
 	(void)skit_thread_ctx; \
 	do {} while(0)
 

@@ -86,6 +86,9 @@ exception allocated in the code that threw the exception.
 #undef ENDTRY
 #endif
 
+#define SKIT_USE_TRY_CATCH_EMULATION \
+	int __skit_try_catch_nesting_level = 0; \
+	do {} while(0)
 
 /** */
 #define sTRY /* */ \
@@ -99,9 +102,11 @@ exception allocated in the code that threw the exception.
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_TRY_PTR,0); \
 		SKIT_FEATURE_TRACE("%s, %d.98: sTRY.if\n", __FILE__, __LINE__); \
 		int __skit_prev_exception_stack_size = 0; \
+		__skit_try_catch_nesting_level++; \
 		do { \
 			SKIT_FEATURE_TRACE("%s, %d.100: sTRY.do\n", __FILE__, __LINE__); \
 			SKIT_FEATURE_TRACE("exc_jmp_stack_alloc\n"); \
+			SKIT_FEATURE_TRACE("sTRY: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
 			switch( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)) ) \
 			{ \
 			case __SKIT_TRY_EXCEPTION_CLEANUP: \
@@ -120,6 +125,7 @@ exception allocated in the code that threw the exception.
 					skit_exception *exc = skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
 					skit_finalize_exception(exc); \
 				} \
+				SKIT_FEATURE_TRACE("sTRY: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
 				SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 				SKIT_FEATURE_TRACE("try_jmp_stack_pop\n"); \
@@ -182,6 +188,7 @@ exception allocated in the code that threw the exception.
 				{ \
 					/* An exception was thrown and we can't handle it. */ \
 					SKIT_FEATURE_TRACE("%s, %d.178: sTRY: default: longjmp\n", __FILE__, __LINE__); \
+					__skit_try_catch_nesting_level--; \
 					SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 					SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
@@ -219,6 +226,7 @@ exception allocated in the code that threw the exception.
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n"); \
 	} \
+	__skit_try_catch_nesting_level--; \
 	SKIT_FEATURE_TRACE("%s, %d.216: sTRY: done.\n", __FILE__, __LINE__); \
 	}
 

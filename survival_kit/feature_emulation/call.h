@@ -39,12 +39,12 @@ and function name will be absent from stack traces if this is not used.
 		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"); \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) { \
 			SKIT_FEATURE_TRACE("%s, %d.40: sCALL.setjmp\n", __FILE__, __LINE__); \
-			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %d\n", skit_thread_ctx->exc_jmp_stack.used.length); \
+			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
 			(expr); \
 		} else { \
 			SKIT_FEATURE_TRACE("%s, %d.43: sCALL.longjmp\n", __FILE__, __LINE__); \
 			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
-			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %d\n", skit_thread_ctx->exc_jmp_stack.used.length); \
+			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
 			__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \

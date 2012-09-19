@@ -285,7 +285,7 @@ returned.
 */
 #define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) \
 		do { \
-			if ( skit_scope_ctx->scope_guards_used ) \
+			if ( __skit_try_catch_nesting_level == 0 && skit_scope_ctx->scope_guards_used ) \
 			{ \
 				skit_scope_ctx->exit_status = macro_arg_exit_status; \
 				\

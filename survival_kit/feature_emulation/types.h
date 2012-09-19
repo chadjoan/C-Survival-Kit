@@ -4,7 +4,7 @@
 
 #include <setjmp.h>
 
-#include "survival_kit/setjmp/jmp_fstack.h"
+#include "survival_kit/feature_emulation/setjmp/jmp_fstack.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
 
 /* SKIT_T_HEADER allows the template header file to be overridden. */

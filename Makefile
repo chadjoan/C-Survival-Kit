@@ -21,8 +21,8 @@ OBJECT_FILES= \
 	obj/cstr.o \
 	obj/stack_builtins.o \
 	obj/fstack_builtins.o \
-	obj/setjmp/jmp_stack.o \
-	obj/setjmp/jmp_fstack.o \
+	obj/feature_emulation/setjmp/jmp_stack.o \
+	obj/feature_emulation/setjmp/jmp_fstack.o \
 	obj/feature_emulation/generated_exception_defs.o \
 	obj/feature_emulation/funcs.o \
 	obj/feature_emulation/types.o \
@@ -56,7 +56,7 @@ lib:
 	mkdir -p lib
 
 $(OBJECT_DIRS):
-	mkdir -p obj/setjmp && mkdir -p obj/feature_emulation
+	mkdir -p obj/feature_emulation/setjmp && mkdir -p obj/feature_emulation
 
 clean:
 	rm -rf lib && rm -rf obj && rm -rf bin

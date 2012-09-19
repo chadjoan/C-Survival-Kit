@@ -13,8 +13,6 @@
 #include "survival_kit/memory.h"
 #include "survival_kit/cstr.h"
 
-#include "survival_kit/setjmp/jmp_fstack.h"
-
 typedef struct skit_fstack_unittest_context skit_fstack_unittest_context;
 struct skit_fstack_unittest_context
 {
@@ -36,22 +34,6 @@ int skit_fstack_walk_unittest(void *context, const skit_i32_stnode *node )
 void skit_fstack_unittest()
 {
 	printf("skit_fstack_unittest()\n");
-	
-	int end_was_reached = 0;
-	skit_jmp_fstack stack;
-	skit_jmp_fstack_init(&stack);
-	if( setjmp(*skit_jmp_fstack_alloc(&stack,&skit_malloc)) == 0 )
-	{
-		assert(stack.used.length == 1);
-		longjmp(*skit_jmp_fstack_pop(&stack),1);
-		assert(0);
-	}
-	else
-	{
-		assert(stack.used.length == 0);
-		end_was_reached = 1;
-	}
-	assert(end_was_reached);
 	
 	skit_fstack_unittest_context ctx;
 	

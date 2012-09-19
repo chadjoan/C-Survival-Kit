@@ -218,6 +218,47 @@ sSCOPE
 	
 sEND_SCOPE
 
+static int skit_scope_layered_try_test(int *result)
+sSCOPE
+	SKIT_USE_FEATURE_EMULATION;
+	
+	*result = 3;
+	sSCOPE_EXIT((*result)--);
+	
+	sTRY
+		(*result)--;
+		sTHROW(GENERIC_EXCEPTION, "  Thrown from a try-catch inside a scope-end_scope.");
+		(*result)--;
+	sCATCH(GENERIC_EXCEPTION, e)
+		printf("  Printing an exception, just as planned.\n");
+		skit_print_exception(e);
+		printf("  Printed!\n");
+		(*result)--;
+	sEND_TRY
+	
+	sRETURN(0);
+sEND_SCOPE
+
+static int skit_scope_layered_try_test2(int *result)
+sSCOPE
+	SKIT_USE_FEATURE_EMULATION;
+	
+	*result = 2;
+	sSCOPE_EXIT((*result)--);
+	
+	/* Try throwing an uncaught exception from within try-catch, not just function scope. */
+	/* Will it execute the sSCOPE_EXIT AND get caught later? It should. */
+	sTRY
+		(*result)--;
+		sTHROW(GENERIC_EXCEPTION, "  Thrown from a try-catch inside a scope-end_scope.");
+		(*result)--;
+	sEND_TRY
+	
+	(*result)--;
+	sASSERT_MSG(0, "This should be unreachable.");
+	sRETURN(0);
+sEND_SCOPE
+
 static void unittest_scope()
 {
 	SKIT_USE_FEATURE_EMULATION;
@@ -256,6 +297,19 @@ static void unittest_scope()
 	
 	sTRY
 		unittest_scope_failure_exceptional(&val);
+	sCATCH(GENERIC_EXCEPTION,e)
+		sASSERT_EQ(val,0,"%d");
+	sEND_TRY
+	
+	sTRY
+		skit_scope_layered_try_test(&val);
+		sASSERT_EQ(val,0,"%d");
+	sCATCH(GENERIC_EXCEPTION,e)
+		sASSERT_MSG(0, "This should be unreachable.");
+	sEND_TRY
+	
+	sTRY
+		skit_scope_layered_try_test2(&val);
 	sCATCH(GENERIC_EXCEPTION,e)
 		sASSERT_EQ(val,0,"%d");
 	sEND_TRY
