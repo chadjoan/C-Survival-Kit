@@ -71,7 +71,7 @@ for execution to fall to the bottom of a given block in the sTRY-sCATCH
 statement.  The "dangerous" was are by using local jumping constructs like
 "break" and "continue" to leave a sTRY-sCATCH statement.  
 */
-#define __SKIT_TRY_SAFE_EXIT         INT_MIN+1  
+#define __SKIT_TRY_SAFE_EXIT         INT_MIN+1
 
 /* __SKIT_TRY_EXCEPTION_CLEANUP is an implementation detail.
 It is jumped to at the end of sCATCH blocks as a way of cleaning up the
@@ -85,6 +85,7 @@ exception allocated in the code that threw the exception.
 #undef CATCH
 #undef ENDTRY
 #endif
+
 
 /** */
 #define sTRY /* */ \
@@ -151,17 +152,17 @@ exception allocated in the code that threw the exception.
 					__skit_prev_exception_stack_size = skit_thread_ctx->exc_instance_stack.used.length;
 
 /** */
-#define sCATCH(__error_code, exc_name) /* */ \
+#define sCATCH(__skit_error_code, exc_name) /* */ \
 					/* This end-of-block may be either the end of the normal/success case */ \
 					/*   OR the end of a catch block.  It must be able to do the correct */ \
 					/*   thing regardless of where it comes from. */ \
 					SKIT_FEATURE_TRACE("%s, %d.153: sTRY: case 0: longjmp\n", __FILE__, __LINE__); \
 					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, __SKIT_TRY_EXCEPTION_CLEANUP); \
 				} \
-				else if ( exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, __error_code) ) \
+				else if ( exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, __skit_error_code) ) \
 				{ \
 					/* sCATCH block. */ \
-					SKIT_FEATURE_TRACE("%s, %d.159: sTRY: case %d:\n", __FILE__, __LINE__, __error_code); \
+					SKIT_FEATURE_TRACE("%s, %d.159: sTRY: case %d:\n", __FILE__, __LINE__, __skit_error_code); \
 					skit_exception *exc_name = &skit_thread_ctx->exc_instance_stack.used.front->val; \
 					/* The caller may not want to actually use the named exception. */ \
 					/* They might just want to prevent its propogation and do different logic. */ \
@@ -219,6 +220,16 @@ exception allocated in the code that threw the exception.
 "Do not do this, ever!\n"); \
 	} \
 	SKIT_FEATURE_TRACE("%s, %d.216: sTRY: done.\n", __FILE__, __LINE__); \
+	}
+
+#define sENDTRY \
+				} /* if-else */ \
+			} /* default: { } */ \
+			} /* switch(setjmp(*__push...)) */ \
+		} while (0); \
+	} \
+	SKIT_sENDTRY_IS_TYPO_TXT(SKIT_sENDTRY_IS_TYPO_PTR); \
+	(void)*SKIT_sENDTRY_IS_TYPO_PTR; \
 	}
 
 #endif

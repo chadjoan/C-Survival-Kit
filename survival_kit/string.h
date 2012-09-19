@@ -123,7 +123,7 @@ Dynamically allocates a loaf of zero length using skit_malloc.
 The allocated memory will contain a nul character and calling 
 skit_loaf_len on the resulting loaf will return 0.
 */
-skit_loaf skit_slice_new();
+skit_loaf skit_loaf_new();
 
 /**
 Dynamically allocates a loaf with the same length as the given nul-terminated
@@ -157,7 +157,7 @@ ssize_t skit_slice_len(skit_slice slice);
 /**
 This macro is shorthand for calling skit_slice_len.
 */
-#define sSLEN(slice) (skit_slice_len((slice)))
+#define sSLENGTH(slice) (skit_slice_len((slice)))
 
 /** 
 These functions will return 0 if the given loaf/slice is uninitialized.

@@ -78,7 +78,7 @@ skit_loaf skit_loaf_null()
 
 /* ------------------------------------------------------------------------- */
 
-skit_loaf skit_string_new()
+skit_loaf skit_loaf_new()
 {
 	skit_loaf result = skit_loaf_null();
 	result.chars = (skit_utf8c*)skit_malloc(1);

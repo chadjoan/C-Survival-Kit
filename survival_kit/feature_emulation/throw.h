@@ -92,7 +92,7 @@ NOTE: Do not expand this macro in any function besides the one with the
 	do { \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
 		skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val); \
-		SKIT_FEATURE_TRACE("%s, %d.117: __PROPOGATE\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.117 in %s: __PROPOGATE\n", __FILE__, __LINE__,__func__); \
 		/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */ \
 		if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) \
 			longjmp( \

@@ -38,6 +38,11 @@
 #define SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR \
 	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_NO_BUILTIN_RETURN_FROM_TRY_TXT,_)
 
+#define SKIT_sENDTRY_IS_TYPO_TXT \
+	sENDTRY_is_probably_a_typo__Did_you_mean_sEND_TRY
+#define SKIT_sENDTRY_IS_TYPO_PTR \
+	SKIT_COMPILE_TIME_ERRORS_JOIN(SKIT_sENDTRY_IS_TYPO_TXT,_)
+
 #define SKIT_NO_GOTO_FROM_TRY_TXT \
 	goto_is_disallowed_from_sTRY_sCATCH_blocks_because_leaving_sTRY_sCATCH_blocks_with_goto_can_be_disastrous
 #define SKIT_NO_GOTO_FROM_TRY_PTR \
@@ -47,7 +52,7 @@
 	This_sRETURN_statement_macro_is_in_a_function_missing_a_SKIT_USE_FEATURE_EMULATION_statement
 
 #define SKIT_USE_FEATURES_IN_FUNC_BODY \
-	Place_the_USE_FEATURES_macro_at_the_top_of_function_bodies_to_use_features_like_sTRY_sCATCH_and_sSCOPE
+	Place_the_SKIT_USE_FEATURE_EMULATION_macro_at_the_top_of_function_bodies_to_use_features_like_sTRY_sCATCH_and_sSCOPE
 /* End of error message definitions. */
 
 
@@ -77,6 +82,10 @@ __attribute__ ((unused)) static void SKIT_NO_GOTO_FROM_SCOPE_GUARDS_TXT         
 __attribute__ ((unused)) static void SKIT_NO_GOTO_FROM_TRY_TXT                  (char *ptr) { }
 __attribute__ ((unused)) static void SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_TXT     (char *ptr) { }
 __attribute__ ((unused)) static void SKIT_NO_BREAK_FROM_SCOPE_GUARDS_TXT        (char *ptr) { }
+
+/* Immediately define this one as non-pointer: it is always an error, regardless of where it appears. */
+__attribute__ ((unused)) static char SKIT_sENDTRY_IS_TYPO_PTR;
+__attribute__ ((unused)) static void SKIT_sENDTRY_IS_TYPO_TXT( char *ptr ) { }
 
 /* Try to catch some common mistakes by redefining keywords. */
 
