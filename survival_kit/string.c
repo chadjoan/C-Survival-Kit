@@ -835,6 +835,48 @@ static void skit_slice_truncate_test()
 	printf("  skit_slice_truncate_test passed.\n");
 }
 
+/* ------------------------------------------------------------------------- */
+
+int skit_slice_match(
+	const skit_slice haystack,
+	const skit_slice needle,
+	ssize_t pos)
+{
+	ssize_t haystack_length;
+	ssize_t needle_length;
+	ssize_t rbound;
+	ssize_t i;
+	sASSERT(haystack.chars != NULL);
+	sASSERT(needle.chars != NULL);
+	sASSERT_GE(pos,0,"%d"); 
+	
+	haystack_length = skit_slice_len(haystack);
+	needle_length = skit_slice_len(needle);
+	rbound = pos+needle_length;
+	if ( rbound > haystack_length )
+		return 0;
+	
+	for ( i = 0; i < needle_length; i++ )
+	{
+		ssize_t j = i+pos;
+		if ( haystack.chars[j] != needle.chars[i] )
+			return 0;
+	}
+	
+	return 1;
+}
+
+static void skit_slice_match_test()
+{
+	skit_slice haystack = sSLICE("foobarbaz");
+	skit_slice needle = sSLICE("bar");
+	sASSERT_EQ(skit_slice_match(haystack,needle,0),0,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,3),1,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,6),0,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,8),0,"%d");
+	printf("  skit_slice_match_test passed.\n");
+}
+
 /* ========================================================================= */
 /* ----------------------------- unittest list ----------------------------- */
 
@@ -861,6 +903,7 @@ void skit_string_unittest()
 	skit_slice_comparison_ops_test();
 	skit_slice_trim_test();
 	skit_slice_truncate_test();
+	skit_slice_match_test();
 	printf("  skit_slice_unittest passed!\n");
 	printf("\n");
 }

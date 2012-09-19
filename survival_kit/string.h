@@ -579,6 +579,32 @@ Example:
 skit_slice skit_slice_ltruncate(const skit_slice slice, size_t nchars);
 skit_slice skit_slice_rtruncate(const skit_slice slice, size_t nchars);
 
+/**
+Determines if the slice 'needle' equals the contents of the slice 'haystack'
+at the position 'pos'.  It will only compare as many characters as there are
+in 'needle'.
+This is similar to calling 
+skit_slice_eqs(skit_slice_of(haystack,pos,pos+sSLENGTH(needle)),needle)
+with the exception that 'needle' is allowed to overlap the end of the 
+'haystack' string (it will return 0 in such cases).
+'pos' must be positive.  An assertion will trigger if it is not.
+Returns 1 if 'needle' is equal to the contents of 'haystack' at 'pos'.
+Returns 0 otherwise.
+This function does not throw.  It may assert if any of the slices contain NULL
+pointers.
+Example:
+	skit_slice haystack = sSLICE("foobarbaz");
+	skit_slice needle = sSLICE("bar");
+	sASSERT_EQ(skit_slice_match(haystack,needle,0),0,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,3),1,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,6),0,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,8),0,"%d");
+*/
+int skit_slice_match(
+	const skit_slice haystack,
+	const skit_slice needle,
+	ssize_t pos);
+
 /* Unittests all string functions. */
 void skit_string_unittest();
 
