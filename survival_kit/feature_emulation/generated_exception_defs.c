@@ -4,6 +4,16 @@
 
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
 
+#define SKIT_DEFINE_EXC_TABLE_ENTRY(EXC_NAME, PARENT_NAME, UID, ERR_TXT) \
+	PARENT_NAME,
+skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE] = {
+	0,
+	1,
+SKIT_EXCEPTION_LIST(SKIT_DEFINE_EXC_TABLE_ENTRY)
+	};
+#undef SKIT_DEFINE_EXC_TABLE_ENTRY
+
+#if 0
 skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 	0, /* Never use 0, it has a special meaning for setjmp/longjmp. */
 	1, /* 1 is pretty dangerous too. */
@@ -16,6 +26,7 @@ skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE] = {
 	GENERIC_EXCEPTION, /* SOCKET_EXCEPTION */
 	GENERIC_EXCEPTION, /* OUT_OF_BOUNDS */
 	};
+#endif
 
 int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {

@@ -12,11 +12,23 @@ extern skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE];
 
 int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 );
 
-#define GENERIC_EXCEPTION     2
-#define FATAL_EXCEPTION       3
-#define BREAK_IN_TRY_CATCH    4
-#define CONTINUE_IN_TRY_CATCH 5
-#define SOCKET_EXCEPTION      6
-#define OUT_OF_BOUNDS         7
+/* Exception list notes: */
+/* Never use 0, it has a special meaning for setjmp/longjmp. */
+/* 1 is pretty dangerous too. */
+/*	X(EXCEPTION_NAME,        PARENT_NAME,      ID,  "MESSAGE") */
+#define SKIT_EXCEPTION_LIST(X) \
+	X(GENERIC_EXCEPTION,     GENERIC_EXCEPTION, 2, "An exception was thrown.") \
+	X(FATAL_EXCEPTION,       FATAL_EXCEPTION,   3, "An unrecoverable exception was thrown.") \
+	X(BREAK_IN_TRY_CATCH,    GENERIC_EXCEPTION, 4, "Attempt to use the built-in 'break' statement while in an sTRY-sCATCH block.") \
+	X(CONTINUE_IN_TRY_CATCH, GENERIC_EXCEPTION, 5, "Attempt to use the built-in 'continue' statement while in an sTRY-sCATCH block.") \
+	X(SOCKET_EXCEPTION,      GENERIC_EXCEPTION, 6, "socket exception.") \
+	X(OUT_OF_BOUNDS,         GENERIC_EXCEPTION, 7, "Out of bounds exception.")
+
+#define SKIT_DEFINE_EXCEPTION_IDS(EXC_NAME, PARENT_NAME, UID, ERR_TXT) \
+	EXC_NAME = UID,
+enum {
+SKIT_EXCEPTION_LIST(SKIT_DEFINE_EXCEPTION_IDS)
+};
+#undef SKIT_DEFINE_EXCEPTION_IDS
 
 #endif
