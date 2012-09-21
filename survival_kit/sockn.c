@@ -40,10 +40,10 @@ void recvn(int sock, skit_loaf *buf)
 	
 	/* Receive message */
 	if ((received = recv(sock, buffer, 4, 0)) < 0)
-		sTHROW(SOCKET_EXCEPTION,"recvn: Length information not received. recv() call failed with error code %d.", received);
+		sTHROW(SKIT_SOCKET_EXCEPTION,"recvn: Length information not received. recv() call failed with error code %d.", received);
 	
 	if ( received < 4 )
-		sTHROW(SOCKET_EXCEPTION,"recvn: Length information not received. Received %d bytes instead.", received);
+		sTHROW(SKIT_SOCKET_EXCEPTION,"recvn: Length information not received. Received %d bytes instead.", received);
 
 	msg_length = ntohl(((uint32_t*)buffer)[0]);
 	buf = skit_loaf_resize(buf, msg_length);
@@ -57,7 +57,7 @@ void recvn(int sock, skit_loaf *buf)
 		
 		/* Check for more data */
 		if ((received = recv(sock, msg_cursor, msg_end - msg_cursor, 0)) < 0)
-			sTHROW(SOCKET_EXCEPTION,"recvn: Not enough bytes received to complete message.", received);
+			sTHROW(SKIT_SOCKET_EXCEPTION,"recvn: Not enough bytes received to complete message.", received);
 		
 		if ( received == 0 )
 			break;

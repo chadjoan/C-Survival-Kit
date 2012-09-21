@@ -165,7 +165,7 @@ exception allocated in the code that threw the exception.
 					SKIT_FEATURE_TRACE("%s, %d.153: sTRY: case 0: longjmp\n", __FILE__, __LINE__); \
 					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, __SKIT_TRY_EXCEPTION_CLEANUP); \
 				} \
-				else if ( exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, __skit_error_code) ) \
+				else if ( skit_exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, __skit_error_code) ) \
 				{ \
 					/* sCATCH block. */ \
 					SKIT_FEATURE_TRACE("%s, %d.159: sTRY: case %d:\n", __FILE__, __LINE__, __skit_error_code); \
@@ -207,7 +207,7 @@ exception allocated in the code that threw the exception.
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
-			sTHROW(BREAK_IN_TRY_CATCH, "\n"\
+			sTHROW(SKIT_BREAK_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'break' statement from within a sTRY-sCATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n" ); \
@@ -221,7 +221,7 @@ exception allocated in the code that threw the exception.
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
-		sTHROW(CONTINUE_IN_TRY_CATCH, "\n"\
+		sTHROW(SKIT_CONTINUE_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'continue' statement from within a sTRY-sCATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
 "Do not do this, ever!\n"); \

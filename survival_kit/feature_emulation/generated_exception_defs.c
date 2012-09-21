@@ -6,14 +6,14 @@
 
 #define SKIT_DEFINE_EXC_TABLE_ENTRY(EXC_NAME, PARENT_NAME, UID, ERR_TXT) \
 	PARENT_NAME,
-skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE] = {
+static skit_err_code __skit_exc_inheritance_table[__SKIT_EXC_TABLE_SIZE] = {
 	0,
 	1,
 SKIT_EXCEPTION_LIST(SKIT_DEFINE_EXC_TABLE_ENTRY)
 	};
 #undef SKIT_DEFINE_EXC_TABLE_ENTRY
 
-int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
+int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {
 	skit_err_code child_code = ecode2;
 	skit_err_code parent_code = ecode1;
@@ -21,7 +21,7 @@ int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 	while (1)
 	{
 		/* Invalid parent_codes. */
-		if ( parent_code <= 1 || parent_code >= __EXC_TABLE_SIZE )
+		if ( parent_code <= 1 || parent_code >= __SKIT_EXC_TABLE_SIZE )
 			return 0;
 		
 		/* Match found! */
@@ -33,7 +33,7 @@ int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 			return 0;
 		
 		last_parent = parent_code;
-		parent_code = __exc_inheritance_table[parent_code];
+		parent_code = __skit_exc_inheritance_table[parent_code];
 	}
 	assert(0);
 }

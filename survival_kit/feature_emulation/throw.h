@@ -17,7 +17,7 @@ While this is the strictly more powerful way to throw exceptions, the more
   convenient way for common cases would be to use the RAISE macro.
 This macro expands to a statement and may not be nested inside expressions.
 Example usage:
-	RAISE(new_exception(GENERIC_EXCEPTION,"Something bad happened!")); 
+	RAISE(new_exception(SKIT_EXCEPTION,"Something bad happened!")); 
 
 TODO: regain this functionality.
 */
@@ -45,9 +45,9 @@ SKIT_ALLOW_OTHER_TRY_CATCH macro symbol before #including this file.
 See "survival_kit/feature_emulation/try_catch.h" for more naming documentation.
 
 Example usage:
-	sTHROW(GENERIC_EXCEPTION); // Use the exception type's default message.
-	sTHROW(GENERIC_EXCEPTION,"Something bad happened!"); // More convenient syntax.
-	sTHROW(GENERIC_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
+	sTHROW(SKIT_EXCEPTION); // Use the exception type's default message.
+	sTHROW(SKIT_EXCEPTION,"Something bad happened!"); // More convenient syntax.
+	sTHROW(SKIT_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
 */
 #define sTHROW(...) MACRO_DISPATCHER3(sTHROW, __VA_ARGS__)(__VA_ARGS__)
 
