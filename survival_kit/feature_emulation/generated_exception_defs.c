@@ -13,21 +13,6 @@ SKIT_EXCEPTION_LIST(SKIT_DEFINE_EXC_TABLE_ENTRY)
 	};
 #undef SKIT_DEFINE_EXC_TABLE_ENTRY
 
-#if 0
-skit_err_code __exc_inheritance_table[__EXC_TABLE_SIZE] = {
-	0, /* Never use 0, it has a special meaning for setjmp/longjmp. */
-	1, /* 1 is pretty dangerous too. */
-	GENERIC_EXCEPTION, /* Is it's own parent. */
-	FATAL_EXCEPTION,   /* ditto */
-	/* From now on, it goes like so: */
-	/* PARENT_NAME, */ /* CHILD_NAME */
-	GENERIC_EXCEPTION, /* BREAK_IN_TRY_CATCH */
-	GENERIC_EXCEPTION, /* CONTINUE_IN_TRY_CATCH */
-	GENERIC_EXCEPTION, /* SOCKET_EXCEPTION */
-	GENERIC_EXCEPTION, /* OUT_OF_BOUNDS */
-	};
-#endif
-
 int exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {
 	skit_err_code child_code = ecode2;
