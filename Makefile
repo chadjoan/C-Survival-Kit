@@ -30,6 +30,11 @@ OBJECT_FILES= \
 	obj/signal_handling.o \
 	obj/math.o \
 	obj/string.o \
+	obj/streams/stream.o \
+	obj/streams/text_stream.o \
+	obj/streams/file_stream.o \
+	obj/streams/pfile_stream.o \
+	obj/streams/init.o \
 	obj/sockn.o \
 	obj/init.o
 
@@ -56,7 +61,7 @@ lib:
 	mkdir -p lib
 
 $(OBJECT_DIRS):
-	mkdir -p obj/feature_emulation/setjmp && mkdir -p obj/feature_emulation
+	mkdir -p obj/feature_emulation/setjmp && mkdir -p obj/feature_emulation && mkdir -p obj/streams
 
 clean:
 	rm -rf lib && rm -rf obj && rm -rf bin

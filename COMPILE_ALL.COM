@@ -26,6 +26,11 @@ $ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
 $ @'THIS_DIR'compile survival_kit/signal_handling
 $ @'THIS_DIR'compile survival_kit/math
 $ @'THIS_DIR'compile survival_kit/string
+$ @'THIS_DIR'compile survival_kit/streams/stream
+$ @'THIS_DIR'compile survival_kit/streams/text_stream
+$ @'THIS_DIR'compile survival_kit/streams/file_stream
+$ @'THIS_DIR'compile survival_kit/streams/pfile_stream
+$ @'THIS_DIR'compile survival_kit/streams/init
 $ @'THIS_DIR'compile survival_kit/sockn
 $ @'THIS_DIR'compile survival_kit/init
 $ @'THIS_DIR'compile tools_src/unittests

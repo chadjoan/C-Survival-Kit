@@ -3,8 +3,6 @@
 #define SKIT_STREAMS_VTABLE_INCLUDED
 
 #include "survival_kit/string.h"
-//#include "survival_kit/streams/stream.h"
-//#include "survival_kit/streams/file_stream.h"
 
 union skit_stream;
 union skit_file_stream;
@@ -13,20 +11,21 @@ typedef struct skit_stream_vtable_t skit_stream_vtable_t;
 struct skit_stream_vtable_t
 {
 	/* Basic stream operations. */
-	void       (*init)        (skit_stream*);
-	skit_slice (*read_line)   (skit_stream*);
-	skit_slice (*read_bytes)  (skit_stream*);
-	void       (*write_line)  (skit_stream*,skit_slice);
-	void       (*write_bytes) (skit_stream*,skit_slice);
-	void       (*flush)       (skit_stream*);
-	void       (*rewind)      (skit_stream*);
-	skit_slice (*slurp)       (skit_stream*);
-	skit_slice (*to_slice)    (skit_stream*);
-	void       (*dump)        (skit_stream*,skit_stream*);
+	void       (*init)        (union skit_stream*);
+	skit_slice (*readln)      (union skit_stream*);
+	skit_slice (*read)        (union skit_stream*);
+	void       (*writeln)     (union skit_stream*,skit_slice);
+	void       (*writefln_va) (union skit_stream*,const char*,va_list);
+	void       (*write)       (union skit_stream*,skit_slice);
+	void       (*flush)       (union skit_stream*);
+	void       (*rewind)      (union skit_stream*);
+	skit_slice (*slurp)       (union skit_stream*);
+	skit_slice (*to_slice)    (union skit_stream*);
+	void       (*dump)        (union skit_stream*,union skit_stream*);
 	
 	/* File stream operations. */
-	void       (*open)        (skit_file_stream*,skit_slice,const char*);
-	void       (*close)       (skit_file_stream*);
+	void       (*open)        (union skit_file_stream*,skit_slice,const char*);
+	void       (*close)       (union skit_file_stream*);
 };
 
 typedef struct skit_stream_metadata skit_stream_metadata;
@@ -44,7 +43,15 @@ extern skit_stream_vtable_t *skit_stream_vtables[];
 void skit_stream_register_vtable();
 */
 
-#define SKIT_STREAM_DISPATCH(stream, func_name, ...) \
-	((stream)->meta.vtable_ptr->func_name(stream, ##__VA_ARGS__))
+#define SKIT_STREAM_DISPATCH(...) MACRO_DISPATCHER3(SKIT_STREAM_DISPATCH, __VA_ARGS__)(__VA_ARGS__)
+
+#define SKIT_STREAM_DISPATCH1(stream) \
+	(char * "Invalid use of SKIT_STREAM_DISPATCH macro.")
+
+#define SKIT_STREAM_DISPATCH2(stream, func_name) \
+	((stream)->meta.vtable_ptr->func_name(stream))
+
+#define SKIT_STREAM_DISPATCH3(stream, func_name, ...) \
+	((stream)->meta.vtable_ptr->func_name(stream, __VA_ARGS__))
 
 #endif
