@@ -28,5 +28,24 @@ union skit_stream
 };
 
 void skit_stream_vtable_init(skit_stream_vtable_t *table);
+skit_slice skit_stream_read_line(skit_stream *stream);
+skit_slice skit_stream_read_bytes(skit_stream *stream);
+void skit_stream_write_line(skit_stream *stream, skit_slice slice);
+void skit_stream_write_bytes(skit_stream *stream, skit_slice slice);
+void skit_stream_flush(skit_stream *stream);
+void skit_stream_rewind(skit_stream *stream);
+skit_slice skit_stream_slurp(skit_stream *stream);
+skit_slice skit_stream_to_slice(skit_stream *stream);
+void skit_stream_dump(skit_stream *stream, skit_stream *out);
+
+/* Streams can't be opened/closed in general, so those methods are absent. */
+
+/* -------------------------- final methods -------------------------------- */
+
+void skit_stream_incr_indent(skit_stream *stream);
+void skit_stream_decr_indent(skit_stream *stream);
+short skit_stream_get_indent_lvl(skit_stream *stream);
+char skit_stream_get_indent_char(skit_stream *stream);
+void skit_stream_set_indent_char(skit_stream *stream, char c);
 
 #endif

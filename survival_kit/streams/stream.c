@@ -1,4 +1,7 @@
 
+#include "survival_kit/streams/meta.h"
+#include "survival_kit/streams/stream.h"
+
 /* ------------------------- vtable stuff ---------------------------------- */
 static int skit_stream_initialized = 0;
 static skit_stream_vtable_t skit_stream_vtable;
@@ -68,47 +71,47 @@ void skit_stream_static_init()
 
 skit_slice skit_stream_read_line(skit_stream *stream)
 {
-	return DISPATCH(stream, read_line);
+	return SKIT_STREAM_DISPATCH(stream, read_line);
 }
 
 skit_slice skit_stream_read_bytes(skit_stream *stream)
 {
-	return DISPATCH(stream, read_bytes);
+	return SKIT_STREAM_DISPATCH(stream, read_bytes);
 }
 
 void skit_stream_write_line(skit_stream *stream, skit_slice slice)
 {
-	DISPATCH(stream, write_line, slice);
+	SKIT_STREAM_DISPATCH(stream, write_line, slice);
 }
 
 void skit_stream_write_bytes(skit_stream *stream, skit_slice slice)
 {
-	DISPATCH(stream, write_bytes, slice);
+	SKIT_STREAM_DISPATCH(stream, write_bytes, slice);
 }
 
 void skit_stream_flush(skit_stream *stream)
 {
-	DISPATCH(stream, flush);
+	SKIT_STREAM_DISPATCH(stream, flush);
 }
 
 void skit_stream_rewind(skit_stream *stream)
 {
-	DISPATCH(stream, rewind);
+	SKIT_STREAM_DISPATCH(stream, rewind);
 }
 
 skit_slice skit_stream_slurp(skit_stream *stream)
 {
-	return DISPATCH(stream, slurp);
+	return SKIT_STREAM_DISPATCH(stream, slurp);
 }
 
 skit_slice skit_stream_to_slice(skit_stream *stream)
 {
-	return DISPATCH(stream, to_slice);
+	return SKIT_STREAM_DISPATCH(stream, to_slice);
 }
 
 void skit_stream_dump(skit_stream *stream, skit_stream *out)
 {
-	return DISPATCH(stream, dump, out);
+	return SKIT_STREAM_DISPATCH(stream, dump, out);
 }
 
 /* Streams can't be opened/closed in general, so those methods are absent. */

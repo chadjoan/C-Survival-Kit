@@ -2,6 +2,13 @@
 #ifndef SKIT_STREAMS_VTABLE_INCLUDED
 #define SKIT_STREAMS_VTABLE_INCLUDED
 
+#include "survival_kit/string.h"
+//#include "survival_kit/streams/stream.h"
+//#include "survival_kit/streams/file_stream.h"
+
+union skit_stream;
+union skit_file_stream;
+
 typedef struct skit_stream_vtable_t skit_stream_vtable_t;
 struct skit_stream_vtable_t
 {
@@ -22,7 +29,6 @@ struct skit_stream_vtable_t
 	void       (*close)       (skit_file_stream*);
 };
 
-
 typedef struct skit_stream_metadata skit_stream_metadata;
 struct skit_stream_metadata
 {
@@ -38,7 +44,7 @@ extern skit_stream_vtable_t *skit_stream_vtables[];
 void skit_stream_register_vtable();
 */
 
-#define DISPATCH(stream, func_name, ...) \
+#define SKIT_STREAM_DISPATCH(stream, func_name, ...) \
 	((stream)->meta.vtable_ptr->func_name(stream, ##__VA_ARGS__))
 
 #endif
