@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_stack_builtins
+#endif
+
 #define SKIT_T_HEADER "survival_kit/templates/stack.c"
 #include "survival_kit/stack_builtins.h"
 

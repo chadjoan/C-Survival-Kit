@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_feature_emu_unittests
+#endif
+
 #include "survival_kit/feature_emulation/unittest.h"
 #include "survival_kit/feature_emulation.h"
 

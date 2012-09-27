@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_string
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>

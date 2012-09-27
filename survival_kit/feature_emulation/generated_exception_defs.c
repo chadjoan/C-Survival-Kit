@@ -1,3 +1,8 @@
+
+#ifdef __DECC
+#pragma module skit_feature_emu_gen_exc_defs
+#endif
+
 #include <inttypes.h>
 #include <assert.h>
 #include <stdio.h> /* printf */

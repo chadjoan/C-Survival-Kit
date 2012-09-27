@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_fstack_builtins
+#endif
+
 #include <setjmp.h>
 #include <assert.h>
 

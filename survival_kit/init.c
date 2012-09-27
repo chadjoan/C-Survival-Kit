@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_init
+#endif
+
 #include "survival_kit/init.h"
 #include "survival_kit/cstr.h"
 #include "survival_kit/feature_emulation.h"

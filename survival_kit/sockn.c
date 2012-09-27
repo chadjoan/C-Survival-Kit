@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_sockn
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <inttypes.h>

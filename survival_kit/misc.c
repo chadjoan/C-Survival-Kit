@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_misc
+#endif
+
 #include <unistd.h> /* For STDERR_FILENO */
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,3 +1,8 @@
+
+#ifdef __DECC
+#pragma module skit_feature_emulation_funcs
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

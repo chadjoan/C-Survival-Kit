@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_feature_emu_setjmp_stack
+#endif
+
 #include <setjmp.h>
 
 #define SKIT_T_DIE_ON_ERROR

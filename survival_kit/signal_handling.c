@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_signal_handling
+#endif
+
 #include <signal.h>
 #include <pthread.h>
 #include <string.h> /* strerror_r */

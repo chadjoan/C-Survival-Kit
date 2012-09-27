@@ -1,3 +1,8 @@
+
+#ifdef __DECC
+#pragma module skit_math
+#endif
+
 #include <stdio.h>
 
 #include "survival_kit/math.h"

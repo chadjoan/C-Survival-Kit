@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_cstr
+#endif
+
 #include <stdio.h> /* snprintf */
 #include <pthread.h>
 #include "survival_kit/init.h"

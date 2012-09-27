@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_feature_emu_setjmp_fstack
+#endif
+
 #include <setjmp.h>
 #include "survival_kit/feature_emulation/setjmp/jmp_stack.h"
 

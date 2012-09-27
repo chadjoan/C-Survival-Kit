@@ -1,4 +1,8 @@
 
+#ifdef __DECC
+#pragma module skit_memory
+#endif
+
 #include <stdlib.h>
 
 #include "survival_kit/memory.h"
