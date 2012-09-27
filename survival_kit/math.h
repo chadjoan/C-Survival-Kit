@@ -15,7 +15,7 @@ Example:
 	double bar = SKIT_MAX(foo, 6, foo+3.5, 1.2);
 	sASSERT_EQ(bar, 8.5);
 */
-#define SKIT_MAX(...) MACRO_DISPATCHER(SKIT_MAX, __VA_ARGS__)(__VA_ARGS__)
+#define SKIT_MAX(...) SKIT_MACRO_DISPATCHER(SKIT_MAX, __VA_ARGS__)(__VA_ARGS__)
 #define SKIT_MAX1(a) a
 #define SKIT_MAX2(a, b) ((a)>(b)?(a):(b))
 #define SKIT_MAX3(a, b, c) SKIT_MAX2(SKIT_MAX2(a, b), c)
@@ -36,7 +36,7 @@ Example:
 	double bar = SKIT_MIN(foo, 6, foo+3.5, 1.2);
 	sASSERT_EQ(bar, 1.2);
 */
-#define SKIT_MIN(...) MACRO_DISPATCHER(SKIT_MIN, __VA_ARGS__)(__VA_ARGS__)
+#define SKIT_MIN(...) SKIT_MACRO_DISPATCHER(SKIT_MIN, __VA_ARGS__)(__VA_ARGS__)
 #define SKIT_MIN1(a) a
 #define SKIT_MIN2(a, b) ((a)<(b)?(a):(b))
 #define SKIT_MIN3(a, b, c) SKIT_MIN2(SKIT_MIN2(a, b), c)

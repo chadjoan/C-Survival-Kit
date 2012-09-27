@@ -69,7 +69,7 @@ static void unittest_exceptions()
 			printf("Nested sCATCH-sTRY-sCATCH test.\n");
 		sCATCH(SKIT_EXCEPTION, e2)
 			printf("This shouldn't happen.\n");
-			UNUSED(e2);
+			SKIT_UNUSED(e2);
 			/* skit_print_exception(e2);*/
 		sEND_TRY
 		
@@ -84,7 +84,7 @@ static void unittest_exceptions()
 				printf("Now to bail without stopping first!\n");
 				break;
 			sCATCH(SKIT_EXCEPTION,e)
-				UNUSED(e);
+				SKIT_UNUSED(e);
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
 			sEND_TRY
 		}
@@ -102,7 +102,7 @@ static void unittest_exceptions()
 				continue;
 			sCATCH(SKIT_EXCEPTION,e)
 				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
-				UNUSED(e);
+				SKIT_UNUSED(e);
 			sEND_TRY
 		}
 	sCATCH(SKIT_CONTINUE_IN_TRY_CATCH, e)

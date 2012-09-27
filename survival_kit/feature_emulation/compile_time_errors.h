@@ -191,7 +191,7 @@ from sTRY-sCATCH blocks.
 
 #define sRETURN0()     SKIT_RETURN_INTERNAL(return)
 #define sRETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
-#define sRETURN(...) MACRO_DISPATCHER1(sRETURN, __VA_ARGS__)(__VA_ARGS__)
+#define sRETURN(...) SKIT_MACRO_DISPATCHER1(sRETURN, __VA_ARGS__)(__VA_ARGS__)
 	
 
 /* 

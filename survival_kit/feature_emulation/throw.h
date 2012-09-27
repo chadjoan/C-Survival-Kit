@@ -49,7 +49,7 @@ Example usage:
 	sTHROW(SKIT_EXCEPTION,"Something bad happened!"); // More convenient syntax.
 	sTHROW(SKIT_EXCEPTION,"Bad index: %d", index);    // Formatting is allowed.
 */
-#define sTHROW(...) MACRO_DISPATCHER3(sTHROW, __VA_ARGS__)(__VA_ARGS__)
+#define sTHROW(...) SKIT_MACRO_DISPATCHER3(sTHROW, __VA_ARGS__)(__VA_ARGS__)
 
 #define sTHROW1(e) \
 	do { \

@@ -43,7 +43,7 @@ extern skit_stream_vtable_t *skit_stream_vtables[];
 void skit_stream_register_vtable();
 */
 
-#define SKIT_STREAM_DISPATCH(...) MACRO_DISPATCHER3(SKIT_STREAM_DISPATCH, __VA_ARGS__)(__VA_ARGS__)
+#define SKIT_STREAM_DISPATCH(...) SKIT_MACRO_DISPATCHER3(SKIT_STREAM_DISPATCH, __VA_ARGS__)(__VA_ARGS__)
 
 #define SKIT_STREAM_DISPATCH1(stream) \
 	(char * "Invalid use of SKIT_STREAM_DISPATCH macro.")
