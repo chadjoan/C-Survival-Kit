@@ -590,8 +590,9 @@ with the exception that 'needle' is allowed to overlap the end of the
 'pos' must be positive.  An assertion will trigger if it is not.
 Returns 1 if 'needle' is equal to the contents of 'haystack' at 'pos'.
 Returns 0 otherwise.
-This function does not throw.  It may assert if any of the slices contain NULL
-pointers.
+This function does not throw.  
+It may assert if any of the slices contain NULL pointers, or if 'pos' does
+not point to a location in the haystack slice.
 Example:
 	skit_slice haystack = sSLICE("foobarbaz");
 	skit_slice needle = sSLICE("bar");
@@ -603,6 +604,32 @@ Example:
 int skit_slice_match(
 	const skit_slice haystack,
 	const skit_slice needle,
+	ssize_t pos);
+
+/**
+Determines if there is a newline sequence at the given position 'pos' in the
+'text'.
+This will attempt to match any of the conventional newline sequences, in this
+order:
+"\r\n"
+"\n"
+"\r"
+Returns 2 if "\r\n" matches.
+Returns 1 if "\n" or "\r" matches.
+Returns 0 if not.
+Example:
+	skit_slice haystack = sSLICE("foo\nbar\r\nbaz\rqux");
+	sASSERT_EQ(skit_slice_match_nl(haystack,3),1,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,7),2,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,8),1,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,12),1,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,0),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,2),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,4),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,13),0,"%d");
+*/
+int skit_slice_match_nl(
+	const skit_slice text,
 	ssize_t pos);
 
 /* Unittests all string functions. */

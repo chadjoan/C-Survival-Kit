@@ -881,6 +881,43 @@ static void skit_slice_match_test()
 	printf("  skit_slice_match_test passed.\n");
 }
 
+/* ------------------------------------------------------------------------- */
+
+int skit_slice_match_nl(
+	const skit_slice text,
+	ssize_t pos)
+{
+	sASSERT(text.chars != NULL);
+	sASSERT_GE(pos,0,"%d");
+	ssize_t length = sSLENGTH(text);
+	sASSERT_LT(pos,length,"%d");
+	if ( text.chars[pos] == '\r' )
+	{
+		if ( pos+1 < length && text.chars[pos+1] == '\n' )
+			return 2;
+		else
+			return 1;
+	}
+	else if ( text.chars[pos] == '\n' )
+		return 1;
+
+	return 0;
+}
+
+static void skit_slice_match_test_nl()
+{
+	skit_slice haystack = sSLICE("foo\nbar\r\nbaz\rqux");
+	sASSERT_EQ(skit_slice_match_nl(haystack,3),1,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,7),2,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,8),1,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,12),1,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,0),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,2),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,4),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,13),0,"%d");
+	printf("  skit_slice_match_test_nl passed.\n");
+}
+
 /* ========================================================================= */
 /* ----------------------------- unittest list ----------------------------- */
 
@@ -908,6 +945,7 @@ void skit_string_unittest()
 	skit_slice_trim_test();
 	skit_slice_truncate_test();
 	skit_slice_match_test();
+	skit_slice_match_test_nl();
 	printf("  skit_slice_unittest passed!\n");
 	printf("\n");
 }
