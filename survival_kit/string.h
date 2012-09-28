@@ -495,6 +495,10 @@ Performs an asciibetical comparison of the two strings.
 |  > 0  | str1 is greater than str2            |
 +-------+--------------------------------------+
 
+As a special case, null strings (slices/loaves with .chars == NULL) will always
+be equal to each other and not equal to non-null strings.
+null strings will always be less than non-null strings.
+
 Example:
 	skit_slice bigstr = sSLICE("Big string!");
 	skit_slice lilstr = sSLICE("lil str.");
@@ -509,6 +513,11 @@ Example:
 	sASSERT(skit_slice_ascii_cmp(bbb, aaa) > 0);
 	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
 	skit_loaf_free(&aaab);
+	
+	skit_slice nullstr = skit_slice_null();
+	sASSERT(skit_slice_ascii_cmp(nullstr, nullstr) == 0);
+	sASSERT(skit_slice_ascii_cmp(nullstr, aaa) < 0);
+	sASSERT(skit_slice_ascii_cmp(aaa, nullstr) > 0);
 */
 int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2);
 
@@ -538,6 +547,13 @@ Example:
 	sASSERT( skit_slice_nes(alphaLo,alphaHi)); // alphaLo != alphaHi
 	sASSERT( skit_slice_nes(alphaHi,alphaLo)); // alphaHi != alphaLo
 	sASSERT(!skit_slice_nes(alphaHi,alphaHi)); // alphaHi != alphaHi
+	
+	skit_slice nullstr = skit_slice_null();
+	sASSERT( skit_slice_eqs(nullstr,nullstr));
+	sASSERT(!skit_slice_nes(nullstr,nullstr));
+	sASSERT(!skit_slice_eqs(alphaLo,nullstr));
+	sASSERT( skit_slice_nes(alphaLo,nullstr));
+	sASSERT( skit_slice_lts(nullstr,alphaLo));
 */
 int skit_slice_ges(const skit_slice str1, const skit_slice str2);
 int skit_slice_gts(const skit_slice str1, const skit_slice str2);

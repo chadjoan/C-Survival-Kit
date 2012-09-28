@@ -601,8 +601,16 @@ static void skit_slice_common_prefix_test()
 
 int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
 {
-	sASSERT(str1.chars != NULL);
-	sASSERT(str2.chars != NULL);
+	if ( str1.chars == NULL )
+	{
+		if ( str2.chars == NULL )
+			return 0;
+		else
+			return -1;
+	}
+	else if ( str2.chars == NULL )
+		return 1;
+	
 	ssize_t len1 = skit_slice_len(str1);
 	ssize_t len2 = skit_slice_len(str2);
 	
@@ -643,6 +651,11 @@ static void skit_slice_ascii_cmp_test()
 	sASSERT(skit_slice_ascii_cmp(bbb, aaa) > 0);
 	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
 	skit_loaf_free(&aaab);
+	
+	skit_slice nullstr = skit_slice_null();
+	sASSERT(skit_slice_ascii_cmp(nullstr, nullstr) == 0);
+	sASSERT(skit_slice_ascii_cmp(nullstr, aaa) < 0);
+	sASSERT(skit_slice_ascii_cmp(aaa, nullstr) > 0);
 	printf("  skit_slice_ascii_cmp_test passed.\n");
 }
 
@@ -715,6 +728,14 @@ static void skit_slice_comparison_ops_test()
 	sASSERT( skit_slice_nes(alphaLo,alphaHi)); // alphaLo != alphaHi
 	sASSERT( skit_slice_nes(alphaHi,alphaLo)); // alphaHi != alphaLo
 	sASSERT(!skit_slice_nes(alphaHi,alphaHi)); // alphaHi != alphaHi
+	
+	skit_slice nullstr = skit_slice_null();
+	sASSERT( skit_slice_eqs(nullstr,nullstr));
+	sASSERT(!skit_slice_nes(nullstr,nullstr));
+	sASSERT(!skit_slice_eqs(alphaLo,nullstr));
+	sASSERT( skit_slice_nes(alphaLo,nullstr));
+	sASSERT( skit_slice_lts(nullstr,alphaLo));
+	
 	printf("  skit_slice_comparison_ops_test passed.\n");
 }
 
