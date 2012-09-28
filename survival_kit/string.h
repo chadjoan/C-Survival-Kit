@@ -88,11 +88,15 @@ It is, of course, possible to directly manipulate the character data
 in the original loaf because the slice is simply a reference to that data.
 This is not recommended unless the code calling such operations has been
 made very aware that their data may be manipulated.  
+
+Do not manipulate the fields in this struct directly.
+To access the characters directly, use sSPTR(slice) or skit_slice_ptr(slice).
+To access the slice's length, use sSLENGTH(slice) or skit_slice_len(slice).
 */
 typedef struct skit_slice skit_slice;
 struct skit_slice
 {
-	skit_utf8c       *chars;
+	skit_utf8c       *chars_handle;
 	skit_string_meta meta;
 };
 
@@ -101,11 +105,15 @@ If it's possible to have a slice of a string, then it only makes sense that
 there be a way to have a loaf of string as well!
 
 The skit_loaf type indicates ownership of the memory used to store a string.
+
+Do not manipulate the fields in this union directly.
+To access the characters directly, use sLPTR(loaf) or skit_loaf_ptr(loaf).
+To access the loaf's length, use sLLENGTH(loaf) or skit_loaf_len(loaf).
 */
 typedef union skit_loaf skit_loaf;
 union skit_loaf
 {
-	skit_utf8c  *chars;
+	skit_utf8c  *chars_handle;
 	skit_slice  as_slice;
 };
 
@@ -129,14 +137,14 @@ skit_loaf skit_loaf_new();
 Dynamically allocates a loaf with the same length as the given nul-terminated
 C string and then copies the C string into the loaf.
 The allocation will be performed with skit_malloc.
-A nul character will be placed loaf.chars[strlen(cstr)].
+A nul character will be placed at sLPTR(loaf)[strlen(cstr)].
 */
 skit_loaf skit_loaf_copy_cstr(const char *cstr);
 
 /**
 Dynamically allocates a loaf of the given 'length' using skit_malloc.
 The resulting string will be uninitialzed, except for the nul character that
-will be placed at loaf.chars[length].
+will be placed at sLPTR(loaf)[length].
 */
 skit_loaf skit_loaf_alloc(size_t length);
 
@@ -152,12 +160,34 @@ Example:
 	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
 */
 ssize_t skit_loaf_len (skit_loaf loaf);
-ssize_t skit_slice_len(skit_slice slice);
+ssize_t skit_slice_len(skit_slice slice); /** ditto */
+
+/**
+This macro is shorthand for calling skit_loaf_len.
+*/
+#define sLLENGTH(loaf) (skit_loaf_len((loaf)))
 
 /**
 This macro is shorthand for calling skit_slice_len.
 */
 #define sSLENGTH(slice) (skit_slice_len((slice)))
+
+/**
+Returns the pointer to the character string's data, thus allowing direct
+manipulation of the string's individual characters.
+*/
+skit_utf8c *skit_loaf_ptr( skit_loaf loaf );
+skit_utf8c *skit_slice_ptr( skit_slice slice ); /** ditto */
+
+/**
+This macro is shorthand for calling skit_loaf_ptr.
+*/
+#define sLPTR(loaf) (skit_loaf_ptr((loaf)))
+
+/**
+This macro is shorthand for calling skit_slice_ptr.
+*/
+#define sSPTR(slice) (skit_slice_ptr((slice)))
 
 /** 
 These functions will return 0 if the given loaf/slice is uninitialized.
@@ -184,7 +214,7 @@ length of the given C string.
 Example:
 	skit_slice slice = skit_slice_of_cstrn("foo",3);
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 */
 skit_slice skit_slice_of_cstrn(const char *cstr, int length );
 
@@ -193,7 +223,7 @@ Creates a slice of the given nul-terminated C string.
 Example:
 	skit_slice slice = skit_slice_of_cstr("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 */
 skit_slice skit_slice_of_cstr(const char *cstr);
 
@@ -206,7 +236,7 @@ skit_slices.
 Example:
 	skit_slice slice = sSLICE("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 */
 #define sSLICE(cstr) (skit_slice_of_cstrn((cstr), sizeof((cstr))-1))
 /* subtract 1 because sizeof(x) includes the nul byte. */
@@ -299,7 +329,7 @@ Example:
 	skit_slice_buffered_resize(&buffer, &slice, 5);
 	sASSERT(skit_loaf_len(buffer) >= 6);
 	sASSERT_EQ(skit_slice_len(slice), 5, "%d");
-	sASSERT_EQ(slice.chars[5], '\0', "%d");
+	sASSERT_EQ(sSPTR(slice)[5], '\0', "%d");
 	skit_loaf_free(&buffer);
 */
 skit_slice *skit_slice_buffered_resize(
@@ -346,7 +376,7 @@ Example:
 	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
 	skit_loaf bar = skit_slice_dup(slice);
-	sASSERT_NE(foo.chars, bar.chars, "%p");
+	sASSERT_NE(sLPTR(foo), sLPTR(bar), "%p");
 	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(bar), "bar");
@@ -407,16 +437,16 @@ Use this to free memory held by 'loaf'.
 'loaf' will be reinitialized to have a NULL ptr and zero length.
 Example:
 	skit_loaf loaf = skit_loaf_alloc(10);
-	sASSERT(loaf.chars != NULL);
+	sASSERT(sLPTR(loaf) != NULL);
 	skit_loaf_free(&loaf);
-	sASSERT(loaf.chars == NULL);
-	sASSERT(skit_loaf_len(loaf) == 0);
+	sASSERT(sLPTR(loaf) == NULL);
+	sASSERT(sLLENGTH(loaf) == 0);
 */
 skit_loaf *skit_loaf_free(skit_loaf *loaf);
 
 /**
-Returns a standard C printf format specifier that can be used with the .chars
-member of a slice to print that slice.  This is done because slices are not
+Returns a standard C printf format specifier that can be used with the character
+data in a slice given by sSPTR(slice).  This is done because slices are not
 necessarily nul-terminated, and must have length information provided in the
 format specifier.
 
@@ -434,7 +464,7 @@ Example:
 	sASSERT_EQ_CSTR( "'%.3s'", fmt_buf );
 	snprintf(fmt_str, sizeof(fmt_str), "Slice is %s.", fmt_buf);
 	sASSERT_EQ_CSTR(fmt_str, "Slice is '%.3s'.");
-	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, slice.chars);
+	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, sSPTR(slice));
 	sASSERT_EQ_CSTR(newstr_buf, "Slice is 'foo'.");
 	skit_loaf_free(&loaf);
 */
@@ -452,8 +482,8 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 			comparison, \
 			skit_slice_get_printf_formatter( lhs, lfmt, sizeof(lfmt), 1 ), \
 			skit_slice_get_printf_formatter( rhs, rfmt, sizeof(rfmt), 1 ), \
-			lhs.chars, \
-			rhs.chars); \
+			sSPTR(lhs), \
+			sSPTR(rhs)); \
 	} while(0)
 
 /**
@@ -495,7 +525,7 @@ Performs an asciibetical comparison of the two strings.
 |  > 0  | str1 is greater than str2            |
 +-------+--------------------------------------+
 
-As a special case, null strings (slices/loaves with .chars == NULL) will always
+As a special case, null strings (slices/loaves with sSPTR(*) == NULL) will always
 be equal to each other and not equal to non-null strings.
 null strings will always be less than non-null strings.
 

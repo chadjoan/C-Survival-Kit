@@ -175,7 +175,7 @@ void skit_pfile_stream_dump(skit_stream *stream, skit_stream *output)
 	}
 	
 	skit_pfile_stream_internal *pstreami = &pstream->as_internal;
-	if ( pstreami->name.chars == NULL )
+	if ( sLPTR(pstreami->name) == NULL )
 	{
 		skit_stream_writeln(output, sSLICE("Unopened skit_pfile_stream"));
 		return;

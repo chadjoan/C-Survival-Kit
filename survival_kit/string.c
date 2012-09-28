@@ -66,8 +66,8 @@ static void skit_slice_setlen(skit_slice *slice, size_t len)
 skit_slice skit_slice_null()
 {
 	skit_slice result;
-	result.chars = NULL;
-	result.meta  = skit_string_init_meta();
+	result.chars_handle = NULL;
+	result.meta         = skit_string_init_meta();
 	return result;
 }
 
@@ -86,8 +86,8 @@ skit_loaf skit_loaf_null()
 skit_loaf skit_loaf_new()
 {
 	skit_loaf result = skit_loaf_null();
-	result.chars = (skit_utf8c*)skit_malloc(1);
-	result.chars[0] = '\0';
+	result.chars_handle = (skit_utf8c*)skit_malloc(1);
+	result.chars_handle[0] = '\0';
 	skit_slice_setlen(&result.as_slice,0);
 	return result;
 }
@@ -98,8 +98,8 @@ skit_loaf skit_loaf_copy_cstr(const char *cstr)
 {
 	size_t length = strlen(cstr);
 	skit_loaf result = skit_loaf_null();
-	result.chars = (skit_utf8c*)skit_malloc(length+1);
-	strcpy((char*)result.chars, cstr);
+	result.chars_handle = (skit_utf8c*)skit_malloc(length+1);
+	strcpy((char*)result.chars_handle, cstr);
 	skit_slice_setlen(&result.as_slice, length);
 	sASSERT(skit_loaf_check_init(result));
 	return result;
@@ -110,8 +110,8 @@ skit_loaf skit_loaf_copy_cstr(const char *cstr)
 skit_loaf skit_loaf_alloc(size_t length)
 {
 	skit_loaf result = skit_loaf_null();
-	result.chars = (skit_utf8c*)skit_malloc(length+1);
-	result.chars[length] = '\0';
+	result.chars_handle = (skit_utf8c*)skit_malloc(length+1);
+	result.chars_handle[length] = '\0';
 	skit_slice_setlen(&result.as_slice, length);
 	return result;
 }
@@ -130,6 +130,18 @@ static void skit_slice_len_test()
 	skit_loaf loaf = skit_loaf_alloc(10);
 	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
 	printf("  skit_slice_len_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_utf8c *skit_loaf_ptr( skit_loaf loaf )
+{
+	return loaf.chars_handle;
+}
+
+skit_utf8c *skit_slice_ptr( skit_slice slice )
+{
+	return slice.chars_handle;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -155,20 +167,10 @@ static void skit_slice_check_init_test()
 
 /* ------------------------------------------------------------------------- */
 
-/**
-Like skit_slice_of_cstr, but only takes a slice with 'length' characters
-in it.
-This can avoid an O(n) string scan if the caller already knows the desired
-length of the given C string.
-Example:
-	skit_slice slice = skit_slice_of_cstrn("foo",3);
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
-*/
 skit_slice skit_slice_of_cstrn(const char *cstr, int length )
 {
 	skit_slice result = skit_slice_null();
-	result.chars = (skit_utf8c*)cstr;
+	result.chars_handle = (skit_utf8c*)cstr;
 	skit_slice_setlen(&result, length);
 	return result;
 }
@@ -177,7 +179,7 @@ static void skit_slice_of_cstrn_test()
 {
 	skit_slice slice = skit_slice_of_cstrn("foo",3);
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 	printf("  skit_slice_of_cstrn_test passed.\n");
 }
 
@@ -192,7 +194,7 @@ static void skit_slice_of_cstr_test()
 {
 	skit_slice slice = skit_slice_of_cstr("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
-	sASSERT_EQ_CSTR((char*)slice.chars, "foo");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 	printf("  skit_slice_of_cstr_test passed.\n");
 }
 
@@ -223,7 +225,7 @@ skit_loaf skit_slice_as_loaf(skit_slice slice)
 	skit_loaf result = skit_loaf_null();
 	sASSERT(skit_slice_check_init(slice));
 	sASSERT(skit_slice_is_loaf(slice));
-	result.chars = slice.chars;
+	result.chars_handle = slice.chars_handle;
 	result.as_slice.meta = slice.meta;
 	return result;
 }
@@ -232,12 +234,13 @@ skit_loaf skit_slice_as_loaf(skit_slice slice)
 
 skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length)
 {
+	skit_utf8c *loaf_chars = sLPTR(*loaf);
 	sASSERT(loaf != NULL);
-	sASSERT(loaf->chars != NULL);
+	sASSERT(loaf_chars != NULL);
 	sASSERT_MSG(skit_loaf_check_init(*loaf), "'loaf' was not initialized.");
 	
-	loaf->chars = skit_realloc(loaf->chars, length+1);
-	loaf->chars[length] = '\0';
+	loaf_chars = skit_realloc(loaf_chars, length+1);
+	loaf_chars[length] = '\0';
 	skit_slice_setlen(&loaf->as_slice, length);
 	
 	return loaf;
@@ -258,9 +261,11 @@ skit_loaf *skit_loaf_append(skit_loaf *loaf1, skit_slice str2)
 {
 	size_t len1;
 	size_t len2;
+	skit_utf8c *loaf1_chars = sLPTR(*loaf1);
+	skit_utf8c *str2_chars = sSPTR(str2);
 	sASSERT(loaf1 != NULL);
-	sASSERT(loaf1->chars != NULL);
-	sASSERT(str2.chars != NULL);
+	sASSERT(loaf1_chars != NULL);
+	sASSERT(str2_chars != NULL);
 	sASSERT_MSG(skit_loaf_check_init(*loaf1), "'loaf1' was not initialized.");
 	sASSERT_MSG(skit_slice_check_init(str2), "'str2' was not initialized.");
 	
@@ -271,7 +276,7 @@ skit_loaf *skit_loaf_append(skit_loaf *loaf1, skit_slice str2)
 	len1 = skit_loaf_len(*loaf1);
 	
 	loaf1 = skit_loaf_resize(loaf1, len1+len2);
-	memcpy(loaf1->chars + len1, str2.chars, len2);
+	memcpy(loaf1_chars + len1, str2_chars, len2);
 	/* setlen was already handled by skit_loaf_resize. */
 	
 	return loaf1;
@@ -293,8 +298,8 @@ skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2)
 	size_t len1;
 	size_t len2;
 	skit_loaf result;
-	sASSERT(str1.chars != NULL);
-	sASSERT(str2.chars != NULL);
+	sASSERT(sSPTR(str1) != NULL);
+	sASSERT(sSPTR(str2) != NULL);
 	sASSERT(skit_slice_check_init(str1));
 	sASSERT(skit_slice_check_init(str2));
 	
@@ -302,8 +307,8 @@ skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2)
 	len2 = skit_slice_len(str2);
 	
 	result = skit_loaf_alloc(len1+len2);
-	memcpy(result.chars,      str1.chars, len1);
-	memcpy(result.chars+len1, str2.chars, len2);
+	memcpy(sLPTR(result),      sSPTR(str1), len1);
+	memcpy(sLPTR(result)+len1, sSPTR(str2), len2);
 	/* setlen was already handled by skit_loaf_alloc. */
 	
 	return result;
@@ -332,23 +337,25 @@ skit_slice *skit_slice_buffered_resize(
 	skit_utf8c *rbound;
 	skit_utf8c *lbound;
 	skit_utf8c *new_rbound;
+	skit_utf8c *buffer_chars = sLPTR(*buffer);
+	skit_utf8c *buf_slice_chars = sSPTR(*buf_slice);
 	sASSERT(buffer != NULL);
 	sASSERT(buf_slice != NULL);
-	sASSERT(buffer->chars != NULL);
-	sASSERT(buf_slice->chars != NULL);
+	sASSERT(buffer_chars != NULL);
+	sASSERT(buf_slice_chars != NULL);
 	
 	buffer_length    = skit_loaf_len(*buffer);
 	buf_slice_length = skit_slice_len(*buf_slice);
-	lbound = buffer->chars;
+	lbound = buffer_chars;
 	rbound = lbound + buffer_length;
-	sASSERT_MSG(lbound <= buf_slice->chars && buf_slice->chars <= rbound, 
+	sASSERT_MSG(lbound <= buf_slice_chars && buf_slice_chars <= rbound, 
 		"The buf_slice given is not a substring of the given buffer.");
 	
-	new_rbound = buf_slice->chars + new_buf_slice_length;
+	new_rbound = buf_slice_chars + new_buf_slice_length;
 	if ( new_rbound > rbound )
 	{
-		ssize_t new_buffer_length = new_rbound - buffer->chars;
-		ptrdiff_t slice_pos = buf_slice->chars - buffer->chars;
+		ssize_t new_buffer_length = new_rbound - buffer_chars;
+		ptrdiff_t slice_pos = buf_slice_chars - buffer_chars;
 		
 		/* Resize to (new_buffer_length * 1.5) */
 		new_buffer_length = (new_buffer_length * 3) / 2;
@@ -369,7 +376,7 @@ static void skit_slice_buffered_resize_test()
 	skit_slice_buffered_resize(&buffer, &slice, 5);
 	sASSERT(skit_loaf_len(buffer) >= 6);
 	sASSERT_EQ(skit_slice_len(slice), 5, "%d");
-	sASSERT_EQ(slice.chars[5], '\0', "%d");
+	sASSERT_EQ(sSPTR(slice)[5], '\0', "%d");
 	skit_loaf_free(&buffer);
 	printf("  skit_slice_buffered_resize_test passed.\n");
 }
@@ -383,15 +390,15 @@ skit_slice *skit_slice_buffered_append(
 {
 	ssize_t suffix_length;
 	ssize_t buf_slice_length;
-	/* We don't need to check buffer->chars and buf_slice->chars because 
+	/* We don't need to check sLPTR(*buffer) and sSPTR(*buf_slice) because 
 	 *  skit_slice_buffered_resize will do that. */
 	sASSERT(buf_slice != NULL);
-	sASSERT(suffix.chars != NULL);
+	sASSERT(sSPTR(suffix) != NULL);
 	
 	suffix_length = skit_slice_len(suffix);
 	buf_slice_length = skit_slice_len(*buf_slice);
 	skit_slice_buffered_resize(buffer, buf_slice, buf_slice_length + suffix_length);
-	memcpy((void*)(buf_slice->chars + buf_slice_length), (void*)suffix.chars, suffix_length);
+	memcpy((void*)(sSPTR(*buf_slice) + buf_slice_length), (void*)sSPTR(suffix), suffix_length);
 	
 	return buf_slice;
 }
@@ -416,12 +423,12 @@ skit_loaf skit_slice_dup(skit_slice slice)
 {
 	size_t length;
 	skit_loaf result;
-	sASSERT(slice.chars != NULL);
+	sASSERT(sSPTR(slice) != NULL);
 	sASSERT(skit_slice_check_init(slice));
 	
 	length = skit_slice_len(slice);
 	result = skit_loaf_alloc(length);
-	memcpy(result.chars, slice.chars, length);
+	memcpy(sLPTR(result), sSPTR(slice), length);
 	/* The call to skit_loaf_alloc will have already handled setlen */
 	return result;
 }
@@ -431,7 +438,7 @@ static void skit_slice_dup_test()
 	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
 	skit_loaf bar = skit_slice_dup(slice);
-	sASSERT_NE(foo.chars, bar.chars, "%p");
+	sASSERT_NE(sLPTR(foo), sLPTR(bar), "%p");
 	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(bar), "bar");
@@ -446,7 +453,7 @@ skit_loaf *skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
 {
 	ssize_t length = strlen(cstr);
 	skit_loaf_resize(loaf, length);
-	strcpy((char*)loaf->chars, cstr);
+	strcpy((char*)sLPTR(*loaf), cstr);
 	return loaf;
 }
 
@@ -481,7 +488,7 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	sASSERT((index2-index1) >= 0);
 	
 	/* Do the slicing. */
-	result.chars = slice.chars + index1;
+	result.chars_handle = sSPTR(slice) + index1;
 	skit_slice_setlen(&result, index2-index1);
 	
 	return result;
@@ -503,7 +510,7 @@ static void skit_slice_of_test()
 
 char *skit_loaf_as_cstr(skit_loaf loaf)
 {
-	return (char*)loaf.chars;
+	return (char*)sLPTR(loaf);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -512,7 +519,7 @@ char *skit_slice_dup_as_cstr(skit_slice slice)
 {
 	ssize_t length = skit_slice_len(slice);
 	char *result = (char*)skit_malloc(length+1);
-	memcpy(result, slice.chars, length);
+	memcpy(result, sSPTR(slice), length);
 	result[length] = '\0';
 	return result;
 }
@@ -522,10 +529,10 @@ char *skit_slice_dup_as_cstr(skit_slice slice)
 skit_loaf *skit_loaf_free(skit_loaf *loaf)
 {
 	sASSERT(loaf != NULL);
-	sASSERT(loaf->chars != NULL);
+	sASSERT(sLPTR(*loaf) != NULL);
 	sASSERT(skit_loaf_check_init(*loaf));
 	
-	skit_free(loaf->chars);
+	skit_free(sLPTR(*loaf));
 	*loaf = skit_loaf_null();
 	return loaf;
 }
@@ -533,9 +540,9 @@ skit_loaf *skit_loaf_free(skit_loaf *loaf)
 static void skit_loaf_free_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
-	sASSERT(loaf.chars != NULL);
+	sASSERT(sLPTR(loaf) != NULL);
 	skit_loaf_free(&loaf);
-	sASSERT(loaf.chars == NULL);
+	sASSERT(sLPTR(loaf) == NULL);
 	sASSERT(skit_loaf_len(loaf) == 0);
 	printf("  skit_loaf_free_test passed.\n");
 }
@@ -561,7 +568,7 @@ static void skit_slice_get_printf_formatter_test()
 	sASSERT_EQ_CSTR( "'%.3s'", fmt_buf );
 	snprintf(fmt_str, sizeof(fmt_str), "Slice is %s.", fmt_buf);
 	sASSERT_EQ_CSTR(fmt_str, "Slice is '%.3s'.");
-	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, slice.chars);
+	snprintf(newstr_buf, sizeof(newstr_buf), fmt_str, sSPTR(slice));
 	sASSERT_EQ_CSTR(newstr_buf, "Slice is 'foo'.");
 	printf("  skit_slice_get_printf_formatter_test passed.\n");
 }
@@ -575,8 +582,10 @@ static void skit_slice_get_printf_formatter_test()
 
 skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2)
 {
-	sASSERT(str1.chars != NULL);
-	sASSERT(str2.chars != NULL);
+	skit_utf8c *chars1 = sSPTR(str1);
+	skit_utf8c *chars2 = sSPTR(str2);
+	sASSERT(chars1 != NULL);
+	sASSERT(chars2 != NULL);
 	ssize_t len1 = skit_slice_len(str1);
 	ssize_t len2 = skit_slice_len(str2);
 
@@ -584,7 +593,7 @@ skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2
 	ssize_t pos = 0;
 	while ( pos < len )
 	{
-		if ( str1.chars[pos] != str2.chars[pos] )
+		if ( chars1[pos] != chars2[pos] )
 			break;
 		pos++;
 	}
@@ -605,14 +614,17 @@ static void skit_slice_common_prefix_test()
 
 int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
 {
-	if ( str1.chars == NULL )
+	skit_utf8c *chars1 = sSPTR(str1);
+	skit_utf8c *chars2 = sSPTR(str2);
+	
+	if ( chars1 == NULL )
 	{
-		if ( str2.chars == NULL )
+		if ( chars2 == NULL )
 			return 0;
 		else
 			return -1;
 	}
-	else if ( str2.chars == NULL )
+	else if ( chars2 == NULL )
 		return 1;
 	
 	ssize_t len1 = skit_slice_len(str1);
@@ -631,8 +643,8 @@ int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
 		if ( pos == len1 )
 			return 0;
 
-		c1 = str1.chars[pos];
-		c2 = str2.chars[pos];
+		c1 = chars1[pos];
+		c2 = chars2[pos];
 		
 		return c1 - c2;
 	}
@@ -747,44 +759,38 @@ static void skit_slice_comparison_ops_test()
 
 skit_slice skit_slice_ltrim(const skit_slice slice)
 {
-	skit_slice result = skit_slice_null();
+	skit_utf8c *chars = sSPTR(slice);
 	
 	ssize_t length = skit_slice_len(slice);
 	ssize_t lbound = 0;
 	while ( lbound < length )
 	{
-		skit_utf8c c = slice.chars[lbound];
+		skit_utf8c c = chars[lbound];
 		if (!IS_WHITESPACE(c))
 			break;
 		
 		lbound++;
 	}
 	
-	result.chars  = slice.chars + lbound;
-	skit_slice_setlen(&result, length - lbound);
-	
-	return result;
+	return skit_slice_of(slice, lbound, length);
 }
 
 skit_slice skit_slice_rtrim(const skit_slice slice)
 {
-	skit_slice result = skit_slice_null();
+	skit_utf8c *chars = sSPTR(slice);
 	
 	ssize_t length = skit_slice_len(slice);
 	ssize_t rbound = length;
 	while ( rbound > 0 )
 	{
-		char c = slice.chars[rbound-1];
+		char c = chars[rbound-1];
 		if (!IS_WHITESPACE(c))
 			break;
 		
 		rbound--;
 	}
 	
-	result.chars  = slice.chars;
-	skit_slice_setlen(&result, rbound);
-	
-	return result;
+	return skit_slice_of(slice, 0, rbound);
 }
 
 skit_slice skit_slice_trim(const skit_slice slice)
@@ -817,14 +823,12 @@ skit_slice skit_slice_ltruncate(const skit_slice slice, size_t nchars)
 	{
 		/* The requested truncation is greater than the string length. */
 		/* In this case we return a zero-length slice at the end of the string. */
-		result.chars = slice.chars;
-		skit_slice_setlen(&result, 0);
+		result = skit_slice_of(slice, length, length);
 	}
 	else
 	{
 		/* Nothing unusual.  Truncate as normal. */
-		result.chars = slice.chars + nchars;
-		skit_slice_setlen(&result, length - nchars);
+		result = skit_slice_of(slice, nchars, length);
 	}
 	
 	return result;
@@ -839,14 +843,12 @@ skit_slice skit_slice_rtruncate(const skit_slice slice, size_t nchars)
 	{
 		/* The requested truncation is greater than the string length. */
 		/* In this case we return a zero-length slice at the beginning of the string. */
-		result.chars = slice.chars;
-		skit_slice_setlen(&result, 0);
+		result = skit_slice_of(slice, 0, 0);
 	}
 	else
 	{
 		/* Nothing unusual.  Truncate as normal. */
-		result.chars = slice.chars;
-		skit_slice_setlen(&result, length - nchars);
+		result = skit_slice_of(slice, 0, length - nchars);
 	}
 	
 	return result;
@@ -871,16 +873,16 @@ int skit_slice_match(
 	const skit_slice needle,
 	ssize_t pos)
 {
-	ssize_t haystack_length;
-	ssize_t needle_length;
+	ssize_t haystack_length = sSLENGTH(haystack);
+	ssize_t needle_length = sSLENGTH(needle);
+	skit_utf8c *haystack_chars = sSPTR(haystack);
+	skit_utf8c *needle_chars = sSPTR(needle);
 	ssize_t rbound;
 	ssize_t i;
-	sASSERT(haystack.chars != NULL);
-	sASSERT(needle.chars != NULL);
+	sASSERT(haystack_chars != NULL);
+	sASSERT(needle_chars != NULL);
 	sASSERT_GE(pos,0,"%d"); 
 	
-	haystack_length = skit_slice_len(haystack);
-	needle_length = skit_slice_len(needle);
 	rbound = pos+needle_length;
 	if ( rbound > haystack_length )
 		return 0;
@@ -888,7 +890,7 @@ int skit_slice_match(
 	for ( i = 0; i < needle_length; i++ )
 	{
 		ssize_t j = i+pos;
-		if ( haystack.chars[j] != needle.chars[i] )
+		if ( haystack_chars[j] != needle_chars[i] )
 			return 0;
 	}
 	
@@ -912,18 +914,19 @@ int skit_slice_match_nl(
 	const skit_slice text,
 	ssize_t pos)
 {
-	sASSERT(text.chars != NULL);
+	skit_utf8c *text_chars = sSPTR(text);
+	sASSERT(text_chars != NULL);
 	sASSERT_GE(pos,0,"%d");
 	ssize_t length = sSLENGTH(text);
 	sASSERT_LT(pos,length,"%d");
-	if ( text.chars[pos] == '\r' )
+	if ( text_chars[pos] == '\r' )
 	{
-		if ( pos+1 < length && text.chars[pos+1] == '\n' )
+		if ( pos+1 < length && text_chars[pos+1] == '\n' )
 			return 2;
 		else
 			return 1;
 	}
-	else if ( text.chars[pos] == '\n' )
+	else if ( text_chars[pos] == '\n' )
 		return 1;
 
 	return 0;

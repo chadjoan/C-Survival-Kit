@@ -26,7 +26,7 @@ ssize_t sendn(int sock, skit_slice text)
 		return 0;
 	}
 	
-	n_bytes_sent = send(sock, text.chars, text_len, 0);
+	n_bytes_sent = send(sock, sSPTR(text), text_len, 0);
 	return n_bytes_sent;
 }
 
@@ -52,7 +52,7 @@ void recvn(int sock, skit_loaf *buf)
 	msg_length = ntohl(((uint32_t*)buffer)[0]);
 	buf = skit_loaf_resize(buf, msg_length);
 	
-	msg_start = buf->chars;
+	msg_start = sLPTR(*buf);
 	msg_cursor = msg_start;
 	msg_end = msg_start + msg_length;
 	

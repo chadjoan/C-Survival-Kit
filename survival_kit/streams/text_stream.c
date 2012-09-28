@@ -156,7 +156,7 @@ skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t 
 void skit_text_stream_writeln(skit_stream *stream, skit_slice line)
 {
 	sASSERT(stream != NULL);
-	sASSERT(line.chars != NULL);
+	sASSERT(sSPTR(line) != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, line);
@@ -198,7 +198,7 @@ void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_li
 void skit_text_stream_write(skit_stream *stream, skit_slice slice)
 {
 	sASSERT(stream != NULL);
-	sASSERT(slice.chars != NULL);
+	sASSERT(sSPTR(slice) != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
 	sASSERT_MSG(tstreami->cursor == sSLENGTH(tstreami->text), "Insert of text into the interior of text streams is currently not implemented.  Only appends are allowed.");
 	
@@ -259,7 +259,7 @@ void skit_text_stream_dump(skit_stream *stream, skit_stream *output)
 	}
 	
 	skit_text_stream_internal *tstreami = &tstream->as_internal;
-	if ( tstreami->buffer.chars == NULL )
+	if ( sLPTR(tstreami->buffer) == NULL )
 	{
 		skit_stream_writeln(output, sSLICE("Invalid skit_text_stream with NULL buffer."));
 		return;
@@ -293,7 +293,7 @@ void skit_text_stream_unittests()
 	printf("skit_text_stream_unittests()\n");
 	
 	skit_text_stream_init_str(&tstream, sSLICE("foo\n\nbar\nbaz"));
-	/*printf("%s\n",tstreami->buffer.chars);*/
+	/*printf("%s\n", sLPTR(tstreami->buffer));*/
 	skit_stream_readln_unittest(stream);
 	skit_text_stream_dtor(stream);
 
