@@ -7,6 +7,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h> /* For ssize_t */
+#include <stddef.h> /* For ptrdiff_t */
 
 #include "survival_kit/string.h"
 #include "survival_kit/assert.h"
@@ -347,13 +348,16 @@ skit_slice *skit_slice_buffered_resize(
 	if ( new_rbound > rbound )
 	{
 		ssize_t new_buffer_length = new_rbound - buffer->chars;
+		ptrdiff_t slice_pos = buf_slice->chars - buffer->chars;
 		
 		/* Resize to (new_buffer_length * 1.5) */
 		new_buffer_length = (new_buffer_length * 3) / 2;
 		skit_loaf_resize( buffer, new_buffer_length );
+		*buf_slice = skit_slice_of( buffer->as_slice, slice_pos, slice_pos + new_buf_slice_length );
 	}
+	else
+		skit_slice_setlen(buf_slice, new_buf_slice_length);
 	
-	skit_slice_setlen(buf_slice, new_buf_slice_length);
 	return buf_slice;
 }
 
