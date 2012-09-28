@@ -61,7 +61,6 @@ static void skit_file_stream_close_not_impl(union skit_file_stream *stream)
 
 void skit_stream_vtable_init(skit_stream_vtable_t *table)
 {
-	table->init          = &skit_stream_func_not_impl;
 	table->readln        = &skit_stream_read_not_impl;
 	table->read          = &skit_stream_readn_not_impl;
 	table->writeln       = &skit_stream_write_not_impl;
@@ -88,12 +87,6 @@ void skit_stream_static_init()
 
 /* ------------------------ virtual methods -------------------------------- */
 
-/** 
-This initialization function is only for inheriting classes to call.
-Do not try to construct a pure skit_stream object: it is considered an abstract
-class and none of its methods will be able to dispatch to anything, which
-would result in thrown exceptions or some form of crashing.
-*/
 void skit_stream_init(skit_stream *stream)
 {
 	skit_stream_internal *streami = &stream->as_internal;
@@ -198,3 +191,92 @@ void skit_stream_set_indent_str(skit_stream *stream, const char *c)
 {
 }
 
+/* ------------------------- generic unittests ----------------------------- */
+
+// The given stream has the contents "foo\n\nbar\nbaz"
+void skit_stream_readln_unittest(skit_stream *stream)
+{
+	skit_loaf buf = skit_loaf_alloc(3);
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("bar"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("baz"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
+	skit_loaf_free(&buf);
+	printf("  skit_stream_readln_unittest passed.\n");
+}
+
+// The given stream has the contents "foobarbaz"
+void skit_stream_read_unittest(skit_stream *stream)
+{
+	skit_loaf buf = skit_loaf_alloc(3);
+	sASSERT_EQS(skit_stream_read(stream,&buf,3), sSLICE("foo"));
+	sASSERT_EQS(skit_stream_read(stream,&buf,0), sSLICE(""));
+	sASSERT_EQS(skit_stream_read(stream,&buf,3), sSLICE("bar"));
+	sASSERT_EQS(skit_stream_read(stream,&buf,4), sSLICE("baz"));
+	sASSERT_EQS(skit_stream_read(stream,&buf,3), skit_slice_null());
+	skit_loaf_free(&buf);
+	printf("  skit_stream_read_unittest passed.\n");
+}
+
+// The given stream has the contents ""
+void skit_stream_writeln_unittest(skit_stream *stream)
+{
+	skit_loaf buf = skit_loaf_alloc(64);
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
+	skit_stream_writeln(stream, sSLICE("foo"));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n"));
+	skit_stream_writeln(stream, sSLICE(""));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\n"));
+	skit_stream_writeln(stream, sSLICE("bar"));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\nbar\n"));
+	skit_stream_writeln(stream, sSLICE("baz"));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\nbar\nbaz\n"));
+	skit_loaf_free(&buf);
+	printf("  skit_stream_writeln_unittest passed.\n");
+}
+
+// The given stream has the contents ""
+void skit_stream_writefln_unittest(skit_stream *stream)
+{
+	skit_loaf buf = skit_loaf_alloc(64);
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
+	skit_stream_writefln(stream, "foo");
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n"));
+	skit_stream_writefln(stream, "%s", "bar");
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\nbar\n"));
+	skit_stream_writefln(stream, "%d", 3);
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\nbar\n3\n"));
+	skit_loaf_free(&buf);
+	printf("  skit_stream_writefln_unittest passed.\n");
+}
+
+// The given stream has the contents ""
+void skit_stream_write_unittest(skit_stream *stream)
+{
+	skit_loaf buf = skit_loaf_alloc(64);
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
+	skit_stream_write(stream, sSLICE("foo"));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo"));
+	skit_stream_write(stream, sSLICE(""));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo"));
+	skit_stream_write(stream, sSLICE("bar"));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foobar"));
+	skit_stream_write(stream, sSLICE("baz"));
+	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foobarbaz"));
+	skit_loaf_free(&buf);
+	printf("  skit_stream_write_unittest passed.\n");
+}
+
+// The given stream has the contents "".  The cursor starts at the begining.
+void skit_stream_rewind_unittest(skit_stream *stream)
+{
+	skit_loaf buf = skit_loaf_alloc(64);
+	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
+	skit_stream_writeln(stream, sSLICE("foo"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
+	skit_stream_rewind(stream);
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));
+	skit_loaf_free(&buf);
+	printf("  skit_stream_rewind_unittest passed.\n");
+}

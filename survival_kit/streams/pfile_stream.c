@@ -17,7 +17,6 @@ static skit_stream_vtable_t skit_pfile_stream_vtable;
 void skit_pfile_stream_vtable_init(skit_stream_vtable_t *table)
 {
 	skit_stream_vtable_init(table);
-	table->init          = &skit_pfile_stream_init;
 	table->readln        = &skit_pfile_stream_readln;
 	table->read          = &skit_pfile_stream_read;
 	table->writeln       = &skit_pfile_stream_writeln;

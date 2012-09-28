@@ -39,7 +39,8 @@ This will return NULL if the given stream isn't actually a skit_text_stream.
 */
 skit_text_stream *skit_text_stream_downcast(skit_stream *stream);
 
-void skit_text_stream_init(skit_stream *stream);
+void skit_text_stream_init(skit_text_stream *tstream);
+void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
 skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes);
 void skit_text_stream_writeln(skit_stream *stream, skit_slice line);
@@ -56,5 +57,7 @@ skit_slice skit_text_stream_slurp(skit_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_to_slice(skit_stream *stream, skit_loaf *buffer);
 void skit_text_stream_dump(skit_stream *stream, skit_stream *output);
 void skit_text_stream_dtor(skit_stream *stream);
+
+void skit_text_stream_unittests();
 
 #endif

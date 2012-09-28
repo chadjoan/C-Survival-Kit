@@ -16,7 +16,6 @@ static skit_stream_vtable_t skit_text_stream_vtable;
 void skit_text_stream_vtable_init(skit_stream_vtable_t *table)
 {
 	skit_stream_vtable_init(table);
-	table->init          = &skit_text_stream_init;
 	table->readln        = &skit_text_stream_readln;
 	table->read          = &skit_text_stream_read;
 	table->writeln       = &skit_text_stream_writeln;
@@ -46,7 +45,7 @@ void skit_text_stream_static_init()
 skit_text_stream *skit_text_stream_new()
 {
 	skit_text_stream *result = (skit_text_stream*)skit_malloc(sizeof(skit_text_stream));
-	skit_text_stream_init(&result->as_stream);
+	skit_text_stream_init(result);
 	return result;
 }
 
@@ -63,15 +62,31 @@ skit_text_stream *skit_text_stream_downcast(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_init(skit_stream *stream)
+void skit_text_stream_init(skit_text_stream *tstream)
 {
+	skit_stream *stream = &tstream->as_stream;
 	skit_stream_init(stream);
 	stream->meta.vtable_ptr = &skit_text_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_text_stream");
 	
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &tstream->as_internal;
 	tstreami->buffer = skit_loaf_alloc(16);
 	tstreami->text = skit_slice_of(tstreami->buffer.as_slice, 0, 0);
+	tstreami->cursor = 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice)
+{
+	skit_stream *stream = &tstream->as_stream;
+	skit_stream_init(stream);
+	stream->meta.vtable_ptr = &skit_text_stream_vtable;
+	stream->meta.class_name = sSLICE("skit_text_stream");
+	
+	skit_text_stream_internal *tstreami = &tstream->as_internal;
+	tstreami->buffer = skit_slice_dup(slice);
+	tstreami->text = skit_slice_of(tstreami->buffer.as_slice, 0, sSLENGTH(slice));
 	tstreami->cursor = 0;
 }
 
@@ -89,7 +104,7 @@ skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer)
 	ssize_t length = sSLENGTH(text);  /* Ditto for length.  It won't be changing. */
 	
 	/* Return null when reading past the end of the stream. */
-	if ( cursor == length )
+	if ( cursor >= length )
 		return skit_slice_null();
 	
 	/* cursor isn't past the end of stream, so grab the next line. */
@@ -121,13 +136,17 @@ skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t 
 	ssize_t length = sSLENGTH(text);  /* Ditto for length.  It won't be changing. */
 	
 	/* Return null when reading past the end of the stream. */
-	if ( cursor == length )
+	if ( cursor >= length )
 		return skit_slice_null();
 	
 	size_t block_begin = cursor;
 	size_t block_end = block_begin + nbytes;
 	if ( length < block_end )
 		block_end = length;
+	
+	/* Since we used a local variable for cursor, we need to update the original. */
+	cursor = block_end;
+	tstreami->cursor = cursor;
 	
 	return skit_slice_of( text, block_begin, block_end );
 }
@@ -170,7 +189,8 @@ void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_li
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, skit_slice_of_cstrn(buffer, nchars_printed));
-	tstreami->cursor += nchars_printed;
+	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
+	tstreami->cursor += nchars_printed + 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -265,3 +285,35 @@ void skit_text_stream_dtor(skit_stream *stream)
 }
 
 /* ------------------------------------------------------------------------- */
+
+void skit_text_stream_unittests()
+{
+	skit_text_stream tstream;
+	skit_stream *stream = &tstream.as_stream;
+	printf("skit_text_stream_unittests()\n");
+	
+	skit_text_stream_init_str(&tstream, sSLICE("foo\n\nbar\nbaz"));
+	/*printf("%s\n",tstreami->buffer.chars);*/
+	skit_stream_readln_unittest(stream);
+	skit_text_stream_dtor(stream);
+
+	skit_text_stream_init_str(&tstream, sSLICE("foobarbaz"));
+	skit_stream_read_unittest(stream);
+	skit_text_stream_dtor(stream);
+
+	skit_text_stream_init_str(&tstream, sSLICE(""));
+	skit_stream_writeln_unittest(stream);
+	skit_text_stream_dtor(stream);
+
+	skit_text_stream_init_str(&tstream, sSLICE(""));
+	skit_stream_writefln_unittest(stream);
+	skit_text_stream_dtor(stream);
+
+	skit_text_stream_init_str(&tstream, sSLICE(""));
+	skit_stream_write_unittest(stream);
+	skit_text_stream_dtor(stream);
+
+	skit_text_stream_init_str(&tstream, sSLICE(""));
+	skit_stream_rewind_unittest(stream);
+	skit_text_stream_dtor(stream);
+}

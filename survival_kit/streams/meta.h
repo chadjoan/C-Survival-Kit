@@ -11,7 +11,6 @@ typedef struct skit_stream_vtable_t skit_stream_vtable_t;
 struct skit_stream_vtable_t
 {
 	/* Basic stream operations. */
-	void       (*init)        (union skit_stream*);
 	skit_slice (*readln)      (union skit_stream*,skit_loaf*);
 	skit_slice (*read)        (union skit_stream*,skit_loaf*,size_t);
 	void       (*writeln)     (union skit_stream*,skit_slice);
