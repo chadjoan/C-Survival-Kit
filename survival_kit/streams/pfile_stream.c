@@ -28,6 +28,7 @@ void skit_pfile_stream_vtable_init(skit_stream_vtable_t *table)
 	table->slurp         = &skit_pfile_stream_slurp;
 	table->to_slice      = &skit_pfile_stream_to_slice;
 	table->dump          = &skit_pfile_stream_dump;
+	table->dtor          = &skit_pfile_stream_dtor;
 	table->open          = &skit_pfile_stream_open;
 	table->close         = &skit_pfile_stream_close;
 }
@@ -79,7 +80,7 @@ void skit_pfile_stream_init(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_readln(skit_stream *stream)
+skit_slice skit_pfile_stream_readln(skit_stream *stream, skit_loaf *buffer)
 {
 	sASSERT_MSG(0, "Not implemented yet.");
 	return skit_slice_null();
@@ -87,7 +88,7 @@ skit_slice skit_pfile_stream_readln(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_read(skit_stream *stream)
+skit_slice skit_pfile_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes)
 {
 	sASSERT_MSG(0, "Not implemented yet.");
 	return skit_slice_null();
@@ -140,7 +141,7 @@ void skit_pfile_stream_rewind(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_slurp(skit_stream *stream)
+skit_slice skit_pfile_stream_slurp(skit_stream *stream, skit_loaf *buffer)
 {
 	sASSERT_MSG(0, "Not implemented yet.");
 	return skit_slice_null();
@@ -148,8 +149,9 @@ skit_slice skit_pfile_stream_slurp(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_to_slice(skit_stream *stream)
+skit_slice skit_pfile_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
 {
+	sASSERT(stream != NULL);
 	/* skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal); */
 	return stream->meta.class_name;
 }
@@ -185,6 +187,18 @@ void skit_pfile_stream_dump(skit_stream *stream, skit_stream *output)
 	skit_stream_writefln(output, "File descriptor: %d\n", pstreami->file_descriptor);
 
 	return;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_pfile_stream_dtor(skit_stream *stream)
+{
+	/* 
+	This shouldn't need to do anything.  Resources are cleaned up when close happens.
+	TODO: It might be wise to leave around buffers after close happens, and then
+	reuse them on open.  This could be an optimization in cases where file streams
+	are repeatedly opened and closed to the same files.
+	*/
 }
 
 /* ------------------------------------------------------------------------- */

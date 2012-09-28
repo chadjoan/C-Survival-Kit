@@ -11,6 +11,7 @@ struct skit_text_stream_internal
 	skit_stream_common_fields common_fields;
 	skit_loaf                 buffer;
 	skit_slice                text;
+	ssize_t                   cursor;
 };
 
 typedef union skit_text_stream skit_text_stream;
@@ -39,16 +40,21 @@ This will return NULL if the given stream isn't actually a skit_text_stream.
 skit_text_stream *skit_text_stream_downcast(skit_stream *stream);
 
 void skit_text_stream_init(skit_stream *stream);
-skit_slice skit_text_stream_readln(skit_stream *stream);
-skit_slice skit_text_stream_read(skit_stream *stream);
+skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer);
+skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes);
 void skit_text_stream_writeln(skit_stream *stream, skit_slice line);
+
+/** TODO: the number of characters that can be written this way is currently
+limited to 1024.  This restriction should be lifted in the future, assuming
+sufficient programming time/resources to do so. */
 void skit_text_stream_writefln(skit_stream *stream, const char *fmtstr, ... );
 void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_list vl );
 void skit_text_stream_write(skit_stream *stream, skit_slice slice);
 void skit_text_stream_flush(skit_stream *stream);
 void skit_text_stream_rewind(skit_stream *stream);
-skit_slice skit_text_stream_slurp(skit_stream *stream);
-skit_slice skit_text_stream_to_slice(skit_stream *stream);
+skit_slice skit_text_stream_slurp(skit_stream *stream, skit_loaf *buffer);
+skit_slice skit_text_stream_to_slice(skit_stream *stream, skit_loaf *buffer);
 void skit_text_stream_dump(skit_stream *stream, skit_stream *output);
+void skit_text_stream_dtor(skit_stream *stream);
 
 #endif

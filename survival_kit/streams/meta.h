@@ -12,16 +12,17 @@ struct skit_stream_vtable_t
 {
 	/* Basic stream operations. */
 	void       (*init)        (union skit_stream*);
-	skit_slice (*readln)      (union skit_stream*);
-	skit_slice (*read)        (union skit_stream*);
+	skit_slice (*readln)      (union skit_stream*,skit_loaf*);
+	skit_slice (*read)        (union skit_stream*,skit_loaf*,size_t);
 	void       (*writeln)     (union skit_stream*,skit_slice);
 	void       (*writefln_va) (union skit_stream*,const char*,va_list);
 	void       (*write)       (union skit_stream*,skit_slice);
 	void       (*flush)       (union skit_stream*);
 	void       (*rewind)      (union skit_stream*);
-	skit_slice (*slurp)       (union skit_stream*);
-	skit_slice (*to_slice)    (union skit_stream*);
+	skit_slice (*slurp)       (union skit_stream*,skit_loaf*);
+	skit_slice (*to_slice)    (union skit_stream*,skit_loaf*);
 	void       (*dump)        (union skit_stream*,union skit_stream*);
+	void       (*dtor)        (union skit_stream*);
 	
 	/* File stream operations. */
 	void       (*open)        (union skit_file_stream*,skit_slice,const char*);

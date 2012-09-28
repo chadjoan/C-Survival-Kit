@@ -21,7 +21,13 @@ static void skit_stream_func_not_impl(skit_stream* stream)
 		"instance of the abstract class skit_stream (or skit_file_stream).");
 }
 
-static skit_slice skit_stream_read_not_impl(skit_stream* stream)
+static skit_slice skit_stream_read_not_impl(skit_stream* stream, skit_loaf *buffer)
+{
+	skit_stream_func_not_impl(stream);
+	return skit_slice_null();
+}
+
+static skit_slice skit_stream_readn_not_impl(skit_stream* stream, skit_loaf *buffer, size_t nbytes )
 {
 	skit_stream_func_not_impl(stream);
 	return skit_slice_null();
@@ -57,7 +63,7 @@ void skit_stream_vtable_init(skit_stream_vtable_t *table)
 {
 	table->init          = &skit_stream_func_not_impl;
 	table->readln        = &skit_stream_read_not_impl;
-	table->read          = &skit_stream_read_not_impl;
+	table->read          = &skit_stream_readn_not_impl;
 	table->writeln       = &skit_stream_write_not_impl;
 	table->writefln_va   = &skit_stream_writeva_not_impl;
 	table->write         = &skit_stream_write_not_impl;
@@ -66,6 +72,7 @@ void skit_stream_vtable_init(skit_stream_vtable_t *table)
 	table->slurp         = &skit_stream_read_not_impl;
 	table->to_slice      = &skit_stream_read_not_impl;
 	table->dump          = &skit_stream_dump_not_impl;
+	table->dtor          = &skit_stream_func_not_impl;
 	table->open          = &skit_file_stream_open_not_impl;
 	table->close         = &skit_file_stream_close_not_impl;
 }
@@ -96,14 +103,14 @@ void skit_stream_init(skit_stream *stream)
 	streami->common_fields.indent_level = 0;
 }
 
-skit_slice skit_stream_readln(skit_stream *stream)
+skit_slice skit_stream_readln(skit_stream *stream, skit_loaf *buffer)
 {
-	return SKIT_STREAM_DISPATCH(stream, readln);
+	return SKIT_STREAM_DISPATCH(stream, readln, buffer);
 }
 
-skit_slice skit_stream_read(skit_stream *stream)
+skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes )
 {
-	return SKIT_STREAM_DISPATCH(stream, read);
+	return SKIT_STREAM_DISPATCH(stream, read, buffer, nbytes);
 }
 
 void skit_stream_writeln(skit_stream *stream, skit_slice line)
@@ -139,19 +146,30 @@ void skit_stream_rewind(skit_stream *stream)
 	SKIT_STREAM_DISPATCH(stream, rewind);
 }
 
-skit_slice skit_stream_slurp(skit_stream *stream)
+skit_slice skit_stream_slurp(skit_stream *stream, skit_loaf *buffer)
 {
-	return SKIT_STREAM_DISPATCH(stream, slurp);
+	return SKIT_STREAM_DISPATCH(stream, slurp, buffer);
 }
 
-skit_slice skit_stream_to_slice(skit_stream *stream)
+skit_slice skit_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
 {
-	return SKIT_STREAM_DISPATCH(stream, to_slice);
+	return SKIT_STREAM_DISPATCH(stream, to_slice, buffer);
 }
 
 void skit_stream_dump(skit_stream *stream, skit_stream *out)
 {
 	SKIT_STREAM_DISPATCH(stream, dump, out);
+}
+
+void skit_stream_dtor(skit_stream *stream)
+{
+	SKIT_STREAM_DISPATCH(stream, dtor);
+}
+
+void skit_stream_delete(skit_stream *stream)
+{
+	skit_stream_dtor(stream);
+	skit_free(stream);
 }
 
 /* Streams can't be opened/closed in general, so those methods are absent. */
