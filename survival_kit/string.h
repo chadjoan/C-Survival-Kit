@@ -269,9 +269,22 @@ skit_loaf skit_slice_as_loaf(skit_slice slice);
 Resizes the given 'loaf' to the given 'length'.
 This will call skit_realloc to adjust the underlying memory size.
 'loaf' will be altered in-place, and the result will also be returned.
+When growing text, any nul-terminating character immediately following the text
+will remain in place, and a nul-terminating character will also be placed at
+the very end of the newly allocated memory.
+When shrinking text, a nul-terminating character will be placed at the end of
+the shrunken text.  Loaves must always have a nul-terminator just past the end
+of their length.
+
 Example:
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello world!");
 	skit_loaf_resize(&loaf, 5);
+	sASSERT_EQ_CSTR("Hello", skit_loaf_as_cstr(loaf));
+	skit_loaf_resize(&loaf, 1024);
+	sASSERT_EQ_CSTR("Hello", skit_loaf_as_cstr(loaf));
+	skit_loaf_resize(&loaf, 512);
+	sASSERT_EQ_CSTR("Hello", skit_loaf_as_cstr(loaf));
+	skit_loaf_resize(&loaf, 1028);
 	sASSERT_EQ_CSTR("Hello", skit_loaf_as_cstr(loaf));
 	skit_loaf_free(&loaf);
 */
