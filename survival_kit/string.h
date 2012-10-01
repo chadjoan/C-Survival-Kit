@@ -18,7 +18,7 @@ typedef uint16_t skit_utf16c;
 typedef uint32_t skit_utf32c;
 
 /* Internal use. */
-typedef ssize_t  skit_string_meta;
+typedef int64_t  skit_string_meta;
 
 /**
 This string module uses a distinction between complete a complete string
@@ -72,6 +72,8 @@ Other notes:
     type.  Either pass it as a pointer or pass it's '.as_slice' value.  Passing
     a skit_loaf as a pointer is a way of communicating to the called function
     that ownership of the loaf is being (temporarily) transferred.
+- Both loaves and slices have a max length limit of about 286MB worth of
+    characters (2^28 bytes).  
 */
 
 /**
@@ -240,30 +242,6 @@ Example:
 */
 #define sSLICE(cstr) (skit_slice_of_cstrn((cstr), sizeof((cstr))-1))
 /* subtract 1 because sizeof(x) includes the nul byte. */
-
-/**
-Returns 1 if the given 'slice' is actually a loaf.
-Returns 0 otherwise.
-Example:
-	skit_loaf loaf = skit_loaf_copy_cstr("foo");
-	skit_slice casted_slice = loaf.as_slice;
-	skit_slice sliced_slice = skit_slice_of(loaf.as_slice, 0, SKIT_EOT);
-	sASSERT( skit_slice_is_loaf(casted_slice));
-	sASSERT(!skit_slice_is_loaf(sliced_slice));
-	skit_loaf_free(&loaf);
-*/
-int skit_slice_is_loaf(skit_slice slice);
-
-/** 
-Does a checked cast of the given slice into a loaf.
-An assertion will trigger if the given 'slice' isn't actually a skit_loaf.
-This is NOT a conversion.  It just reinterprets the bytes of the given slice.
-If you're given a slice and you need a loaf, then the safe way of preparing 
-it for use in operations requiring a loaf is to call 
-skit_slice_dup(slice.as_slice) on the slice to obtain a loaf, and then free 
-the loaf when done using skit_loaf_free(loaf).
-*/
-skit_loaf skit_slice_as_loaf(skit_slice slice);
 
 /**
 Resizes the given 'loaf' to the given 'length'.

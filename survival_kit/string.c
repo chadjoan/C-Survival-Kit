@@ -16,8 +16,8 @@
 
 /* 
 -----------===== .meta layout =====-----------
-The hi 9 bits of the 'meta' member is layed out like so:
-  1 0 1 L S S S S C
+The hi 8 bits of the 'meta' member is layed out like so:
+  1 0 1 C S S S S
 
 The highest 3 bits are always 1 0 1.  This causes the meta member to
   always be /very/ negative, and at the same time not entirely made of set
@@ -25,16 +25,6 @@ The highest 3 bits are always 1 0 1.  This causes the meta member to
   arrangement, then any string handling function working with it can assume 
   that the string wans't propertly initialized and throw an exception.
   This is accessed internally with the META_CHECK_XXX defines.
-
-The L bit is whether the string is a (l)oaf or a slice.
-  This is accessed internally with the META_SLICE_XXX defines.
-
-The four S bits are the stride of the array.  Currently, this field has the
-  following possible values with the following meanings:
-  1 - A utf8 encoded string.
-  2 - A utf16 encoded string.
-  4 - A utf32 encoded string.
-  This is accessed internally with the META_STRIDE_XXX defines.
 
 The C bit (standing for 'C style string' here) specifies whether the string
   content is stored in a loaf or in a C style nul-terminated string.
@@ -47,8 +37,18 @@ The C bit (standing for 'C style string' here) specifies whether the string
   that points to a pointer that points to the string data.  The specifics
   of this arrangement are described in the ".chars_handle layout" section.
 
-The rest of the bytes in the 'meta' member are the length of the string.
-  These are accessed internally with the META_LENGTH_XXX defines.
+The four S bits are the stride of the array.  Currently, this field has the
+  following possible values with the following meanings:
+  1 - A utf8 encoded string.
+  2 - A utf16 encoded string.
+  4 - A utf32 encoded string.
+  This is accessed internally with the META_STRIDE_XXX defines.
+
+The rest of the bytes in the 'meta' member are the length of the string and its
+  offset (if it's a slice).  These are accessed internally with the 
+  META_LENGTH_XXX and META_OFFSET_XXX defines.  They are 28 bits each: a split
+  between the remaining bits in the meta member.  A loaf will always have an
+  offset of 0.  This does mean that strings can't be longer than ~268MB.
   
 -----------===== .chars_handle layout =====-----------
 The .chars_handle can have one of 3 meanings:
@@ -92,29 +92,41 @@ very temporary manner.
 #define META_STRIDE_SHIFT (sizeof(skit_string_meta)*8 - 8)
 #define META_STRIDE_MASK  (0x0FULL << META_STRIDE_SHIFT)
 
-#define META_SLICE_SHIFT  (sizeof(skit_string_meta)*8 - 4)
-#define META_SLICE_BIT    (0x1ULL << META_SLICE_SHIFT)
-
 #define META_CHECK_SHIFT  (sizeof(skit_string_meta)*8 - 3)
 #define META_CHECK_MASK   (0x7ULL << META_CHECK_SHIFT)
 #define META_CHECK_VAL    (0x5ULL << META_CHECK_SHIFT)
 
-#define META_CSTR_SHIFT   (sizeof(skit_string_meta)*8 - 9)
-#define META_CSTR_BIT     (0x001ULL << META_CSTR_SHIFT)
+#define META_CSTR_SHIFT   (sizeof(skit_string_meta)*8 - 4)
+#define META_CSTR_BIT     (0x1ULL << META_CSTR_SHIFT)
 
-#define META_LENGTH_MASK  ((1ULL << META_CSTR_SHIFT)-1)
+#define META_LENGTH_MASK  (0x000000000FFFFFFFULL)
 #define META_LENGTH_SHIFT (0)
+
+#define META_OFFSET_MASK  (0x00FFFFFFF0000000ULL)
+#define META_OFFSET_SHIFT (28)
 
 #define SKIT_SLICE_IS_CSTR(slice) ((slice).meta & META_CSTR_BIT)
 
 #define skit_string_init_meta() \
-	(META_CHECK_VAL | (1ULL << META_STRIDE_SHIFT) | META_SLICE_BIT)
+	(META_CHECK_VAL | (1ULL << META_STRIDE_SHIFT))
 
-static void skit_slice_setlen(skit_slice *slice, size_t len)
+static void skit_slice_set_length(skit_slice *slice, size_t len)
 {
 	slice->meta = 
 		(slice->meta & ~META_LENGTH_MASK) | 
 		((len << META_LENGTH_SHIFT) & META_LENGTH_MASK);
+}
+
+static void skit_slice_set_offset(skit_slice *slice, size_t offset)
+{
+	slice->meta = 
+		(slice->meta & ~META_OFFSET_MASK) | 
+		((offset << META_OFFSET_SHIFT) & META_OFFSET_MASK);
+}
+
+static size_t skit_slice_get_offset(skit_slice slice)
+{
+	return (slice.meta & META_OFFSET_MASK) >> META_OFFSET_SHIFT;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -133,7 +145,6 @@ skit_loaf skit_loaf_null()
 {
 	skit_loaf result;
 	result.as_slice = skit_slice_null();
-	result.as_slice.meta &= ~META_SLICE_BIT; /* clear the slice bit */
 	return result;
 }
 
@@ -149,7 +160,7 @@ skit_loaf skit_loaf_new()
 	memset( result.chars_handle, 0, sizeof(skit_utf8c*)+1 );
 	
 	/* Set the length to agree with the string data. */
-	skit_slice_setlen(&result.as_slice,0);
+	skit_slice_set_length(&result.as_slice,0);
 	
 	return result;
 }
@@ -170,14 +181,10 @@ skit_loaf skit_loaf_copy_cstr(const char *cstr)
 	/* The strcpy operation will handle the creation of the last nul-terminating byte. */
 	
 	/* Set the length to agree with the string data. */
-	skit_slice_setlen(&result.as_slice, length);
-	
-	skit_utf8c **handle_ptr = (skit_utf8c**)result.chars_handle;
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__, *handle_ptr);
+	skit_slice_set_length(&result.as_slice, length);
 	
 	/* Do some invariant checking and then return. */
 	sASSERT(skit_loaf_check_init(result));
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__, *handle_ptr);
 	return result;
 }
 
@@ -192,7 +199,7 @@ skit_loaf skit_loaf_alloc(size_t length)
 	memset(result.chars_handle, 0, sizeof(skit_utf8c*)+1); /* nullify the handle and provide a nul-terminator right after it. */
 	result.chars_handle[sizeof(skit_utf8c*)+length] = '\0'; /* put a nul-terminator at the very end, just incase. */
 	
-	skit_slice_setlen(&result.as_slice, length);
+	skit_slice_set_length(&result.as_slice, length);
 	return result;
 }
 
@@ -209,7 +216,6 @@ static void skit_slice_len_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
 	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
-	printf("  skit_slice_len_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -222,10 +228,7 @@ skit_utf8c *skit_loaf_ptr( skit_loaf loaf )
 	/* Loaves will never have the META_CSTR_BIT set.  That wouldn't make sense. */
 	/* So don't bother the extra cycles to check it. */
 	
-	skit_utf8c **handle_ptr = (skit_utf8c**)loaf.chars_handle;
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__,  *handle_ptr);
 	skit_utf8c *handle = *((skit_utf8c**)loaf.chars_handle);
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__,  *handle_ptr);
 	if ( handle == NULL )
 		return loaf.chars_handle + sizeof(skit_utf8c*);
 	else
@@ -237,17 +240,17 @@ skit_utf8c *skit_slice_ptr( skit_slice slice )
 	if ( slice.chars_handle == NULL )
 		return NULL;
 
-	skit_utf8c **handle_ptr = (skit_utf8c**)slice.chars_handle;
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__,  *handle_ptr);
 	if ( SKIT_SLICE_IS_CSTR(slice) )
+	{
 		return slice.chars_handle;
+	}
 	else
 	{
 		skit_utf8c *handle = *((skit_utf8c**)slice.chars_handle);
 		if ( handle == NULL )
-			return slice.chars_handle + sizeof(handle);
+			return slice.chars_handle + sizeof(handle) + skit_slice_get_offset(slice);
 		else
-			return handle;
+			return handle + skit_slice_get_offset(slice);
 	}
 }
 
@@ -278,7 +281,7 @@ skit_slice skit_slice_of_cstrn(const char *cstr, int length )
 {
 	skit_slice result = skit_slice_null();
 	result.chars_handle = (skit_utf8c*)cstr;
-	skit_slice_setlen(&result, length);
+	skit_slice_set_length(&result, length);
 	result.meta |= META_CSTR_BIT;
 	return result;
 }
@@ -308,38 +311,6 @@ static void skit_slice_of_cstr_test()
 
 /* ------------------------------------------------------------------------- */
 
-int skit_slice_is_loaf(skit_slice slice)
-{
-	if ( (slice.meta & META_SLICE_BIT) == 0 )
-		return 1;
-	return 0;
-}
-
-static void skit_slice_is_loaf_test()
-{
-	skit_loaf loaf = skit_loaf_copy_cstr("foo");
-	skit_slice casted_slice = loaf.as_slice;
-	skit_slice sliced_slice = skit_slice_of(loaf.as_slice, 0, SKIT_EOT);
-	sASSERT( skit_slice_is_loaf(casted_slice));
-	sASSERT(!skit_slice_is_loaf(sliced_slice));
-	skit_loaf_free(&loaf);
-	printf("  skit_slice_is_loaf_test passed.\n");
-}
-
-/* ------------------------------------------------------------------------- */
-
-skit_loaf skit_slice_as_loaf(skit_slice slice)
-{
-	skit_loaf result = skit_loaf_null();
-	sASSERT(skit_slice_check_init(slice));
-	sASSERT(skit_slice_is_loaf(slice));
-	result.chars_handle = slice.chars_handle;
-	result.as_slice.meta = slice.meta;
-	return result;
-}
-
-/* ------------------------------------------------------------------------- */
-
 skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length)
 {
 	skit_utf8c *loaf_chars = sLPTR(*loaf);
@@ -347,59 +318,43 @@ skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length)
 	sASSERT(loaf_chars != NULL);
 	sASSERT_MSG(skit_loaf_check_init(*loaf), "'loaf' was not initialized.");
 	
-	printf("%s, %d: \n",__func__,__LINE__);
 	skit_utf8c **handle_ptr = (skit_utf8c**)loaf->chars_handle;
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__, *handle_ptr);
 	if ( *handle_ptr == NULL )
 	{
-		/* Note: realloc doesn't seem to guarantee that memory won't move 
-		during shrink operations, so we shouldn't try to reclaim the memory
-		next to the current handle because we could lose our immovable handle
-		that way. */
-	printf("%s, %d: \n",__func__,__LINE__);
 		size_t old_length = sLLENGTH(*loaf);
-	printf("%s, %d: old_length == %ld\n",__func__,__LINE__, old_length);
-	printf("%s, %d: \n",__func__,__LINE__);
 		if ( old_length < length )
 		{
 			/* grow operation */
-	printf("%s, %d: \n",__func__,__LINE__);
 			*handle_ptr = (skit_utf8c*)skit_malloc(length+1);
-	printf("%s, %d: \n",__func__,__LINE__);
 			memcpy(*handle_ptr, loaf->chars_handle + sizeof(skit_utf8c*), old_length);
-	printf("%s, %d: \n",__func__,__LINE__);
 			(*handle_ptr)[old_length] = '\0';
 			(*handle_ptr)[length] = '\0';
 		}
 		else
 		{
 			/* shrink operation: no allocation required */
+			
+			/* Note: realloc doesn't seem to guarantee that memory won't move 
+			during shrink operations, so we shouldn't try to reclaim the memory
+			next to the current handle because we could lose our immovable 
+			handle that way. */
+			
 			loaf->chars_handle[sizeof(skit_utf8c*)+length] = '\0';
 		}
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__, *handle_ptr);
-	printf("%s, %d: *handle_ptr[] == '%s'\n",__func__,__LINE__, *handle_ptr);
 	}
 	else
 	{
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__,  *handle_ptr);
 		*handle_ptr = (skit_utf8c*)skit_realloc(*handle_ptr, length+1);
-	printf("%s, %d: \n",__func__,__LINE__);
 		(*handle_ptr)[length] = '\0';
-	printf("%s, %d: *handle_ptr[] == %s\n",__func__,__LINE__, *handle_ptr);
 	}
-	printf("%s, %d: \n",__func__,__LINE__);
-	skit_slice_setlen(&loaf->as_slice, length);
-	printf("%s, %d: \n",__func__,__LINE__);
+	skit_slice_set_length(&loaf->as_slice, length);
 	
 	return loaf;
 }
 
 static void skit_loaf_resize_test()
 {
-	printf("%s, %d: \n",__func__,__LINE__);
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello world!");
-	skit_utf8c **handle_ptr = (skit_utf8c**)loaf.chars_handle;
-	printf("%s, %d: *handle_ptr == %p\n",__func__,__LINE__,  *handle_ptr);
 	skit_loaf_resize(&loaf, 5);
 	sASSERT_EQ_CSTR("Hello", skit_loaf_as_cstr(loaf));
 	skit_loaf_resize(&loaf, 1024);
@@ -455,7 +410,6 @@ static void skit_loaf_append_test()
 
 skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2)
 {
-	printf("%s, %d: \n",__func__,__LINE__);
 	size_t len1;
 	size_t len2;
 	skit_loaf result;
@@ -464,18 +418,12 @@ skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2)
 	sASSERT(skit_slice_check_init(str1));
 	sASSERT(skit_slice_check_init(str2));
 	
-	printf("%s, %d: \n",__func__,__LINE__);
 	len1 = skit_slice_len(str1);
 	len2 = skit_slice_len(str2);
 	
-	printf("%s, %d: \n",__func__,__LINE__);
 	result = skit_loaf_alloc(len1+len2);
-	printf("%s, %d: sLPTR(result) == %p \n",__func__,__LINE__, sLPTR(result));
-	printf("%s, %d: sSPTR(str1) == %p \n",__func__,__LINE__, sSPTR(str1));
 	memcpy(sLPTR(result),      sSPTR(str1), len1);
-	printf("%s, %d: \n",__func__,__LINE__);
 	memcpy(sLPTR(result)+len1, sSPTR(str2), len2);
-	printf("%s, %d: \n",__func__,__LINE__);
 	/* setlen was already handled by skit_loaf_alloc. */
 	
 	return result;
@@ -483,16 +431,12 @@ skit_loaf skit_slice_concat(skit_slice str1, skit_slice str2)
 
 static void skit_slice_concat_test()
 {
-	printf("%s, %d: \n",__func__,__LINE__);
 	skit_loaf  orig  = skit_loaf_copy_cstr("Hello world!");
 	skit_slice slice = skit_slice_of(orig.as_slice, 0, 6);
 	skit_loaf  newb  = skit_slice_concat(slice, orig.as_slice);
-	printf("%s, %d: \n",__func__,__LINE__);
 	sASSERT_EQ_CSTR("Hello Hello world!", skit_loaf_as_cstr(newb));
-	printf("%s, %d: \n",__func__,__LINE__);
 	skit_loaf_free(&orig);
 	skit_loaf_free(&newb);
-	printf("%s, %d: \n",__func__,__LINE__);
 	printf("  skit_slice_concat_test passed.\n");
 }
 
@@ -532,7 +476,7 @@ skit_slice *skit_slice_buffered_resize(
 		skit_loaf_resize( buffer, new_buffer_length );
 	}
 	
-	skit_slice_setlen(buf_slice, new_buf_slice_length);
+	skit_slice_set_length(buf_slice, new_buf_slice_length);
 	
 	return buf_slice;
 }
@@ -657,8 +601,9 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	sASSERT((index2-index1) >= 0);
 	
 	/* Do the slicing. */
-	result.chars_handle = sSPTR(slice) + index1;
-	skit_slice_setlen(&result, index2-index1);
+	result.chars_handle = slice.chars_handle;
+	skit_slice_set_length(&result, index2-index1);
+	skit_slice_set_offset(&result, index1);
 	if ( SKIT_SLICE_IS_CSTR(slice) )
 		result.meta |= META_CSTR_BIT;
 	
@@ -1139,7 +1084,6 @@ void skit_string_unittest()
 	skit_slice_check_init_test();
 	skit_slice_of_cstrn_test();
 	skit_slice_of_cstr_test();
-	skit_slice_is_loaf_test();
 	skit_loaf_resize_test();
 	skit_loaf_append_test();
 	skit_slice_concat_test();
