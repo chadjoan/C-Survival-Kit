@@ -2,7 +2,7 @@
 #ifndef SKIT_STREAMS_PFILE_STREAM_INCLUDED
 #define SKIT_STREAMS_PFILE_STREAM_INCLUDED
 
-#include <fcntl.h>
+#include <stdio.h>
 
 #include "survival_kit/streams/stream.h"
 
@@ -12,8 +12,10 @@ struct skit_pfile_stream_internal
 	skit_stream_metadata      meta;
 	skit_stream_common_fields common_fields;
 	skit_loaf                 name;
+	skit_loaf                 line_buffer;
 	skit_loaf                 err_msg_buf;
-	int                       file_descriptor;
+	FILE*                     file_handle;
+	char                      eof_reached;
 };
 
 /** File stream backed by POSIX style file I/O or equivalent. */
