@@ -256,6 +256,38 @@ skit_utf8c *skit_slice_ptr( skit_slice slice )
 
 /* ------------------------------------------------------------------------- */
 
+int skit_loaf_is_null(skit_loaf loaf)
+{
+	if ( loaf.chars_handle == NULL )
+		return 1;
+	else
+		return 0;
+}
+
+int skit_slice_is_null(skit_slice slice)
+{
+	if ( slice.chars_handle == NULL )
+		return 1;
+	else
+		return 0;
+}
+
+static void skit_slice_is_null_test()
+{
+	skit_loaf  nloaf  = skit_loaf_null();
+	skit_slice nslice = skit_slice_null();
+	skit_loaf  loaf   = skit_loaf_copy_cstr("foo");
+	skit_slice slice  = skit_slice_of(loaf.as_slice, 0, 2);
+	sASSERT_EQ(skit_loaf_is_null(nloaf),   1, "%d");
+	sASSERT_EQ(skit_slice_is_null(nslice), 1, "%d");
+	sASSERT_EQ(skit_loaf_is_null(loaf),    0, "%d");
+	sASSERT_EQ(skit_slice_is_null(slice),  0, "%d");
+	skit_loaf_free(&loaf);
+	printf("  skit_slice_is_null_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 int skit_slice_check_init(skit_slice slice)
 {
 	if ( META_CHECK_VAL == (slice.meta & META_CHECK_MASK) )
@@ -1081,6 +1113,7 @@ void skit_string_unittest()
 {
 	printf("skit_slice_unittest()\n");
 	skit_slice_len_test();
+	skit_slice_is_null_test();
 	skit_slice_check_init_test();
 	skit_slice_of_cstrn_test();
 	skit_slice_of_cstr_test();

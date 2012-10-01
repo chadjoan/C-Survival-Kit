@@ -191,6 +191,27 @@ This macro is shorthand for calling skit_slice_ptr.
 */
 #define sSPTR(slice) (skit_slice_ptr((slice)))
 
+/**
+These functions return 1 if the given string is considered null.
+They return 0 otherwise.
+A string is "null" if it has been initialized but has no memory allocated
+to it -- not even an empty string.
+Such null strings are returned by the skit_loaf_null() and skit_slice_null()
+functions.
+Example:
+	skit_loaf  nloaf  = skit_loaf_null();
+	skit_slice nslice = skit_slice_null();
+	skit_loaf  loaf   = skit_loaf_copy_cstr("foo");
+	skit_slice slice  = skit_slice_of(loaf.as_slice, 0, 2);
+	sASSERT_EQ(skit_loaf_is_null(nloaf),  1, "%d");
+	sASSERT_EQ(skit_slice_is_null(nloaf), 1, "%d");
+	sASSERT_EQ(skit_loaf_is_null(loaf),   0, "%d");
+	sASSERT_EQ(skit_slice_is_null(loaf),  0, "%d");
+	skit_loaf_free(&loaf);
+*/
+int skit_loaf_is_null(skit_loaf loaf);
+int skit_slice_is_null(skit_slice slice);
+
 /** 
 These functions will return 0 if the given loaf/slice is uninitialized.
 They will return 1 if there is a high probability that it is initialized.
