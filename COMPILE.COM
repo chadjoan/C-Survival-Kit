@@ -1,4 +1,8 @@
+$!COMPILE.COM:
+$! P1 = Source file path relative to project root in unix style.
+$! P2 = Optional compiler flags.
 $!
+$!SUB_VMS2UNIX
 $! P1 = input VMS path
 $! P2 = output UNIX path
 $ SUB_VMS2UNIX: SUBROUTINE
@@ -159,7 +163,8 @@ $ CC /OBJ=SYS$SCRATCH:'CFILE_MUNGED_NAME.OBJ -
     /LIS=SYS$SCRATCH:'CFILE_MUNGED_NAME.LIS - 
     /NESTED_INCLUDE_DIR=NONE -
     /INCLUDE_DIR=("''PROJECT_UNIX_PATH'/") -
-    'CFILE_VMS_PATH
+    'CFILE_VMS_PATH -
+	'P2
 $!
 $! PORTABILITY: Converting the list file using CMD:STREAM_LF requires STREAM_LF to exist.
 $ CONVERT /FDL=CMD:STREAM_LF SYS$SCRATCH:'CFILE_MUNGED_NAME.LIS CLIST:'CFILE_MUNGED_NAME.LIS
