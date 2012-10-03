@@ -5,6 +5,7 @@
 
 #include <unistd.h> /* For STDERR_FILENO */
 #include <stdio.h>
+#include <string.h> /* strerror_r */
 #include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
@@ -19,6 +20,7 @@
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/misc.h"
+
 
 void skit_die(char *mess, ...)
 {
@@ -105,4 +107,31 @@ void skit_print_mem(void *ptr, int size)
 		pos += LINE_SIZE;
 	}
 	printf("\n");
+}
+
+const char *skit_errno_to_cstr( char *buf, size_t buf_size)
+{
+		#ifdef __VMS
+			/* strerror_r is not provided on OpenVMS, but supposedly strerror is thread-safe on VMS.
+			source: http://www.mail-archive.com/boost-cvs@lists.sourceforge.net/msg08433.html
+			(Search for "VMS doesn't provide strerror_r, but on this platform")
+			*/
+			const char *result = strerror(errno);
+		#elif defined(__linux__)
+			/* Linux: do it the normal way. */
+			char *result = buf;
+			
+			/* Reference: http://linux.die.net/man/3/strerror_r */
+			#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+				int errval = strerror_r(errno, result, buf_size);
+				(void)errval;
+				/* TODO: what to do if (errval != 0) ? */
+			#else
+				result = strerror_r(errno, buf, buf_size);
+			#endif
+		#else
+		#	error "This requires porting."
+		#endif
+		
+		return buf;
 }

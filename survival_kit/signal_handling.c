@@ -5,7 +5,6 @@
 
 #include <signal.h>
 #include <pthread.h>
-#include <string.h> /* strerror_r */
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h> /* getpid() */
@@ -31,20 +30,9 @@ static void skit_sigaction( int sig, const struct sigaction *act, struct sigacti
 	int success = sigaction(sig, act, oact);
 	if ( success != 0 )
 	{
-		#ifdef __VMS
-			/* strerror_r is not provided on OpenVMS, but supposedly strerror is thread-safe on VMS.
-			source: http://www.mail-archive.com/boost-cvs@lists.sourceforge.net/msg08433.html
-			(Search for "VMS doesn't provide strerror_r, but on this platform")
-			*/
-			char *buf = strerror(errno);
-		#elif defined(__linux__)
-			/* Linux: do it the normal way. */
-			char buf[1024];
-			strerror_r(errno, buf, 1024);
-		#else
-		#	error "This requires porting."
-		#endif
-		sASSERT_MSG( success == 0, buf );
+		char buf[1024];
+		const char *errmsg = skit_errno_to_cstr(buf, sizeof(buf));
+		sASSERT_MSG( success == 0, errmsg );
 	}
 }
 
