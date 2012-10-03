@@ -33,8 +33,27 @@ static void skit_thread_context_init( skit_thread_context *ctx )
 	if ( ctx->error_text_buffer == NULL )
 		ctx->error_text_buffer_size = 0;
 	
+	/* TODO: BUG: This works amazingly well for how broken it is! */
+	/*   The problem is that we setjmp and then return from the function. */
+	/*   After that the main routine will call some other function that */
+	/*   will almost assuredly take up residence in this functions stack */
+	/*   space. */
+	/*   Now, whenever we jump back to this place, the memory used to store */
+	/*   state for this function (notable the '*ctx' argument) will be */
+	/*   potentially ravaged.  */
+	/*   This init function should probably be a MACRO that performs the */
+	/*   setjmp inside the thread's entry function so that the stack space */
+	/*   used here will for-sure be valid later on. */
+	/*   For now, the undefined behavior seems to work quite well! */
+	/*     *ducks and crosses fingers*      */
 	if( setjmp( *skit_jmp_fstack_alloc(&ctx->exc_jmp_stack, &skit_malloc) ) != 0 )
 	{
+		/* jmp'ing from god-knows-where. */
+		/* At least once the ctx->exc_instance_stack member was fubar'd once */
+		/*   execution got to this point, so we should probably restore this */
+		/*   context before proceeding.  Otherwise: random segfault time! */
+		ctx = skit_thread_context_get();
+	
 		/* Uncaught exception(s)!  We're going down! */
 		while ( ctx->exc_instance_stack.used.length > 0 )
 		{
