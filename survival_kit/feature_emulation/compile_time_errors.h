@@ -192,7 +192,11 @@ from sTRY-sCATCH blocks.
 #define sRETURN0()     SKIT_RETURN_INTERNAL(return)
 #define sRETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
 #define sRETURN(...) SKIT_MACRO_DISPATCHER1(sRETURN, __VA_ARGS__)(__VA_ARGS__)
-	
+
+/* This (slightly uglier) version is offered as a way to work around the
+lack of an ability to determine whether a variadic macro was expanded with
+1 argument or 0 arguments. */
+#define sRETURN_       SKIT_RETURN_INTERNAL(return)
 
 /* 
 This macro is used internally by macros to simplify the creation of error 

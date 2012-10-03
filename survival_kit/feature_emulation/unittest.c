@@ -319,6 +319,11 @@ static void unittest_scope()
 	sEND_TRY
 
 	printf("  scope unittest passed!\n");
+	
+	/* sRETURN();*/ /* This should compile.  It tests for zero-arg sRETURN functionality. */
+	/* It is currently broken though, pending some fairly complicated macro trickery. */
+	/* For now, use this slightly uglier version instead: */
+	sRETURN_;
 }
 
 void skit_unittest_features()

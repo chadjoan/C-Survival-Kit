@@ -6,19 +6,23 @@ void skit_macro_unittest();
 /**
 Counts the number of arguments passed into a variadic macro.
 
+Limitation: For now, the 0 argument case does not work.
 Limitation: For now this only supports up to 15 arguments.
+(The zero arg case should be doable.  Jens Gustedt's P99 library can do it, and make it work without the GNU ##__VA_ARGS__ extentsion.)
+(The many-arg case is of course doable, but pending a rebalance of laziness and necessity.)
 
 Examples:
-	assert( SKIT_NARGS()        == 0 );
+	// assert( SKIT_NARGS()        == 0 ); // May work in the future.
 	assert( SKIT_NARGS(9000)    == 1 );
 	assert( SKIT_NARGS(1,2,3,4) == 4 );
 */
-#define SKIT_NARGS(...)  SKIT_NARGS_(0, ##__VA_ARGS__,SKIT_RSEQ_N())
+#define SKIT_NARGS(...)  SKIT_NARGS_(__VA_ARGS__,SKIT_RSEQ_N())
 #define SKIT_NARGS_(...) SKIT_ARG_N(__VA_ARGS__)
-#define SKIT_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+#define SKIT_ARG_N(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,N,...) N
 #define SKIT_RSEQ_N() 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
 
 /**
+Limitation: For now, the 0 argument case does not work.
 Returns 0 if there are 0 arguments passed.
 Returns 1 if there are any other number of arguments passed.
 This is mostly useful in macro generation or other meta-programming tasks
@@ -28,32 +32,34 @@ This is mostly useful in macro generation or other meta-programming tasks
   yields 'func(((2)<(1)?(2):(1)))' instead of the desired 'func1'.
 
 Examples:
-	assert( SKIT_NARGS1()        == 0 );
+	// assert( SKIT_NARGS1()        == 0 ); // May work in the future.
 	assert( SKIT_NARGS1(9000)    == 1 );
 	assert( SKIT_NARGS1(1,2,3,4) == 1 );
 */
-#define SKIT_NARGS1(...)  SKIT_NARGS1_(0, ##__VA_ARGS__,SKIT_RSEQ_1())
+#define SKIT_NARGS1(...)  SKIT_NARGS1_(__VA_ARGS__,SKIT_RSEQ_1())
 #define SKIT_NARGS1_(...) SKIT_ARG_1(__VA_ARGS__)
-#define SKIT_ARG_1(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+#define SKIT_ARG_1(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,N,...) N
 #define SKIT_RSEQ_1() 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
 
 /**
+Limitation: For now, the 0 argument case does not work.
 Returns 0 if there are 0 arguments passed.
 Returns 1 if there is 1 argument passed.
 Returns 2 if there are any other number of arguments passed.
 See SKIT_NARGS1 for an explanation of purpose.
 
 Examples:
-	assert( SKIT_NARGS2()        == 0 );
+	// assert( SKIT_NARGS2()        == 0 ); // May work in the future.
 	assert( SKIT_NARGS2(9000)    == 1 );
 	assert( SKIT_NARGS2(1,2,3,4) == 2 );
 */
-#define SKIT_NARGS2(...)  SKIT_NARGS2_(0, ##__VA_ARGS__,SKIT_RSEQ_2())
+#define SKIT_NARGS2(...)  SKIT_NARGS2_(__VA_ARGS__,SKIT_RSEQ_2())
 #define SKIT_NARGS2_(...) SKIT_ARG_2(__VA_ARGS__)
-#define SKIT_ARG_2(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+#define SKIT_ARG_2(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,N,...) N
 #define SKIT_RSEQ_2() 2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0
 
 /**
+Limitation: For now, the 0 argument case does not work.
 Returns 0 if there are 0 arguments passed.
 Returns 1 if there is 1 argument passed.
 Returns 2 if there are 2 arguments passed.
@@ -61,13 +67,13 @@ Returns 3 if there are any other number of arguments passed.
 See SKIT_NARGS1 for an explanation of purpose.
 
 Examples:
-	assert( SKIT_NARGS3()        == 0 );
+	// assert( SKIT_NARGS3()        == 0 ); // May work in the future.
 	assert( SKIT_NARGS3(9000)    == 1 );
 	assert( SKIT_NARGS3(1,2,3,4) == 3 );
 */
-#define SKIT_NARGS3(...)  SKIT_NARGS3_(0, ##__VA_ARGS__,SKIT_RSEQ_3())
+#define SKIT_NARGS3(...)  SKIT_NARGS3_(__VA_ARGS__,SKIT_RSEQ_3())
 #define SKIT_NARGS3_(...) SKIT_ARG_3(__VA_ARGS__)
-#define SKIT_ARG_3(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
+#define SKIT_ARG_3(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,N,...) N
 #define SKIT_RSEQ_3() 3,3,3,3,3,3,3,3,3,3,3,3,3,2,1,0
 
 /**
