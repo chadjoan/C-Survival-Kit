@@ -13,6 +13,7 @@
 int main(int argc, char *argv[])
 {
 	skit_init();
+	skit_macro_unittest();
 	skit_math_unittest();
 	skit_stack_unittest();
 	skit_fstack_unittest();

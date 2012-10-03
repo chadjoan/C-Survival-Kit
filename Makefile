@@ -16,6 +16,7 @@ OBJECT_DIRS= \
 	obj/setjmp
 
 OBJECT_FILES= \
+	obj/macro.o \
 	obj/memory.o \
 	obj/misc.o \
 	obj/cstr.o \
