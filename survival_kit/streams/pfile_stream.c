@@ -253,7 +253,7 @@ static void skit_try_fgets(
 		/* This is the end-of-line for the last line in the file. */
 		/* The '\0' isn't from the file, so we don't return it.  */
 		/* Because we aren't return the '\n' from the memset or the '\0' from fgets, */
-		/*   we'll subtract 2 from our final pointer. */
+		/*   we'll subtract 1 from our final pointer. */
 		sASSERT_EQ( *(ptr-1), '\0', "%02x" );
 		*nbytes_read = ptr - buf - 1;
 	}
