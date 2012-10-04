@@ -6,6 +6,17 @@
 
 #include "survival_kit/streams/meta.h"
 
+/**
+Justifications for a stream package when the C standard already defines stream
+operations:
+- skit's implementation supports portable in-memory text streams.
+- It provides streams that throw exceptions rather than returning ignorable 
+    error codes.
+- Better debugging output when things fail. Every stream has a *_dump function.
+- Extensibility: since this code is not OS/vendor-specific, it can be used to 
+    modify the behavior of code that is otherwise inaccessible.
+*/
+
 typedef struct skit_stream_common_fields skit_stream_common_fields;
 struct skit_stream_common_fields
 {
@@ -59,7 +70,7 @@ slice into the stream's internal buffers.
 
 Example:
 
-// The given stream has the contents "foo\n\nbar\nbaz"
+// The given stream has the contents "foo\n\n\0bar\nbaz"
 void skit_stream_readln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(3);
@@ -77,10 +88,11 @@ skit_slice skit_stream_readln(skit_stream *stream, skit_loaf *buffer);
 (virtual)
 Reads a block of bytes from the stream.
 These will be in the returned slice.
-If the end of the stream has already been reached, then skit_slice_null() is
-returned.
 If the block requested extends beyond the end of the stream, then the stream's
 remaining bytes will be returned.
+If the end of the stream has already been reached, then skit_slice_null() is
+returned.  This way, forgetting to check for EOF conditions becomes a bug that
+causes segfaults/crashing instead of a bug that causes infinite loops.
 
 'buffer' is an optional parameter.  
 If it is provided, then the stream /may/ use it to store the returned slice.
@@ -109,89 +121,94 @@ skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbyte
 
 /**
 (virtual)
-Writes the given slice into the stream, followed by a line ending.
+Positions the cursor to the end of the stream and then writes the given slice
+into the stream, followed by a line ending.
 
 For targets that use textual line delimiters, the linefeed character '\n' is
 written after the given slice.  
 
-Some streams may support only appending writes: such streams will not support
-the insertion of data into the stream before its end.
-
 Example:
 
 // The given stream has the contents ""
-void skit_stream_writeln_unittest(skit_stream *stream)
+void skit_stream_appendln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
-	skit_stream_writeln(stream, sSLICE("foo"));
+	skit_stream_appendln(stream, sSLICE("foo"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n"));
-	skit_stream_writeln(stream, sSLICE(""));
+	skit_stream_appendln(stream, sSLICE(""));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\n"));
-	skit_stream_writeln(stream, sSLICE("bar"));
+	skit_stream_appendln(stream, sSLICE("bar"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\nbar\n"));
-	skit_stream_writeln(stream, sSLICE("baz"));
+	skit_stream_appendln(stream, sSLICE("baz"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\nbar\nbaz\n"));
 	skit_loaf_free(&buf);
 }
 */
-void skit_stream_writeln(skit_stream *stream, skit_slice line);
+void skit_stream_appendln(skit_stream *stream, skit_slice line);
 
 /**
 (virtual)
-Writes formatted text into the stream, followed by a line ending.
+Positions the cursor to the end of the stream and then writes formatted text
+into the stream, followed by a line ending.
 
 For targets that use textual line delimiters, the linefeed character '\n' is
 written after the given slice.  
 
-Some streams may support only appending writes: such streams will not support
-the insertion of data into the stream before its end.
-
 Example:
 
 // The given stream has the contents ""
-void skit_stream_writefln_unittest(skit_stream *stream)
+void skit_stream_appendfln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
-	skit_stream_writefln(stream, "foo");
+	skit_stream_appendfln(stream, "foo");
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n"));
-	skit_stream_writefln(stream, "%s", "bar");
+	skit_stream_appendfln(stream, "%s", "bar");
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\nbar\n"));
-	skit_stream_writefln(stream, "%d", 3);
+	skit_stream_appendfln(stream, "%d", 3);
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\nbar\n3\n"));
 	skit_loaf_free(&buf);
 }
 */
-void skit_stream_writefln(skit_stream *stream, const char *fmtstr, ...);
-void skit_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_list vl);
+void skit_stream_appendfln(skit_stream *stream, const char *fmtstr, ...);
+void skit_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl);
 
 /**
 (virtual)
-Writes the bytes in the given slice into the stream.
-
-Some streams may support only appending writes: such streams will not support
-the insertion of data into the stream before its end.
+Positions the cursor to the end of the stream and then writes the bytes in the
+given slice into the stream.
 
 Example:
 
 // The given stream has the contents ""
-void skit_stream_write_unittest(skit_stream *stream)
+void skit_stream_append_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
-	skit_stream_write(stream, sSLICE("foo"));
+	skit_stream_append(stream, sSLICE("foo"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo"));
-	skit_stream_write(stream, sSLICE(""));
+	skit_stream_append(stream, sSLICE(""));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo"));
-	skit_stream_write(stream, sSLICE("bar"));
+	skit_stream_append(stream, sSLICE("bar"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foobar"));
-	skit_stream_write(stream, sSLICE("baz"));
+	skit_stream_append(stream, sSLICE("baz"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foobarbaz"));
 	skit_loaf_free(&buf);
 }
 */
-void skit_stream_write(skit_stream *stream, skit_slice slice);
+void skit_stream_append(skit_stream *stream, skit_slice slice);
 
 /**
 (virtual)
@@ -213,7 +230,7 @@ void skit_stream_rewind_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
-	skit_stream_writeln(stream, sSLICE("foo"));
+	skit_stream_appendln(stream, sSLICE("foo"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));
@@ -224,9 +241,10 @@ void skit_stream_rewind(skit_stream *stream);
 
 /**
 (virtual)
-Returns the stream's entire contents as one long string.
-The result of this operation does not change with the stream's cursor
-position.
+Returns the the stream's contents starting at the cursor and ending at the
+end of the stream.  The contents are returned as one long string.
+The result of this operation moves the stream's cursor to the end of the
+stream.
 
 'buffer' is an optional parameter.  
 If it is provided, then the stream /may/ use it to store the returned slice.
@@ -237,7 +255,15 @@ It is not guaranteed that the stream will actually use the buffer parameter,
 since some streams, like skit_text_stream, can avoid copying by returning a 
 slice into the stream's internal buffers.
 
-See skit_stream_writeln for an example of how this is used.
+Note that some streams, when passed NULL for the 'buffer' parameter on the
+slurp function, may hold onto the internal buffer's memory until the stream
+has its destructor called.  If the caller wishes to have this memory freed
+before the destructor call, then the caller should pass a 'buffer' argument
+and free the buffer in calling code.  Since this function is likely to be
+called at the end of a stream's lifetime, it may be perfectly feasible to
+just let the destructor handle it in such cases.  
+
+See skit_stream_appendln for an example of how this is used.
 */
 skit_slice skit_stream_slurp(skit_stream *stream, skit_loaf *buffer);
 
@@ -301,22 +327,28 @@ void skit_stream_set_indent_char(skit_stream *stream, const char *c);
 
 /* ------------------------- generic unittests ----------------------------- */
 
-// The given stream has the contents "foo\n\nbar\nbaz"
+// The given stream has the contents "foo\n\n\0bar\nbaz"
 void skit_stream_readln_unittest(skit_stream *stream);
+#define SKIT_READLN_UNITTEST_CONTENTS "foo\n\n\0bar\nbaz"
 
 // The given stream has the contents "foobarbaz"
 void skit_stream_read_unittest(skit_stream *stream);
+#define SKIT_READ_UNITTEST_CONTENTS "foobarbaz"
 
 // The given stream has the contents ""
-void skit_stream_writeln_unittest(skit_stream *stream);
+void skit_stream_appendln_unittest(skit_stream *stream);
+#define SKIT_APPENDLN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
-void skit_stream_writefln_unittest(skit_stream *stream);
+void skit_stream_appendfln_unittest(skit_stream *stream);
+#define SKIT_APPENDFLN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
-void skit_stream_write_unittest(skit_stream *stream);
+void skit_stream_append_unittest(skit_stream *stream);
+#define SKIT_APPEND_UNITTEST_CONTENTS ""
 
 // The given stream has the contents "".  The cursor starts at the begining.
 void skit_stream_rewind_unittest(skit_stream *stream);
+#define SKIT_REWIND_UNITTEST_CONTENTS ""
 
 #endif

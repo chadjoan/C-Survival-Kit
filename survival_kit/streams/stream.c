@@ -33,12 +33,12 @@ static skit_slice skit_stream_readn_not_impl(skit_stream* stream, skit_loaf *buf
 	return skit_slice_null();
 }
 
-static void skit_stream_write_not_impl(skit_stream *stream, skit_slice slice)
+static void skit_stream_append_not_impl(skit_stream *stream, skit_slice slice)
 {
 	skit_stream_func_not_impl(stream);
 }
 
-static void skit_stream_writeva_not_impl(skit_stream *stream, const char *fmtstr, va_list vl)
+static void skit_stream_appendva_not_impl(skit_stream *stream, const char *fmtstr, va_list vl)
 {
 	skit_stream_func_not_impl(stream);
 }
@@ -49,12 +49,12 @@ static void skit_stream_dump_not_impl(skit_stream *stream, skit_stream* output)
 }
 
 union skit_file_stream;
-static void skit_file_stream_open_not_impl(union skit_file_stream *stream, skit_slice fname, const char *mode)
+static void skit_file_stream_open_not_impl(union skit_stream *stream, skit_slice fname, const char *mode)
 {
 	skit_stream_func_not_impl((skit_stream*)stream);
 }
 
-static void skit_file_stream_close_not_impl(union skit_file_stream *stream)
+static void skit_file_stream_close_not_impl(union skit_stream *stream)
 {
 	skit_stream_func_not_impl((skit_stream*)stream);
 }
@@ -63,9 +63,9 @@ void skit_stream_vtable_init(skit_stream_vtable_t *table)
 {
 	table->readln        = &skit_stream_read_not_impl;
 	table->read          = &skit_stream_readn_not_impl;
-	table->writeln       = &skit_stream_write_not_impl;
-	table->writefln_va   = &skit_stream_writeva_not_impl;
-	table->write         = &skit_stream_write_not_impl;
+	table->appendln       = &skit_stream_append_not_impl;
+	table->appendfln_va   = &skit_stream_appendva_not_impl;
+	table->append         = &skit_stream_append_not_impl;
 	table->flush         = &skit_stream_func_not_impl;
 	table->rewind        = &skit_stream_func_not_impl;
 	table->slurp         = &skit_stream_read_not_impl;
@@ -106,27 +106,27 @@ skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbyte
 	return SKIT_STREAM_DISPATCH(stream, read, buffer, nbytes);
 }
 
-void skit_stream_writeln(skit_stream *stream, skit_slice line)
+void skit_stream_appendln(skit_stream *stream, skit_slice line)
 {
-	SKIT_STREAM_DISPATCH(stream, writeln, line);
+	SKIT_STREAM_DISPATCH(stream, appendln, line);
 }
 
-void skit_stream_writefln(skit_stream *stream, const char* fmtstr, ...)
+void skit_stream_appendfln(skit_stream *stream, const char* fmtstr, ...)
 {
 	va_list vl;
 	va_start(vl, fmtstr);
-	SKIT_STREAM_DISPATCH(stream, writefln_va, fmtstr, vl);
+	SKIT_STREAM_DISPATCH(stream, appendfln_va, fmtstr, vl);
 	va_end(vl);
 }
 
-void skit_stream_writefln_va(skit_stream *stream, const char* fmtstr, va_list vl)
+void skit_stream_appendfln_va(skit_stream *stream, const char* fmtstr, va_list vl)
 {
-	SKIT_STREAM_DISPATCH(stream, writefln_va, fmtstr, vl);
+	SKIT_STREAM_DISPATCH(stream, appendfln_va, fmtstr, vl);
 }
 
-void skit_stream_write(skit_stream *stream, skit_slice slice)
+void skit_stream_append(skit_stream *stream, skit_slice slice)
 {
-	SKIT_STREAM_DISPATCH(stream, write, slice);
+	SKIT_STREAM_DISPATCH(stream, append, slice);
 }
 
 void skit_stream_flush(skit_stream *stream)
@@ -199,7 +199,7 @@ void skit_stream_readln_unittest(skit_stream *stream)
 	skit_loaf buf = skit_loaf_alloc(3);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
-	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("bar"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("\0bar"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("baz"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_loaf_free(&buf);
@@ -220,52 +220,63 @@ void skit_stream_read_unittest(skit_stream *stream)
 }
 
 // The given stream has the contents ""
-void skit_stream_writeln_unittest(skit_stream *stream)
+void skit_stream_appendln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
-	skit_stream_writeln(stream, sSLICE("foo"));
+	skit_stream_appendln(stream, sSLICE("foo"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n"));
-	skit_stream_writeln(stream, sSLICE(""));
+	skit_stream_appendln(stream, sSLICE(""));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\n"));
-	skit_stream_writeln(stream, sSLICE("bar"));
+	skit_stream_appendln(stream, sSLICE("bar"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\nbar\n"));
-	skit_stream_writeln(stream, sSLICE("baz"));
+	skit_stream_appendln(stream, sSLICE("baz"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n\nbar\nbaz\n"));
 	skit_loaf_free(&buf);
-	printf("  skit_stream_writeln_unittest passed.\n");
+	printf("  skit_stream_appendln_unittest passed.\n");
 }
 
 // The given stream has the contents ""
-void skit_stream_writefln_unittest(skit_stream *stream)
+void skit_stream_appendfln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
-	skit_stream_writefln(stream, "foo");
+	skit_stream_appendfln(stream, "foo");
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\n"));
-	skit_stream_writefln(stream, "%s", "bar");
+	skit_stream_appendfln(stream, "%s", "bar");
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\nbar\n"));
-	skit_stream_writefln(stream, "%d", 3);
+	skit_stream_appendfln(stream, "%d", 3);
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo\nbar\n3\n"));
 	skit_loaf_free(&buf);
-	printf("  skit_stream_writefln_unittest passed.\n");
+	printf("  skit_stream_appendfln_unittest passed.\n");
 }
 
 // The given stream has the contents ""
-void skit_stream_write_unittest(skit_stream *stream)
+void skit_stream_append_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE(""));
-	skit_stream_write(stream, sSLICE("foo"));
+	skit_stream_append(stream, sSLICE("foo"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo"));
-	skit_stream_write(stream, sSLICE(""));
+	skit_stream_append(stream, sSLICE(""));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foo"));
-	skit_stream_write(stream, sSLICE("bar"));
+	skit_stream_append(stream, sSLICE("bar"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foobar"));
-	skit_stream_write(stream, sSLICE("baz"));
+	skit_stream_append(stream, sSLICE("baz"));
+	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_slurp(stream,&buf), sSLICE("foobarbaz"));
 	skit_loaf_free(&buf);
-	printf("  skit_stream_write_unittest passed.\n");
+	printf("  skit_stream_append_unittest passed.\n");
 }
 
 // The given stream has the contents "".  The cursor starts at the begining.
@@ -273,7 +284,7 @@ void skit_stream_rewind_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
-	skit_stream_writeln(stream, sSLICE("foo"));
+	skit_stream_appendln(stream, sSLICE("foo"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_stream_rewind(stream);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));

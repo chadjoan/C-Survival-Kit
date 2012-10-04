@@ -43,14 +43,14 @@ void skit_text_stream_init(skit_text_stream *tstream);
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
 skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes);
-void skit_text_stream_writeln(skit_stream *stream, skit_slice line);
+void skit_text_stream_appendln(skit_stream *stream, skit_slice line);
 
 /** TODO: the number of characters that can be written this way is currently
 limited to 1024.  This restriction should be lifted in the future, assuming
 sufficient programming time/resources to do so. */
-void skit_text_stream_writefln(skit_stream *stream, const char *fmtstr, ... );
-void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_list vl );
-void skit_text_stream_write(skit_stream *stream, skit_slice slice);
+void skit_text_stream_appendfln(skit_stream *stream, const char *fmtstr, ... );
+void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl );
+void skit_text_stream_append(skit_stream *stream, skit_slice slice);
 void skit_text_stream_flush(skit_stream *stream);
 void skit_text_stream_rewind(skit_stream *stream);
 skit_slice skit_text_stream_slurp(skit_stream *stream, skit_loaf *buffer);

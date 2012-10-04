@@ -7,6 +7,7 @@
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/string.h"
 #include "survival_kit/streams/text_stream.h"
+#include "survival_kit/streams/pfile_stream.h"
 
 #include <stdio.h> /* incase printf is needed. */
 
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
 	skit_unittest_features();
 	skit_string_unittest();
 	skit_text_stream_unittests();
+	skit_pfile_stream_unittests();
 	skit_unittest_signal_handling(); /* Must go LAST.  This test crashes. */
 	return 0;
 }

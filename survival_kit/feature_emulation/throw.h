@@ -37,6 +37,14 @@ The double (or more) argument version accepts an exception type as the first
   format string with substitution values given in subsequent arguments.
 This macro expands to a statement and may not be nested inside expressions.
 
+The string arguments passed into this do not need to survive during any 
+  sSCOPE_EXIT or sSCOPE_FAILURE statements operations that result from the
+  throwing of the exception.  In other words: the sTHROW statement can be
+  expected to copy its string argument into an internal buffer somewhere
+  before the exception begins propogating.  This allows calling code to
+  allocate strings that are passed into the sTHROW statement and then use
+  a sSCOPE_EXIT statement to ensure that the strings are free'd.
+
 It is named sTHROW instead of THROW because other libraries may define their
 own exception handling with a macro by that name.  By default, any definitions
 for THROW will be undefined by this file as a way to prevent a potentially

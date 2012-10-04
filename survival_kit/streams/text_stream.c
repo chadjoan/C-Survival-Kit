@@ -18,9 +18,9 @@ void skit_text_stream_vtable_init(skit_stream_vtable_t *table)
 	skit_stream_vtable_init(table);
 	table->readln        = &skit_text_stream_readln;
 	table->read          = &skit_text_stream_read;
-	table->writeln       = &skit_text_stream_writeln;
-	table->writefln_va   = &skit_text_stream_writefln_va;
-	table->write         = &skit_text_stream_write;
+	table->appendln       = &skit_text_stream_appendln;
+	table->appendfln_va   = &skit_text_stream_appendfln_va;
+	table->append         = &skit_text_stream_append;
 	table->flush         = &skit_text_stream_flush;
 	table->rewind        = &skit_text_stream_rewind;
 	table->slurp         = &skit_text_stream_slurp;
@@ -153,11 +153,12 @@ skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t 
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_writeln(skit_stream *stream, skit_slice line)
+void skit_text_stream_appendln(skit_stream *stream, skit_slice line)
 {
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(line) != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	tstreami->cursor = sSLENGTH(tstreami->text);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, line);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
@@ -166,17 +167,17 @@ void skit_text_stream_writeln(skit_stream *stream, skit_slice line)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_writefln(skit_stream *stream, const char *fmtstr, ...)
+void skit_text_stream_appendfln(skit_stream *stream, const char *fmtstr, ...)
 {
 	va_list vl;
 	va_start(vl, fmtstr);
-	skit_text_stream_writefln_va(stream, fmtstr, vl);
+	skit_text_stream_appendfln_va(stream, fmtstr, vl);
 	va_end(vl);
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_list vl)
+void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl)
 {
 	const size_t buf_size = 1024;
 	char buffer[buf_size];
@@ -185,7 +186,7 @@ void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_li
 	sASSERT(fmtstr != NULL);
 	
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
-	sASSERT_MSG(tstreami->cursor == sSLENGTH(tstreami->text), "Insert of text into the interior of text streams is currently not implemented.  Only appends are allowed.");
+	tstreami->cursor = sSLENGTH(tstreami->text);
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, skit_slice_of_cstrn(buffer, nchars_printed));
@@ -195,12 +196,12 @@ void skit_text_stream_writefln_va(skit_stream *stream, const char *fmtstr, va_li
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_write(skit_stream *stream, skit_slice slice)
+void skit_text_stream_append(skit_stream *stream, skit_slice slice)
 {
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(slice) != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
-	sASSERT_MSG(tstreami->cursor == sSLENGTH(tstreami->text), "Insert of text into the interior of text streams is currently not implemented.  Only appends are allowed.");
+	tstreami->cursor = sSLENGTH(tstreami->text);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, slice);
 	tstreami->cursor += sSLENGTH(slice);
@@ -228,6 +229,7 @@ skit_slice skit_text_stream_slurp(skit_stream *stream, skit_loaf *buffer)
 {
 	sASSERT(stream != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	tstreami->cursor = sSLENGTH(tstreami->text);
 	return tstreami->text;
 }
 
@@ -247,30 +249,30 @@ void skit_text_stream_dump(skit_stream *stream, skit_stream *output)
 	
 	if ( stream == NULL )
 	{
-		skit_stream_writeln(output, sSLICE("NULL skit_text_stream"));
+		skit_stream_appendln(output, sSLICE("NULL skit_text_stream"));
 		return;
 	}
 	
 	skit_text_stream *tstream = skit_text_stream_downcast(stream);
 	if ( tstream == NULL )
 	{
-		skit_stream_writeln(output, sSLICE("skit_stream (Error: invalid call to skit_text_stream_dump() with a first argument that isn't a pfile stream.)"));
+		skit_stream_appendln(output, sSLICE("skit_stream (Error: invalid call to skit_text_stream_dump() with a first argument that isn't a pfile stream.)"));
 		return;
 	}
 	
 	skit_text_stream_internal *tstreami = &tstream->as_internal;
 	if ( sLPTR(tstreami->buffer) == NULL )
 	{
-		skit_stream_writeln(output, sSLICE("Invalid skit_text_stream with NULL buffer."));
+		skit_stream_appendln(output, sSLICE("Invalid skit_text_stream with NULL buffer."));
 		return;
 	}
 	
-	skit_stream_writefln(output, "skit_text_stream with the following properties:");
-	skit_stream_writefln(output, "Capacity: %d\n", skit_loaf_len(tstreami->buffer));
-	skit_stream_writefln(output, "Length:   %d\n", skit_slice_len(tstreami->text));
-	skit_stream_write(output, sSLICE("First 60 chars: '"));
-	skit_stream_write(output, skit_slice_of(tstreami->text, 0, SKIT_MIN(60, sSLENGTH(tstreami->text))));
-	skit_stream_writeln(output, sSLICE("'"));
+	skit_stream_appendfln(output, "skit_text_stream with the following properties:");
+	skit_stream_appendfln(output, "Capacity: %d\n", skit_loaf_len(tstreami->buffer));
+	skit_stream_appendfln(output, "Length:   %d\n", skit_slice_len(tstreami->text));
+	skit_stream_append(output, sSLICE("First 60 chars: '"));
+	skit_stream_append(output, skit_slice_of(tstreami->text, 0, SKIT_MIN(60, sSLENGTH(tstreami->text))));
+	skit_stream_appendln(output, sSLICE("'"));
 	return;
 }
 
@@ -292,28 +294,31 @@ void skit_text_stream_unittests()
 	skit_stream *stream = &tstream.as_stream;
 	printf("skit_text_stream_unittests()\n");
 	
-	skit_text_stream_init_str(&tstream, sSLICE("foo\n\nbar\nbaz"));
+	skit_text_stream_init_str(&tstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS));
 	/*printf("%s\n", sLPTR(tstreami->buffer));*/
 	skit_stream_readln_unittest(stream);
 	skit_text_stream_dtor(stream);
 
-	skit_text_stream_init_str(&tstream, sSLICE("foobarbaz"));
+	skit_text_stream_init_str(&tstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS));
 	skit_stream_read_unittest(stream);
 	skit_text_stream_dtor(stream);
 
-	skit_text_stream_init_str(&tstream, sSLICE(""));
-	skit_stream_writeln_unittest(stream);
+	skit_text_stream_init_str(&tstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS));
+	skit_stream_appendln_unittest(stream);
 	skit_text_stream_dtor(stream);
 
-	skit_text_stream_init_str(&tstream, sSLICE(""));
-	skit_stream_writefln_unittest(stream);
+	skit_text_stream_init_str(&tstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS));
+	skit_stream_appendfln_unittest(stream);
 	skit_text_stream_dtor(stream);
 
-	skit_text_stream_init_str(&tstream, sSLICE(""));
-	skit_stream_write_unittest(stream);
+	skit_text_stream_init_str(&tstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS));
+	skit_stream_append_unittest(stream);
 	skit_text_stream_dtor(stream);
 
-	skit_text_stream_init_str(&tstream, sSLICE(""));
+	skit_text_stream_init_str(&tstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));
 	skit_stream_rewind_unittest(stream);
 	skit_text_stream_dtor(stream);
+	
+	printf("  skit_text_stream_unittests passed!\n");
+	printf("\n");
 }
