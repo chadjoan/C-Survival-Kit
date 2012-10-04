@@ -153,7 +153,6 @@ void skit_pfile_stream_init(skit_stream *stream)
 	pstreami->read_buffer = skit_loaf_null();
 	pstreami->err_msg_buf = skit_loaf_null();
 	pstreami->file_handle = NULL;
-	pstreami->eof_reached = 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -204,7 +203,6 @@ static void skit_try_fgets(
 	/*   it needs to be special-cased right here. */
 	if ( ret == NULL )
 	{
-		pstreami->eof_reached = 1;
 		*done = 1; /* This means we're done, one way or another. */
 		*nbytes_read = 0;
 		return;
@@ -246,7 +244,6 @@ static void skit_try_fgets(
 		/* The newline was from our memset. */
 		/* This means that end-of-file was reached. */
 		
-		pstreami->eof_reached = 1;
 		*done = 1;
 		
 		/* There should be a '\0' placed before the '\n' by fgets. */
@@ -269,7 +266,7 @@ skit_slice skit_pfile_stream_readln(skit_stream *stream, skit_loaf *buffer)
 	size_t buf_len;
 	
 	/* Return NULL slices when attempting to read from an already-exhausted stream. */
-	if ( pstreami->eof_reached == 1 )
+	if ( feof(pstreami->file_handle) )
 		return skit_slice_null();
 	
 	/* Figure out which buffer to use. */
@@ -322,7 +319,7 @@ skit_slice skit_pfile_stream_read(skit_stream *stream, skit_loaf *buffer, size_t
 	skit_loaf *read_buf;
 	
 	/* Return NULL slices when attempting to read from an already-exhausted stream. */
-	if ( pstreami->eof_reached == 1 )
+	if ( feof(pstreami->file_handle) )
 		return skit_slice_null();
 	
 	/* Figure out which buffer to use. */
@@ -340,10 +337,6 @@ skit_slice skit_pfile_stream_read(skit_stream *stream, skit_loaf *buffer, size_t
 		char errbuf[1024];
 		sCALL(throw_pfile_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
-	
-	/* Set eof condition as needed. */
-	if ( nbytes_read < nbytes )
-		pstreami->eof_reached = 1;
 	
 	return skit_slice_of(read_buf->as_slice, 0, nbytes_read);
 }
@@ -437,7 +430,6 @@ void skit_pfile_stream_rewind(skit_stream *stream)
 	sASSERT(stream != NULL);
 	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
 	rewind(pstreami->file_handle);
-	pstreami->eof_reached = 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -493,9 +485,6 @@ skit_slice skit_pfile_stream_slurp(skit_stream *stream, skit_loaf *buffer)
 		offset += nbytes_read;
 		chunk_length = default_chunk_size; /* After the first resize, start reading this many bytes at a time. */
 	}
-	
-	/* Slurping should make this always true. */
-	pstreami->eof_reached = 1;
 
 	/* The slurp's total size will be the offset to the last chunk read plus */
 	/*   the number of bytes read into the last chunk. */
@@ -544,7 +533,6 @@ void skit_pfile_stream_dump(skit_stream *stream, skit_stream *output)
 	skit_stream_appendfln(output, "File name:   %s", skit_loaf_as_cstr(pstreami->name));
 	skit_stream_appendfln(output, "File handle: %p", pstreami->file_handle);
 	skit_stream_appendfln(output, "Access:      %s", skit_loaf_as_cstr(pstreami->access_mode));
-	skit_stream_appendfln(output, "EOF reached: %d", pstreami->eof_reached);
 
 	return;
 }
@@ -685,7 +673,7 @@ void skit_pfile_stream_unittests()
 	skit_pfile_run_utest(stream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),    &skit_stream_append_unittest);
 	skit_pfile_run_utest(stream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),    &skit_stream_rewind_unittest);
 	
-	skit_text_stream_dtor(stream);
+	skit_pfile_stream_dtor(stream);
 
 	printf("  skit_pfile_stream_unittests passed!\n");
 	printf("\n");

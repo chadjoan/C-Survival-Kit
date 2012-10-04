@@ -70,7 +70,7 @@ slice into the stream's internal buffers.
 
 Example:
 
-// The given stream has the contents "foo\n\n\0bar\nbaz"
+// The given stream has the contents "foo\n\n\0bar\nbaz\n"
 void skit_stream_readln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(3);
@@ -78,6 +78,7 @@ void skit_stream_readln_unittest(skit_stream *stream)
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("bar"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("baz"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_loaf_free(&buf);
 }
@@ -229,7 +230,7 @@ Sets the stream's cursor position to the very beginning of the stream.
 void skit_stream_rewind_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
-	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
 	skit_stream_appendln(stream, sSLICE("foo"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_stream_rewind(stream);
@@ -327,9 +328,9 @@ void skit_stream_set_indent_char(skit_stream *stream, const char *c);
 
 /* ------------------------- generic unittests ----------------------------- */
 
-// The given stream has the contents "foo\n\n\0bar\nbaz"
+// The given stream has the contents "foo\n\n\0bar\nbaz\n"
 void skit_stream_readln_unittest(skit_stream *stream);
-#define SKIT_READLN_UNITTEST_CONTENTS "foo\n\n\0bar\nbaz"
+#define SKIT_READLN_UNITTEST_CONTENTS "foo\n\n\0bar\nbaz\n"
 
 // The given stream has the contents "foobarbaz"
 void skit_stream_read_unittest(skit_stream *stream);

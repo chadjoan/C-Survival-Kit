@@ -17,7 +17,6 @@ struct skit_pfile_stream_internal
 	skit_loaf                 err_msg_buf;
 	skit_loaf                 access_mode;
 	FILE                      *file_handle;
-	char                      eof_reached;
 };
 
 /** File stream backed by POSIX style file I/O or equivalent. */

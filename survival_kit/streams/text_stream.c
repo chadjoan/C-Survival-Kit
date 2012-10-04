@@ -104,7 +104,7 @@ skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer)
 	ssize_t length = sSLENGTH(text);  /* Ditto for length.  It won't be changing. */
 	
 	/* Return null when reading past the end of the stream. */
-	if ( cursor >= length )
+	if ( cursor > length )
 		return skit_slice_null();
 	
 	/* cursor isn't past the end of stream, so grab the next line. */
@@ -118,8 +118,25 @@ skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer)
 		cursor++;
 	}
 	ssize_t line_end = cursor;
-	cursor += nl_size; /* note: nl_size will be 0 if we reached the end of the buffer, so this addition works it both cases. */
-	tstreami->cursor = cursor; /* Since we used a local variable for cursor, we need to update the original. */
+	
+	
+	if ( cursor == length )
+	{
+		/* This should only happen if we were already positioned at the end of */
+		/*   the stream.  Such can happen if the stream had a '\n' character at */
+		/*   the very end that causes one last empty line to be read.  If this */
+		/*   statement is true, then a previous call already read that empty line */
+		/*   and cursor==length means that we are /past/ the end-of-stream now. */
+		tstreami->cursor = length+1;
+	}
+	else
+	{
+		/* Skip the newline.  We just handled it. */
+		cursor += nl_size;
+		
+		/* Since we used a local variable for cursor, we need to update the original. */
+		tstreami->cursor = cursor;
+	}
 	
 	return skit_slice_of( text, line_begin, line_end );
 }
@@ -141,12 +158,21 @@ skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t 
 	
 	size_t block_begin = cursor;
 	size_t block_end = block_begin + nbytes;
-	if ( length < block_end )
-		block_end = length;
 	
-	/* Since we used a local variable for cursor, we need to update the original. */
-	cursor = block_end;
-	tstreami->cursor = cursor;
+	if ( length < block_end )
+	{
+		/* Saturate at the end bounds. */
+		block_end = length;
+		
+		/* We've read /past/ the end of the stream.  Demonstrate this by */
+		/*   tossing the cursor over the end. */
+		tstreami->cursor = block_end+1;
+	}
+	else
+	{
+		/* Normal case: update the cursor. */
+		tstreami->cursor = block_end;
+	}
 	
 	return skit_slice_of( text, block_begin, block_end );
 }
@@ -158,11 +184,11 @@ void skit_text_stream_appendln(skit_stream *stream, skit_slice line)
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(line) != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
-	tstreami->cursor = sSLENGTH(tstreami->text);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, line);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
-	tstreami->cursor += sSLENGTH(line) + 1;
+	
+	tstreami->cursor += sSLENGTH(tstreami->text) + 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -186,12 +212,12 @@ void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_l
 	sASSERT(fmtstr != NULL);
 	
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
-	tstreami->cursor = sSLENGTH(tstreami->text);
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, skit_slice_of_cstrn(buffer, nchars_printed));
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
-	tstreami->cursor += nchars_printed + 1;
+	
+	tstreami->cursor = sSLENGTH(tstreami->text) + 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -201,10 +227,10 @@ void skit_text_stream_append(skit_stream *stream, skit_slice slice)
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(slice) != NULL);
 	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
-	tstreami->cursor = sSLENGTH(tstreami->text);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, slice);
-	tstreami->cursor += sSLENGTH(slice);
+	
+	tstreami->cursor = sSLENGTH(tstreami->text) + 1;
 }
 
 /* ------------------------------------------------------------------------- */

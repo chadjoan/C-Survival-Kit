@@ -193,7 +193,7 @@ void skit_stream_set_indent_str(skit_stream *stream, const char *c)
 
 /* ------------------------- generic unittests ----------------------------- */
 
-// The given stream has the contents "foo\n\nbar\nbaz"
+// The given stream has the contents "foo\n\n\0bar\nbaz\n"
 void skit_stream_readln_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(3);
@@ -201,6 +201,7 @@ void skit_stream_readln_unittest(skit_stream *stream)
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("\0bar"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("baz"));
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_loaf_free(&buf);
 	printf("  skit_stream_readln_unittest passed.\n");
@@ -283,7 +284,7 @@ void skit_stream_append_unittest(skit_stream *stream)
 void skit_stream_rewind_unittest(skit_stream *stream)
 {
 	skit_loaf buf = skit_loaf_alloc(64);
-	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
+	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
 	skit_stream_appendln(stream, sSLICE("foo"));
 	sASSERT_EQS(skit_stream_readln(stream,&buf), skit_slice_null());
 	skit_stream_rewind(stream);
