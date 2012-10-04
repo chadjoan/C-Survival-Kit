@@ -254,6 +254,16 @@ skit_utf8c *skit_slice_ptr( skit_slice slice )
 	}
 }
 
+static void skit_slice_ptr_test()
+{
+	skit_loaf  loaf = skit_loaf_copy_cstr("foobarbaz");
+	skit_slice slice = skit_slice_of(loaf.as_slice, 3, 6);
+	sASSERT_EQ(sSPTR(slice) - sLPTR(loaf), 3, "%d");
+	sASSERT_EQS(slice, sSLICE("bar"));
+	skit_loaf_free(&loaf);
+	printf("  skit_slice_ptr_test finished.\n");
+}
+
 /* ------------------------------------------------------------------------- */
 
 int skit_loaf_is_null(skit_loaf loaf)
@@ -1113,6 +1123,7 @@ void skit_string_unittest()
 {
 	printf("skit_slice_unittest()\n");
 	skit_slice_len_test();
+	skit_slice_ptr_test();
 	skit_slice_is_null_test();
 	skit_slice_check_init_test();
 	skit_slice_of_cstrn_test();

@@ -177,6 +177,12 @@ This macro is shorthand for calling skit_slice_len.
 /**
 Returns the pointer to the character string's data, thus allowing direct
 manipulation of the string's individual characters.
+Example:
+	skit_loaf  loaf = skit_loaf_copy_cstr("foobarbaz");
+	skit_slice slice = skit_slice_of(loaf.as_slice, 3, 6);
+	sASSERT_EQ(sSPTR(slice) - sLPTR(loaf), 3, "%d");
+	sASSERT_EQS(slice, sSLICE("bar"));
+	skit_loaf_free(&loaf);
 */
 skit_utf8c *skit_loaf_ptr( skit_loaf loaf );
 skit_utf8c *skit_slice_ptr( skit_slice slice ); /** ditto */
