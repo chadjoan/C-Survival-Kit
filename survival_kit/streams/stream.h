@@ -4,6 +4,7 @@
 
 #include <stdarg.h>
 
+#include "survival_kit/feature_emulation.h"
 #include "survival_kit/streams/meta.h"
 
 /**
@@ -325,6 +326,15 @@ void skit_stream_decr_indent(skit_stream *stream);
 short skit_stream_get_indent_lvl(skit_stream *stream);
 const char *skit_stream_get_indent_char(skit_stream *stream);
 void skit_stream_set_indent_char(skit_stream *stream, const char *c);
+
+/**
+This throws an exception with the given code and message.
+Additionally, it will call the given stream's skit_stream_dump method and
+  dump that information into the exception text.
+This is the preferred way to throw exceptions with streams because of the
+  superior debugging output it provides.
+*/
+void skit_stream_throw_exc( skit_err_code ecode, skit_stream *stream, const char *msg, ... );
 
 /* ------------------------- generic unittests ----------------------------- */
 
