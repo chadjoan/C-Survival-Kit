@@ -628,6 +628,7 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 {
 	skit_slice result = skit_slice_null();
 	ssize_t length = skit_slice_len(slice);
+	ssize_t old_offset = skit_slice_get_offset(slice);
 	
 	/* Implement index2 as SKIT_EOT being length. */
 	if ( index2 == SKIT_EOT )
@@ -645,7 +646,7 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	/* Do the slicing. */
 	result.chars_handle = slice.chars_handle;
 	skit_slice_set_length(&result, index2-index1);
-	skit_slice_set_offset(&result, index1);
+	skit_slice_set_offset(&result, index1 + old_offset);
 	if ( SKIT_SLICE_IS_CSTR(slice) )
 		result.meta |= META_CSTR_BIT;
 	
@@ -656,10 +657,12 @@ static void skit_slice_of_test()
 {
 	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
 	skit_slice slice0 = loaf.as_slice;
-	skit_slice slice1 = skit_slice_of(slice0, 3, -1);
+	skit_slice slice1 = skit_slice_of(slice0, 3, 5);
 	skit_slice slice2 = skit_slice_of(slice0, 3, SKIT_EOT);
+	skit_slice slice3 = skit_slice_of(slice1, 0, -1);
 	sASSERT_EQS(slice1, sSLICE("ba"));
 	sASSERT_EQS(slice2, sSLICE("bar"));
+	sASSERT_EQS(slice3, sSLICE("b"));
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_of_test passed.\n");
 }
