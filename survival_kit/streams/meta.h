@@ -1,39 +1,23 @@
 
-#ifndef SKIT_STREAMS_VTABLE_INCLUDED
-#define SKIT_STREAMS_VTABLE_INCLUDED
+#ifndef SKIT_STREAMS_META_INCLUDED
+#define SKIT_STREAMS_META_INCLUDED
 
 #include "survival_kit/string.h"
 
 union skit_stream;
-union skit_file_stream;
 
-typedef struct skit_stream_vtable_t skit_stream_vtable_t;
-struct skit_stream_vtable_t
-{
-	/* Basic stream operations. */
-	skit_slice (*readln)       (union skit_stream*,skit_loaf*);
-	skit_slice (*read)         (union skit_stream*,skit_loaf*,size_t);
-	void       (*appendln)     (union skit_stream*,skit_slice);
-	void       (*appendfln_va) (union skit_stream*,const char*,va_list);
-	void       (*append)       (union skit_stream*,skit_slice);
-	void       (*flush)        (union skit_stream*);
-	void       (*rewind)       (union skit_stream*);
-	skit_slice (*slurp)        (union skit_stream*,skit_loaf*);
-	skit_slice (*to_slice)     (union skit_stream*,skit_loaf*);
-	void       (*dump)         (union skit_stream*,union skit_stream*);
-	void       (*dtor)         (union skit_stream*);
-	
-	/* File stream operations. */
-	void       (*open)        (union skit_stream*,skit_slice,const char*);
-	void       (*close)       (union skit_stream*);
-};
+#define SKIT_STREAM_T void
+#define SKIT_VTABLE_T skit_stream_vtable_t
+#include "survival_kit/streams/vtable.h"
+#undef SKIT_STREAM_T
+#undef SKIT_VTABLE_T
 
 typedef struct skit_stream_metadata skit_stream_metadata;
 struct skit_stream_metadata
 {
 	/* Inheritence/polymorphism stuff. */
-	skit_slice            class_name;
-	skit_stream_vtable_t  *vtable_ptr;
+	skit_slice           class_name;
+	skit_stream_vtable_t *vtable_ptr;
 };
 
 /* These haven't been needed yet.

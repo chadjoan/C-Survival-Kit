@@ -6,9 +6,16 @@
 #include <stdarg.h>
 
 #include "survival_kit/feature_emulation.h"
+
 #include "survival_kit/streams/meta.h"
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/streams/text_stream.h" /* Used in skit_stream_throw_exc(...) */
+
+#define SKIT_STREAM_T skit_stream
+#define SKIT_VTABLE_T skit_stream_vtable_base
+#include "survival_kit/streams/vtable.h"
+#undef SKIT_STREAM_T
+#undef SKIT_VTABLE_T
 
 /* ------------------------- vtable stuff ---------------------------------- */
 static int skit_stream_initialized = 0;
@@ -60,8 +67,9 @@ static void skit_file_stream_close_not_impl(union skit_stream *stream)
 	skit_stream_func_not_impl((skit_stream*)stream);
 }
 
-void skit_stream_vtable_init(skit_stream_vtable_t *table)
+void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 {
+	skit_stream_vtable_base *table = (skit_stream_vtable_base*)arg_table;
 	table->readln        = &skit_stream_read_not_impl;
 	table->read          = &skit_stream_readn_not_impl;
 	table->appendln       = &skit_stream_append_not_impl;
@@ -197,9 +205,8 @@ void skit_stream_set_indent_str(skit_stream *stream, const char *c)
 void skit_stream_throw_exc( skit_err_code ecode, skit_stream *stream, const char *msg, ... )
 sSCOPE
 	SKIT_USE_FEATURE_EMULATION;
-	skit_text_stream tstream;
-	skit_text_stream_init(&tstream);
-	skit_stream *err_stream = &tstream.as_stream;
+	skit_text_stream err_stream;
+	skit_text_stream_init(&err_stream);
 	va_list vl;
 	
 	/* Prevent memory leaks. */
@@ -208,24 +215,24 @@ sSCOPE
 	/* sTHROW does specify that it copies its string argument, so there is */
 	/*   no need to keep our copy of the string data around while the stack */
 	/*   unwinds. */
-	sSCOPE_EXIT(skit_text_stream_dtor(err_stream));
+	sSCOPE_EXIT(skit_text_stream_dtor(&err_stream));
 	
 	/* Mention what we are. */
-	skit_text_stream_appendfln( err_stream, "" );
-	skit_text_stream_appendfln( err_stream, "%s error:", sSPTR(stream->meta.class_name) ); /* HACK: using sSPTR to return c string for class_name slice.  The class_name slice might not be nul-terminated.  (It should be at the time of writing.) */
+	skit_text_stream_appendfln( &err_stream, "" );
+	skit_text_stream_appendfln( &err_stream, "%s error:", sSPTR(stream->meta.class_name) ); /* HACK: using sSPTR to return c string for class_name slice.  The class_name slice might not be nul-terminated.  (It should be at the time of writing.) */
 	
 	/* Dump the message. It's probably something from errno. */
 	va_start(vl, msg);
-	skit_text_stream_appendfln_va( err_stream, msg, vl );
+	skit_text_stream_appendfln_va( &err_stream, msg, vl );
 	va_end(vl);
 	
 	/* Dump our file stream's info.  This makes it easier to track what went wrong and where/why. */
-	skit_text_stream_appendfln( err_stream, "" );
-	skit_text_stream_appendfln( err_stream, "Stream metadata at time of error:" );
-	skit_stream_dump( stream, err_stream );
+	skit_text_stream_appendfln( &err_stream, "" );
+	skit_text_stream_appendfln( &err_stream, "Stream metadata at time of error:" );
+	skit_stream_dump( stream, &(err_stream.as_stream) );
 	
 	/* Convert the text stream into a string that we can feed into the exception. */
-	skit_slice errtxt = skit_text_stream_slurp( err_stream, NULL );
+	skit_slice errtxt = skit_text_stream_slurp( &err_stream, NULL );
 	
 	/* HACK: TODO: text_stream doesn't specify that it holds text in a nul-terminated string. */
 	/* This can be easily fixed when string formatters are written that handle skit_slice's. */

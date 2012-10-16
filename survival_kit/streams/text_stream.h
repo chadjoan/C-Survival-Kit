@@ -41,22 +41,22 @@ skit_text_stream *skit_text_stream_downcast(skit_stream *stream);
 
 void skit_text_stream_init(skit_text_stream *tstream);
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
-skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer);
-skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes);
-void skit_text_stream_appendln(skit_stream *stream, skit_slice line);
+skit_slice skit_text_stream_readln(skit_text_stream *stream, skit_loaf *buffer);
+skit_slice skit_text_stream_read(skit_text_stream *stream, skit_loaf *buffer, size_t nbytes);
+void skit_text_stream_appendln(skit_text_stream *stream, skit_slice line);
 
 /** TODO: the number of characters that can be written this way is currently
 limited to 1024.  This restriction should be lifted in the future, assuming
 sufficient programming time/resources to do so. */
-void skit_text_stream_appendfln(skit_stream *stream, const char *fmtstr, ... );
-void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl );
-void skit_text_stream_append(skit_stream *stream, skit_slice slice);
-void skit_text_stream_flush(skit_stream *stream);
-void skit_text_stream_rewind(skit_stream *stream);
-skit_slice skit_text_stream_slurp(skit_stream *stream, skit_loaf *buffer);
-skit_slice skit_text_stream_to_slice(skit_stream *stream, skit_loaf *buffer);
-void skit_text_stream_dump(skit_stream *stream, skit_stream *output);
-void skit_text_stream_dtor(skit_stream *stream);
+void skit_text_stream_appendfln(skit_text_stream *stream, const char *fmtstr, ... );
+void skit_text_stream_appendfln_va(skit_text_stream *stream, const char *fmtstr, va_list vl );
+void skit_text_stream_append(skit_text_stream *stream, skit_slice slice);
+void skit_text_stream_flush(skit_text_stream *stream);
+void skit_text_stream_rewind(skit_text_stream *stream);
+skit_slice skit_text_stream_slurp(skit_text_stream *stream, skit_loaf *buffer);
+skit_slice skit_text_stream_to_slice(skit_text_stream *stream, skit_loaf *buffer);
+void skit_text_stream_dump(skit_text_stream *stream, skit_stream *output);
+void skit_text_stream_dtor(skit_text_stream *stream);
 
 void skit_text_stream_unittests();
 

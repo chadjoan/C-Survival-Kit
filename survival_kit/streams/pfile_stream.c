@@ -13,6 +13,12 @@
 #include "survival_kit/streams/file_stream.h"
 #include "survival_kit/streams/pfile_stream.h"
 
+#define SKIT_STREAM_T skit_pfile_stream
+#define SKIT_VTABLE_T skit_stream_vtable_pfile
+#include "survival_kit/streams/vtable.h"
+#undef SKIT_STREAM_T
+#undef SKIT_VTABLE_T
+
 /* ------------------------------------------------------------------------- */
 
 static skit_loaf *skit_pfile_get_read_buffer( skit_pfile_stream_internal *pstreami, skit_loaf *arg_buffer )
@@ -51,14 +57,15 @@ static skit_stream_vtable_t skit_pfile_stream_vtable;
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_vtable_init(skit_stream_vtable_t *table)
+void skit_pfile_stream_vtable_init(skit_stream_vtable_t *arg_table)
 {
-	skit_stream_vtable_init(table);
+	skit_stream_vtable_init(arg_table);
+	skit_stream_vtable_pfile *table = (skit_stream_vtable_pfile*)arg_table;
 	table->readln        = &skit_pfile_stream_readln;
 	table->read          = &skit_pfile_stream_read;
-	table->appendln       = &skit_pfile_stream_appendln;
-	table->appendfln_va   = &skit_pfile_stream_appendfln_va;
-	table->append         = &skit_pfile_stream_append;
+	table->appendln      = &skit_pfile_stream_appendln;
+	table->appendfln_va  = &skit_pfile_stream_appendfln_va;
+	table->append        = &skit_pfile_stream_append;
 	table->flush         = &skit_pfile_stream_flush;
 	table->rewind        = &skit_pfile_stream_rewind;
 	table->slurp         = &skit_pfile_stream_slurp;
@@ -85,7 +92,7 @@ void skit_pfile_stream_static_init()
 skit_pfile_stream *skit_pfile_stream_new()
 {
 	skit_pfile_stream *result = (skit_pfile_stream*)skit_malloc(sizeof(skit_pfile_stream));
-	skit_pfile_stream_init(&result->as_stream);
+	skit_pfile_stream_init(result);
 	return result;
 }
 
@@ -102,13 +109,14 @@ skit_pfile_stream *skit_pfile_stream_downcast(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_init(skit_stream *stream)
+void skit_pfile_stream_init(skit_pfile_stream *pstream)
 {
+	skit_stream *stream = &(pstream->as_stream);
 	skit_stream_init(stream);
 	stream->meta.vtable_ptr = &skit_pfile_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_pfile_stream");
 	
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(pstream->as_internal);
 	pstreami->name = skit_loaf_null();
 	pstreami->read_buffer = skit_loaf_null();
 	pstreami->err_msg_buf = skit_loaf_null();
@@ -218,10 +226,10 @@ static void skit_try_fgets(
 	return;
 }
 
-skit_slice skit_pfile_stream_readln(skit_stream *stream, skit_loaf *buffer)
+skit_slice skit_pfile_stream_readln(skit_pfile_stream *stream, skit_loaf *buffer)
 {
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	skit_loaf *read_buf;
 	size_t buf_len;
 	
@@ -271,11 +279,11 @@ skit_slice skit_pfile_stream_readln(skit_stream *stream, skit_loaf *buffer)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes)
+skit_slice skit_pfile_stream_read(skit_pfile_stream *stream, skit_loaf *buffer, size_t nbytes)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	skit_loaf *read_buf;
 	
 	/* Return NULL slices when attempting to read from an already-exhausted stream. */
@@ -295,7 +303,7 @@ skit_slice skit_pfile_stream_read(skit_stream *stream, skit_loaf *buffer, size_t
 	if ( ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	return skit_slice_of(read_buf->as_slice, 0, nbytes_read);
@@ -303,19 +311,19 @@ skit_slice skit_pfile_stream_read(skit_stream *stream, skit_loaf *buffer, size_t
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_appendln(skit_stream *stream, skit_slice line)
+void skit_pfile_stream_appendln(skit_pfile_stream *stream, skit_slice line)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
 	/* The error handling is handled by subsequent calls. */
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	skit_pfile_stream_append(stream, line);
 	sCALL(skit_pfile_stream_newline(pstreami));
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_appendfln(skit_stream *stream, const char *fmtstr, ... )
+void skit_pfile_stream_appendfln(skit_pfile_stream *stream, const char *fmtstr, ... )
 {
 	va_list vl;
 	va_start(vl, fmtstr);
@@ -325,13 +333,13 @@ void skit_pfile_stream_appendfln(skit_stream *stream, const char *fmtstr, ... )
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl )
+void skit_pfile_stream_appendfln_va(skit_pfile_stream *stream, const char *fmtstr, va_list vl )
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, "Attempt to write to an unopened stream."));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	vfprintf( pstreami->file_handle, fmtstr, vl ); /* TODO: error handling? */
 	sCALL(skit_pfile_stream_newline(pstreami));
@@ -339,14 +347,14 @@ void skit_pfile_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_append(skit_stream *stream, skit_slice slice)
+void skit_pfile_stream_append(skit_pfile_stream *stream, skit_slice slice)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
 	
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, "Attempt to write to an unopened stream."));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	ssize_t length = sSLENGTH(slice);
 	
@@ -360,47 +368,47 @@ void skit_pfile_stream_append(skit_stream *stream, skit_slice slice)
 	if ( ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_flush(skit_stream *stream)
+void skit_pfile_stream_flush(skit_pfile_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, "Attempt to flush an unopened stream."));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to flush an unopened stream."));
 	
 	int errval = fflush(pstreami->file_handle);
 	if ( errval != 0 )
 	{
 		char errbuf[1024];
 		/* TODO: throw exception for invalid streams when (errval == EBADF) */
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_rewind(skit_stream *stream)
+void skit_pfile_stream_rewind(skit_pfile_stream *stream)
 {
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	rewind(pstreami->file_handle);
 }
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_slurp(skit_stream *stream, skit_loaf *buffer)
+skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	const size_t default_chunk_size = 1024;
 	/*char chunk_buf[default_chunk_size]; */ /* This number is completely unoptimized. */
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	skit_loaf *read_buf;
 	ssize_t buf_length;
 	
@@ -434,7 +442,7 @@ skit_slice skit_pfile_stream_slurp(skit_stream *stream, skit_loaf *buffer)
 		if ( ferror(pstreami->file_handle) )
 		{
 			char errbuf[1024];
-			sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+			sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 		}
 		
 		/* Check for EOF. */
@@ -456,7 +464,7 @@ skit_slice skit_pfile_stream_slurp(skit_stream *stream, skit_loaf *buffer)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_pfile_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
+skit_slice skit_pfile_stream_to_slice(skit_pfile_stream *stream, skit_loaf *buffer)
 {
 	sASSERT(stream != NULL);
 	/* skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal); */
@@ -465,7 +473,7 @@ skit_slice skit_pfile_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_dump(skit_stream *stream, skit_stream *output)
+void skit_pfile_stream_dump(skit_pfile_stream *stream, skit_stream *output)
 {
 	sASSERT(output != NULL);
 	
@@ -475,7 +483,8 @@ void skit_pfile_stream_dump(skit_stream *stream, skit_stream *output)
 		return;
 	}
 	
-	skit_pfile_stream *pstream = skit_pfile_stream_downcast(stream);
+	/* Check for improperly cast streams.  Downcast will make sure we have the right vtable. */
+	skit_pfile_stream *pstream = skit_pfile_stream_downcast(&(stream->as_stream));
 	if ( pstream == NULL )
 	{
 		skit_stream_appendln(output, sSLICE("skit_stream (Error: invalid call to skit_pfile_stream_dump() with a first argument that isn't a pfile stream.)"));
@@ -499,15 +508,15 @@ void skit_pfile_stream_dump(skit_stream *stream, skit_stream *output)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_dtor(skit_stream *stream)
+void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	
 	if ( pstreami->file_handle != NULL )
 	{
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, 
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), 
 			"Attempt to free resources from an open stream.\n"
 			"Use skit_pfile_stream_close(stream) first!"));
 	}
@@ -527,15 +536,15 @@ void skit_pfile_stream_dtor(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_open(skit_stream *stream, skit_slice fname, const char *access_mode)
+void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const char *access_mode)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	char errbuf[1024];
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	
 	if ( pstreami->file_handle != NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, "Already open to another file."));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Already open to another file."));
 	
 	pstreami->name = skit_slice_dup(fname);
 	pstreami->access_mode = skit_loaf_copy_cstr(access_mode);
@@ -545,27 +554,27 @@ void skit_pfile_stream_open(skit_stream *stream, skit_slice fname, const char *a
 	if ( pstreami->file_handle == NULL )
 	{
 		/* TODO: generate different kinds of exceptions depending on what went wrong. */
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_close(skit_stream *stream)
+void skit_pfile_stream_close(skit_pfile_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(skit_pfile_stream_downcast(stream)->as_internal);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, "Attempt to close an unopened stream."));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to close an unopened stream."));
 	
 	int errval = fclose(pstreami->file_handle);
 	if ( errval != 0 )
 	{
 		char errbuf[1024];
 		/* TODO: throw exception for invalid file handles when (errval == EBADF) */
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, stream, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	pstreami->file_handle = NULL;
@@ -606,14 +615,14 @@ static void skit_pfile_utest_rm()
 }
 
 static void skit_pfile_run_utest(
-	skit_stream *stream,
+	skit_pfile_stream *stream,
 	skit_slice initial_file_contents,
 	void (*utest_function)(skit_stream*)
 )
 {
 	skit_pfile_utest_prep_file(initial_file_contents);
 	skit_pfile_stream_open(stream, sSLICE(SKIT_PFILE_UTEST_FILE), "r+");
-	utest_function(stream);
+	utest_function(&(stream->as_stream));
 	skit_pfile_stream_close(stream);
 	skit_pfile_utest_rm();
 }
@@ -621,19 +630,18 @@ static void skit_pfile_run_utest(
 void skit_pfile_stream_unittests()
 {
 	skit_pfile_stream pstream;
-	skit_stream *stream = &pstream.as_stream;
 	printf("skit_pfile_stream_unittests()\n");
 	
-	skit_pfile_stream_init(stream);
+	skit_pfile_stream_init(&pstream);
 	
-	skit_pfile_run_utest(stream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),    &skit_stream_readln_unittest);
-	skit_pfile_run_utest(stream, sSLICE(SKIT_READ_UNITTEST_CONTENTS),      &skit_stream_read_unittest);
-	skit_pfile_run_utest(stream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),  &skit_stream_appendln_unittest);
-	skit_pfile_run_utest(stream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS), &skit_stream_appendfln_unittest);
-	skit_pfile_run_utest(stream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),    &skit_stream_append_unittest);
-	skit_pfile_run_utest(stream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),    &skit_stream_rewind_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),    &skit_stream_readln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS),      &skit_stream_read_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),  &skit_stream_appendln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS), &skit_stream_appendfln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),    &skit_stream_append_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),    &skit_stream_rewind_unittest);
 	
-	skit_pfile_stream_dtor(stream);
+	skit_pfile_stream_dtor(&pstream);
 
 	printf("  skit_pfile_stream_unittests passed!\n");
 	printf("\n");

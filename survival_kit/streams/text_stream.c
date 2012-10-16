@@ -10,17 +10,24 @@
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/streams/text_stream.h"
 
+#define SKIT_STREAM_T skit_text_stream
+#define SKIT_VTABLE_T skit_stream_vtable_text
+#include "survival_kit/streams/vtable.h"
+#undef SKIT_STREAM_T
+#undef SKIT_VTABLE_T
+
 static int skit_text_stream_initialized = 0;
 static skit_stream_vtable_t skit_text_stream_vtable;
 
-void skit_text_stream_vtable_init(skit_stream_vtable_t *table)
+void skit_text_stream_vtable_init(skit_stream_vtable_t *arg_table)
 {
-	skit_stream_vtable_init(table);
+	skit_stream_vtable_init(arg_table);
+	skit_stream_vtable_text *table = (skit_stream_vtable_text*)arg_table;
 	table->readln        = &skit_text_stream_readln;
 	table->read          = &skit_text_stream_read;
-	table->appendln       = &skit_text_stream_appendln;
-	table->appendfln_va   = &skit_text_stream_appendfln_va;
-	table->append         = &skit_text_stream_append;
+	table->appendln      = &skit_text_stream_appendln;
+	table->appendfln_va  = &skit_text_stream_appendfln_va;
+	table->append        = &skit_text_stream_append;
 	table->flush         = &skit_text_stream_flush;
 	table->rewind        = &skit_text_stream_rewind;
 	table->slurp         = &skit_text_stream_slurp;
@@ -92,13 +99,13 @@ void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer)
+skit_slice skit_text_stream_readln(skit_text_stream *stream, skit_loaf *buffer)
 {
 	sASSERT(stream != NULL);
 	/* We don't care what the caller passed for buffer.  All of our strings
 	are in memory anyways, so we can just pass out slices of those. */
 	
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	size_t cursor = tstreami->cursor; /* Create a fast, local copy of the cursor. */
 	skit_slice text = tstreami->text; /* Ditto for the text slice. */
 	ssize_t length = sSLENGTH(text);  /* Ditto for length.  It won't be changing. */
@@ -143,11 +150,11 @@ skit_slice skit_text_stream_readln(skit_stream *stream, skit_loaf *buffer)
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes)
+skit_slice skit_text_stream_read(skit_text_stream *stream, skit_loaf *buffer, size_t nbytes)
 {
 	sASSERT(stream != NULL);
 	
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	size_t cursor = tstreami->cursor; /* Create a fast, local copy of the cursor. */
 	skit_slice text = tstreami->text; /* Ditto for the text slice. */
 	ssize_t length = sSLENGTH(text);  /* Ditto for length.  It won't be changing. */
@@ -179,11 +186,11 @@ skit_slice skit_text_stream_read(skit_stream *stream, skit_loaf *buffer, size_t 
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_appendln(skit_stream *stream, skit_slice line)
+void skit_text_stream_appendln(skit_text_stream *stream, skit_slice line)
 {
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(line) != NULL);
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, line);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
@@ -193,7 +200,7 @@ void skit_text_stream_appendln(skit_stream *stream, skit_slice line)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_appendfln(skit_stream *stream, const char *fmtstr, ...)
+void skit_text_stream_appendfln(skit_text_stream *stream, const char *fmtstr, ...)
 {
 	va_list vl;
 	va_start(vl, fmtstr);
@@ -203,7 +210,7 @@ void skit_text_stream_appendfln(skit_stream *stream, const char *fmtstr, ...)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl)
+void skit_text_stream_appendfln_va(skit_text_stream *stream, const char *fmtstr, va_list vl)
 {
 	const size_t buf_size = 1024;
 	char buffer[buf_size];
@@ -211,7 +218,7 @@ void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_l
 	sASSERT(stream != NULL);
 	sASSERT(fmtstr != NULL);
 	
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, skit_slice_of_cstrn(buffer, nchars_printed));
@@ -222,11 +229,11 @@ void skit_text_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_l
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_append(skit_stream *stream, skit_slice slice)
+void skit_text_stream_append(skit_text_stream *stream, skit_slice slice)
 {
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(slice) != NULL);
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, slice);
 	
@@ -235,7 +242,7 @@ void skit_text_stream_append(skit_stream *stream, skit_slice slice)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_flush(skit_stream *stream)
+void skit_text_stream_flush(skit_text_stream *stream)
 {
 	/* Text streams never need flushing. */
 	/* This is only for things like disk/network/terminal I/O. */
@@ -243,25 +250,25 @@ void skit_text_stream_flush(skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_rewind(skit_stream *stream)
+void skit_text_stream_rewind(skit_text_stream *stream)
 {
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	tstreami->cursor = 0;
 }
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_text_stream_slurp(skit_stream *stream, skit_loaf *buffer)
+skit_slice skit_text_stream_slurp(skit_text_stream *stream, skit_loaf *buffer)
 {
 	sASSERT(stream != NULL);
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	tstreami->cursor = sSLENGTH(tstreami->text);
 	return tstreami->text;
 }
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_text_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
+skit_slice skit_text_stream_to_slice(skit_text_stream *stream, skit_loaf *buffer)
 {
 	sASSERT(stream != NULL);
 	return stream->meta.class_name;
@@ -269,7 +276,7 @@ skit_slice skit_text_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_dump(skit_stream *stream, skit_stream *output)
+void skit_text_stream_dump(skit_text_stream *stream, skit_stream *output)
 {
 	sASSERT(output != NULL);
 	
@@ -279,7 +286,8 @@ void skit_text_stream_dump(skit_stream *stream, skit_stream *output)
 		return;
 	}
 	
-	skit_text_stream *tstream = skit_text_stream_downcast(stream);
+	/* Check for improperly cast streams.  Downcast will make sure we have the right vtable. */
+	skit_text_stream *tstream = skit_text_stream_downcast(&(stream->as_stream));
 	if ( tstream == NULL )
 	{
 		skit_stream_appendln(output, sSLICE("skit_stream (Error: invalid call to skit_text_stream_dump() with a first argument that isn't a pfile stream.)"));
@@ -304,9 +312,9 @@ void skit_text_stream_dump(skit_stream *stream, skit_stream *output)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_dtor(skit_stream *stream)
+void skit_text_stream_dtor(skit_text_stream *stream)
 {
-	skit_text_stream_internal *tstreami = &(skit_text_stream_downcast(stream)->as_internal);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
 	tstreami->buffer = *skit_loaf_free(&tstreami->buffer);
 	tstreami->text = skit_slice_null();
@@ -323,27 +331,27 @@ void skit_text_stream_unittests()
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS));
 	/*printf("%s\n", sLPTR(tstreami->buffer));*/
 	skit_stream_readln_unittest(stream);
-	skit_text_stream_dtor(stream);
+	skit_text_stream_dtor(&tstream);
 
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS));
 	skit_stream_read_unittest(stream);
-	skit_text_stream_dtor(stream);
+	skit_text_stream_dtor(&tstream);
 
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS));
 	skit_stream_appendln_unittest(stream);
-	skit_text_stream_dtor(stream);
+	skit_text_stream_dtor(&tstream);
 
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS));
 	skit_stream_appendfln_unittest(stream);
-	skit_text_stream_dtor(stream);
+	skit_text_stream_dtor(&tstream);
 
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS));
 	skit_stream_append_unittest(stream);
-	skit_text_stream_dtor(stream);
+	skit_text_stream_dtor(&tstream);
 
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));
 	skit_stream_rewind_unittest(stream);
-	skit_text_stream_dtor(stream);
+	skit_text_stream_dtor(&tstream);
 	
 	printf("  skit_text_stream_unittests passed!\n");
 	printf("\n");
