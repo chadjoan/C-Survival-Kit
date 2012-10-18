@@ -218,8 +218,9 @@ sSCOPE
 	sSCOPE_EXIT(skit_text_stream_dtor(&err_stream));
 	
 	/* Mention what we are. */
+	skit_slice class_name = stream->meta.class_name;
 	skit_text_stream_appendfln( &err_stream, "" );
-	skit_text_stream_appendfln( &err_stream, "%s error:", sSPTR(stream->meta.class_name) ); /* HACK: using sSPTR to return c string for class_name slice.  The class_name slice might not be nul-terminated.  (It should be at the time of writing.) */
+	skit_text_stream_appendfln( &err_stream, "%.*s error:", sSLENGTH(class_name), sSPTR(class_name) );
 	
 	/* Dump the message. It's probably something from errno. */
 	va_start(vl, msg);
@@ -232,11 +233,13 @@ sSCOPE
 	skit_stream_dump( stream, &(err_stream.as_stream) );
 	
 	/* Convert the text stream into a string that we can feed into the exception. */
+	skit_text_stream_rewind( &err_stream );
 	skit_slice errtxt = skit_text_stream_slurp( &err_stream, NULL );
 	
-	/* HACK: TODO: text_stream doesn't specify that it holds text in a nul-terminated string. */
-	/* This can be easily fixed when string formatters are written that handle skit_slice's. */
-	sTHROW( ecode, (char*)sSPTR(errtxt) );
+	/* Pass our message into the exception, being sure to handle two things right: */
+	/* 1. Prevent any formatter expansions in errtxt. */
+	/* 2. The slice is not necessarily null-terminated, so use the %.*s specifier and length-bound it. */
+	sTHROW( ecode, "%.*s", sSLENGTH(errtxt), sSPTR(errtxt) );
 sEND_SCOPE
 
 /* ------------------------- generic unittests ----------------------------- */

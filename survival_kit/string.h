@@ -476,6 +476,11 @@ This can be tedious to use, so it is mostly intended to help with implementing
 other functions responsible for placing slices into formatted strings 
 (ex: sASSERT_EQS).
 
+Only use this in places where a single formatter for a single argument is
+required.  Otherwise, use the format specifier %.*s like so:
+skit_slice slice = sSLICE("foo");
+printf("%.*s", sSLENGTH(slice), sSPTR(slice));
+
 Example:
 	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
 	skit_slice slice = skit_slice_of(loaf.as_slice, 0, 3);
