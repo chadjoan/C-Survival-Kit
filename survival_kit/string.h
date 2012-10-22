@@ -393,7 +393,7 @@ This function allocates memory, so be sure to clean up as needed.
 Example:
 	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
-	skit_loaf bar = skit_slice_dup(slice);
+	skit_loaf bar = skit_loaf_dup(slice);
 	sASSERT_NE(sLPTR(foo), sLPTR(bar), "%p");
 	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
@@ -410,10 +410,16 @@ enlarging of the loaf.
 The loaf will never be shrunk.  Instead, the returned value is a slice of the 
 loaf corresponding to the text actually written.
 Example:
-	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
-	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello" );
-	skit_loaf_assign_cstr(&loaf, "Hello world!");
-	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello world!" );
+	skit_loaf loaf = skit_loaf_alloc(8);
+	const char *smallish = "foo";
+	const char *largish  = "Hello world!";
+	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
+	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
+	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
@@ -424,6 +430,18 @@ slice.  It will use skit_loaf_resize to handle an necessary enlarging of the
 loaf.  
 The loaf will never be shrunk.  Instead, the returned value is a slice of the 
 loaf corresponding to the text actually written.
+Example:
+	skit_loaf loaf = skit_loaf_alloc(8);
+	skit_slice smallish = sSLICE("foo");
+	skit_slice largish  = sSLICE("Hello world!");
+	skit_slice test1 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	skit_slice test2 = skit_loaf_assign_slice(&loaf, largish);
+	sASSERT_EQS( test2, largish );
+	sASSERT_NES( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish), "%d" );
+	skit_loaf_free(&loaf);
 */
 skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice);
 
