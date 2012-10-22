@@ -546,7 +546,7 @@ void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const c
 	if ( pstreami->file_handle != NULL )
 		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Already open to another file."));
 	
-	pstreami->name = skit_slice_dup(fname);
+	pstreami->name = skit_loaf_dup(fname);
 	pstreami->access_mode = skit_loaf_copy_cstr(access_mode);
 	
 	const char *cfname = skit_loaf_as_cstr(pstreami->name);

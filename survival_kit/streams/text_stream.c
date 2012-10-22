@@ -92,7 +92,7 @@ void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice)
 	stream->meta.class_name = sSLICE("skit_text_stream");
 	
 	skit_text_stream_internal *tstreami = &tstream->as_internal;
-	tstreami->buffer = skit_slice_dup(slice);
+	tstreami->buffer = skit_loaf_dup(slice);
 	tstreami->text = skit_slice_of(tstreami->buffer.as_slice, 0, sSLENGTH(slice));
 	tstreami->cursor = 0;
 }

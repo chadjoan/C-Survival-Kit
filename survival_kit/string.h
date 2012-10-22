@@ -401,12 +401,14 @@ Example:
 	skit_loaf_free(&foo);
 	skit_loaf_free(&bar);
 */
-skit_loaf skit_slice_dup(skit_slice slice);
+skit_loaf skit_loaf_dup(skit_slice slice);
 
 /**
 Replaces the contents of the given loaf with a copy of the text in the given
-nul-terminated C string.  It will use skit_loaf_resize to handle any necessary
-memory resizing.
+nul-terminated C string.  It will use skit_loaf_resize to handle an necessary 
+enlarging of the loaf.  
+The loaf will never be shrunk.  Instead, the returned value is a slice of the 
+loaf corresponding to the text actually written.
 Example:
 	skit_loaf loaf = skit_loaf_copy_cstr("Hello");
 	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello" );
@@ -414,7 +416,16 @@ Example:
 	sASSERT_EQS( skit_loaf_as_cstr(loaf), "Hello world!" );
 	skit_loaf_free(&loaf);
 */
-skit_loaf *skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
+skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
+
+/**
+Replaces the contents of the given loaf with a copy of the text in the given
+slice.  It will use skit_loaf_resize to handle an necessary enlarging of the
+loaf.  
+The loaf will never be shrunk.  Instead, the returned value is a slice of the 
+loaf corresponding to the text actually written.
+*/
+skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice);
 
 /**
 Takes a slice of the given string/slice.
