@@ -151,6 +151,54 @@ will be placed at sLPTR(loaf)[length].
 skit_loaf skit_loaf_alloc(size_t length);
 
 /**
+The length of a loaf returned from skit_loaf_emplace will be smaller than
+the original memory allocated by this much.  The overhead is used to do
+things like allocate a handle and trailing null byte.
+*/
+#define SKIT_LOAF_EMPLACEMENT_OVERHEAD (sizeof(skit_utf8c*) + 1)
+
+/**
+Creates a loaf from the given chunk of caller-allocated memory.  This can
+be useful if you have some place to obtain memory more quickly than 
+skit_malloc can, and you wish to use that memory to avoid the memory allocation
+overhead that happens with calls to skit_loaf_alloc.
+
+skit_free should still be called on loaves allocated this way.  skit_free will
+not free the memory introduced here (the 'mem' pointer), but it will free any
+auxiliary resources that the loaf might have allocated on its own to deal with
+enlarging resizes.  
+
+Example:
+
+	char mem[128];
+	size_t mem_size = sizeof(mem);
+	skit_loaf loaf = skit_loaf_emplace(mem, mem_size);
+	sASSERT_EQ( mem_size, sLLENGTH(loaf) + SKIT_LOAF_EMPLACEMENT_OVERHEAD, "%d" );
+	sASSERT( sLPTR(loaf) != NULL );
+	sASSERT( mem <= (char*)sLPTR(loaf) );
+	sASSERT( (char*)sLPTR(loaf) < mem+mem_size );
+	skit_loaf_free(&loaf);
+	skit_free(mem);
+	
+*/
+skit_loaf skit_loaf_emplace( void *mem, size_t mem_size );
+
+/**
+This is shorthand for allocating a loaf using stack memory.
+Internally it will declare a stack array large enough to hold the desired loaf,
+and then call skit_loaf_emplace to turn the memory into a usable loaf.
+
+Example:
+	SKIT_LOAF_ON_STACK(loaf, 32);
+	sASSERT( sLPTR(loaf) != NULL );
+	sASSERT_EQ( sLLENGTH(loaf), 32, "%d" );
+	skit_loaf_free(&loaf);
+*/
+#define SKIT_LOAF_ON_STACK( loaf_name, size ) \
+	const char *__SKIT_LOAF_##loaf_name [size + SKIT_LOAF_EMPLACEMENT_OVERHEAD]; \
+	skit_loaf loaf_name = skit_loaf_emplace( __SKIT_LOAF_##loaf_name, size + SKIT_LOAF_EMPLACEMENT_OVERHEAD);
+
+/**
 These functions calculate the length of the given loaf/slice.
 This is an O(1) operation because the length information is stored
 in a string's 'meta' field.  It is safe to assume, however, that this operation
@@ -485,13 +533,49 @@ char *skit_slice_dup_as_cstr(skit_slice slice);
 
 /**
 Use this to free memory held by 'loaf'.
-'loaf' will be reinitialized to have a NULL ptr and zero length.
+If the loaf's memory was created using one of the skit_loaf_* functions
+'loaf' will be reinitialized to have a NULL value for sLPTR(loaf) and
+zero for sLLENGTH(loaf), which is what skit_loaf_null() would return.
+
+"User allocated" memory is memory given to a loaf using skit_loaf_emplace or
+allocated using SKIT_LOAF_ON_STACK.
+If the original memory for the loaf was user allocated, then skit_free will 
+NOT be called on the original memory.  It will be the caller's responsibility
+to clean up that memory separately, if it is even required.  In this case the
+loaf will still be assigned a value like that returned from skit_loaf_null().
+
+It is still important for user allocated loaves to have skit_free called on
+them at the end of their lifetime.  This is because loaves may have
+skit_loaf_resize called on them in the meantime, either by the caller or by
+another loaf manipulation function.  In this case the call to skit_free will
+selectively free any auxiliary memory that was allocated to enlarge the loaf.
+
+Protip:
+If the loaf allocated will only live within the span of a function call's
+lifetime (and won't be stored for later use), then use 
+sSCOPE_EXIT(skit_loaf_free(&loaf));
+directly after the point where a loaf is allocated.  This will guarantee that
+any memory resources allocated to the loaf are released, regardless of what 
+happens later in the function, including thrown exceptions.
+
 Example:
+
 	skit_loaf loaf = skit_loaf_alloc(10);
 	sASSERT(sLPTR(loaf) != NULL);
 	skit_loaf_free(&loaf);
 	sASSERT(sLPTR(loaf) == NULL);
 	sASSERT(sLLENGTH(loaf) == 0);
+	
+	SKIT_LOAF_ON_STACK(stack_loaf, 64);
+	sASSERT(sLPTR(stack_loaf) != NULL);
+	sASSERT(sLLENGTH(stack_loaf) == 64);
+	skit_loaf_resize(&stack_loaf, 128);
+	sASSERT(sLPTR(stack_loaf) != NULL);
+	sASSERT(sLLENGTH(stack_loaf) == 128);
+	skit_loaf_free(&stack_loaf);
+	sASSERT(sLPTR(loaf) == NULL);
+	sASSERT(sLLENGTH(loaf) == 0);
+	
 */
 skit_loaf *skit_loaf_free(skit_loaf *loaf);
 

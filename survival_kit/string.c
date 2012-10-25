@@ -13,11 +13,10 @@
 #include "survival_kit/assert.h"
 #include "survival_kit/memory.h"
 
-
 /* 
 -----------===== .meta layout =====-----------
 The hi 8 bits of the 'meta' member is layed out like so:
-  1 0 1 C S S S S
+  1 0 1 A A S S S
 
 The highest 3 bits are always 1 0 1.  This causes the meta member to
   always be /very/ negative, and at the same time not entirely made of set
@@ -26,23 +25,33 @@ The highest 3 bits are always 1 0 1.  This causes the meta member to
   that the string wans't propertly initialized and throw an exception.
   This is accessed internally with the META_CHECK_XXX defines.
 
-The C bit (standing for 'C style string' here) specifies whether the string
-  content is stored in a loaf or in a C style nul-terminated string.
+The A bits (standing for 'allocation type' here) specify how the string
+  content is stored:
   It has the following meanings:
   0 - The string is either a loaf or a slice of a loaf.
-  1 - The string is a slice of a C style string.
+  1 - The string data is in a user-provided location, probably the stack.
+  2 - The string is a slice of a C style string.
   Strings that are a slice of a C-style string will have a chars_handle
   pointer that points directly to string data.
   Strings that are a loaf or a slice of a loaf will have a chars_handle
-  that points to a pointer that points to the string data.  The specifics
-  of this arrangement are described in the ".chars_handle layout" section.
+  that points to a pointer that points to the string data.  This is the
+  case for both 0 and 1.  The specifics of this arrangement are described
+  in the ".chars_handle layout" section.
+  The 1 value is used to determine if skit_free is called or not on the
+  string data when skit_loaf_free is called.  It is otherwise equivalent
+  to the 0 case.
+  The allocation type always refers to the original block of memory held by a
+  loaf.  It does not refer to handle-referenced memory that is created to
+  satiate growth: that will always be dynamically allocated with skit_malloc.
+  See also the skit_string_alloc_type definitions.
 
-The four S bits are the stride of the array.  Currently, this field has the
+The three S bits are the stride of the array.  Currently, this field has the
   following possible values with the following meanings:
   1 - A utf8 encoded string.
   2 - A utf16 encoded string.
   4 - A utf32 encoded string.
   This is accessed internally with the META_STRIDE_XXX defines.
+  (currently populated, but not used)
 
 The rest of the bytes in the 'meta' member are the length of the string and its
   offset (if it's a slice).  These are accessed internally with the 
@@ -62,7 +71,7 @@ null pointer/handle contiguously in memory.
 (3) It is a pointer to the string data.  The string data is a traditional
 nul-terminated C string.
 
-Cases 1&2 can be distinguished from case 3 by using the 'C' bit in the string's
+Cases 1&2 can be distinguished from case 3 by using the 'A' bits in the string's
 metadata.  This is made easier by using the internal macro SKIT_SLICE_IS_CSTR()
 macro.  
 
@@ -90,14 +99,14 @@ very temporary manner.
  */
 
 #define META_STRIDE_SHIFT (sizeof(skit_string_meta)*8 - 8)
-#define META_STRIDE_MASK  (0x0FULL << META_STRIDE_SHIFT)
+#define META_STRIDE_MASK  (0x0700000000000000ULL)
 
 #define META_CHECK_SHIFT  (sizeof(skit_string_meta)*8 - 3)
-#define META_CHECK_MASK   (0x7ULL << META_CHECK_SHIFT)
-#define META_CHECK_VAL    (0x5ULL << META_CHECK_SHIFT)
+#define META_CHECK_MASK   (0xE000000000000000ULL)
+#define META_CHECK_VAL    (0xA000000000000000ULL)
 
-#define META_CSTR_SHIFT   (sizeof(skit_string_meta)*8 - 4)
-#define META_CSTR_BIT     (0x1ULL << META_CSTR_SHIFT)
+#define META_ALLOC_SHIFT  (sizeof(skit_string_meta)*8 - 5)
+#define META_ALLOC_MASK   (0x1800000000000000ULL)
 
 #define META_LENGTH_MASK  (0x000000000FFFFFFFULL)
 #define META_LENGTH_SHIFT (0)
@@ -105,7 +114,22 @@ very temporary manner.
 #define META_OFFSET_MASK  (0x00FFFFFFF0000000ULL)
 #define META_OFFSET_SHIFT (28)
 
-#define SKIT_SLICE_IS_CSTR(slice) ((slice).meta & META_CSTR_BIT)
+typedef enum skit_string_alloc_type skit_string_alloc_type;
+enum skit_string_alloc_type
+{
+	skit_string_alloc_type_malloc = 0,  /* skit_malloc, to be exact. */
+	skit_string_alloc_type_user   = 1,  /* Probably stack memory.  Don't free. */
+	skit_string_alloc_type_cstr   = 2,  /* Handle doesn't exist.  Don't resize or free. */
+};
+
+#define SKIT_STRING_GET_ALLOC_TYPE(meta)     (((meta) & META_ALLOC_MASK) >> META_ALLOC_SHIFT)
+#define SKIT_STRING_SET_ALLOC_TYPE(meta,val) \
+	( (meta) = \
+		(((meta) & ~META_ALLOC_MASK) | \
+		 (((0ULL | (val)) << META_ALLOC_SHIFT) & META_ALLOC_MASK)) \
+	)
+
+#define SKIT_SLICE_IS_CSTR(slice) (SKIT_STRING_GET_ALLOC_TYPE((slice).meta) == skit_string_alloc_type_cstr)
 
 #define skit_string_init_meta() \
 	(META_CHECK_VAL | (1ULL << META_STRIDE_SHIFT))
@@ -131,6 +155,40 @@ static size_t skit_slice_get_offset(skit_slice slice)
 
 /* ------------------------------------------------------------------------- */
 
+/* 
+This is an important step in all loaf allocations:
+This function defines how memory is stored by loaves, including where the
+handle pointer goes and ensuring that there is always a null byte at the end.
+It should be called whenever a new loaf is needed.  The memory should have
+already been allocated by the point this is called, and all loaves must have
+their allocation type tracked.  Tracking allocation is important for ensuring
+correct cleanup of resources (so that malloc'd memory is free'd, and
+non-malloc'd memory isn't free'd).
+*/
+static skit_loaf skit_loaf_emplace_internal( 
+	void *mem, size_t mem_size, skit_string_alloc_type type )
+{
+	skit_loaf result = skit_loaf_null();
+	
+	/* Give the loaf access to the memory.  The first pointer's worth is */
+	/*   turned into the handle itself, followed by the string data, */
+	/*   followed by a null-terminating byte that is not counted in the */
+	/*   loaf's length. */
+	result.chars_handle = (skit_utf8c*)mem;
+	memset( result.chars_handle, 0, sizeof(skit_utf8c*) );
+	result.chars_handle[mem_size-1] = '\0';
+	
+	/* Set the length to agree with the string data. */
+	skit_slice_set_length(&result.as_slice, mem_size - (sizeof(skit_utf8c*)+1));
+	
+	/* Remember things like user-supplied memory. */
+	SKIT_STRING_SET_ALLOC_TYPE(result.as_slice.meta, type);
+	
+	return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 skit_slice skit_slice_null()
 {
 	skit_slice result;
@@ -152,11 +210,14 @@ skit_loaf skit_loaf_null()
 
 skit_loaf skit_loaf_new()
 {
+	return skit_loaf_alloc(0);
+	
+	/* TODO: cleanup. */
 	skit_loaf result = skit_loaf_null();
 	
 	/* Allocate a null handle followed by a zero-length string. */
 	/* The zero-length string is represented by a single nul byte. */
-	result.chars_handle = (skit_utf8c*)skit_malloc(sizeof(skit_utf8c*)+1);
+	result.chars_handle = (skit_utf8c*)skit_malloc(SKIT_LOAF_EMPLACEMENT_OVERHEAD);
 	memset( result.chars_handle, 0, sizeof(skit_utf8c*)+1 );
 	
 	/* Set the length to agree with the string data. */
@@ -169,22 +230,8 @@ skit_loaf skit_loaf_new()
 
 skit_loaf skit_loaf_copy_cstr(const char *cstr)
 {
-	size_t length = strlen(cstr);
-	skit_loaf result = skit_loaf_null();
-	
-	/* Allocate enough memory for (null handle)+(the C string)+(nul-terminating byte) */
-	/* Note: we aren't a /slice/ of a C string, but instead are making our own copy. */
-	/*   Because of that, we don't need to set the META_CSTR_BIT. */
-	result.chars_handle = (skit_utf8c*)skit_malloc(sizeof(skit_utf8c*) + length + 1);
-	memset( result.chars_handle, 0, sizeof(skit_utf8c*) ); /* nullify the handle */
-	strcpy((char*)(result.chars_handle + sizeof(skit_utf8c*)), cstr); /* fill the space after the null handle with the copy of the c string data. */
-	/* The strcpy operation will handle the creation of the last nul-terminating byte. */
-	
-	/* Set the length to agree with the string data. */
-	skit_slice_set_length(&result.as_slice, length);
-	
-	/* Do some invariant checking and then return. */
-	sASSERT(skit_loaf_check_init(result));
+	skit_loaf result = skit_loaf_alloc(strlen(cstr));
+	skit_loaf_assign_cstr(&result,cstr);
 	return result;
 }
 
@@ -192,6 +239,11 @@ skit_loaf skit_loaf_copy_cstr(const char *cstr)
 
 skit_loaf skit_loaf_alloc(size_t length)
 {
+	size_t mem_size = SKIT_LOAF_EMPLACEMENT_OVERHEAD + length;
+	void *mem = skit_malloc(mem_size);
+	return skit_loaf_emplace_internal(mem, mem_size, skit_string_alloc_type_malloc);
+
+	/* TODO: cleanup */
 	skit_loaf result = skit_loaf_null();
 	
 	/* Allocate enough memory for (null handle)+(desired length)+(nul-terminating byte) */
@@ -201,6 +253,35 @@ skit_loaf skit_loaf_alloc(size_t length)
 	
 	skit_slice_set_length(&result.as_slice, length);
 	return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_loaf skit_loaf_emplace( void *mem, size_t mem_size )
+{
+	return skit_loaf_emplace_internal(mem, mem_size, skit_string_alloc_type_user);
+}
+
+static void skit_loaf_emplace_test()
+{
+	char mem[128];
+	size_t mem_size = sizeof(mem);
+	skit_loaf loaf = skit_loaf_emplace(mem, mem_size);
+	sASSERT_EQ( mem_size, sLLENGTH(loaf) + SKIT_LOAF_EMPLACEMENT_OVERHEAD, "%d" );
+	sASSERT( sLPTR(loaf) != NULL );
+	sASSERT( mem <= (char*)sLPTR(loaf) );
+	sASSERT( (char*)sLPTR(loaf) < mem+mem_size );
+	skit_loaf_free(&loaf);
+	printf("  skit_loaf_emplace_test finished.\n");
+}
+
+static void skit_loaf_on_stack_test()
+{
+	SKIT_LOAF_ON_STACK(loaf, 32);
+	sASSERT( sLPTR(loaf) != NULL );
+	sASSERT_EQ( sLLENGTH(loaf), 32, "%d" );
+	skit_loaf_free(&loaf);
+	printf("  skit_loaf_on_stack_test finished.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -216,6 +297,7 @@ static void skit_slice_len_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
 	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
+	printf("  skit_slice_len_test finished.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -225,7 +307,8 @@ skit_utf8c *skit_loaf_ptr( skit_loaf loaf )
 	if ( loaf.chars_handle == NULL )
 		return NULL;
 	
-	/* Loaves will never have the META_CSTR_BIT set.  That wouldn't make sense. */
+	/* Loaves will never have the skit_string_alloc_type_cstr allocation type. */
+	/* That wouldn't make sense. */
 	/* So don't bother the extra cycles to check it. */
 	
 	skit_utf8c *handle = *((skit_utf8c**)loaf.chars_handle);
@@ -324,7 +407,7 @@ skit_slice skit_slice_of_cstrn(const char *cstr, int length )
 	skit_slice result = skit_slice_null();
 	result.chars_handle = (skit_utf8c*)cstr;
 	skit_slice_set_length(&result, length);
-	result.meta |= META_CSTR_BIT;
+	SKIT_STRING_SET_ALLOC_TYPE(result.meta, skit_string_alloc_type_cstr);
 	return result;
 }
 
@@ -371,6 +454,11 @@ skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length)
 			memcpy(*handle_ptr, loaf->chars_handle + sizeof(skit_utf8c*), old_length);
 			(*handle_ptr)[old_length] = '\0';
 			(*handle_ptr)[length] = '\0';
+			
+			/* Do not do the below line. */
+			/* Allocation type refers to the original ptr.  That allocation */
+			/*   type will never change throughout the life of the loaf. */
+			/*SKIT_STRING_SET_ALLOC_TYPE(loaf->meta, skit_string_alloc_type_malloc);*/
 		}
 		else
 		{
@@ -684,7 +772,7 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	skit_slice_set_length(&result, index2-index1);
 	skit_slice_set_offset(&result, index1 + old_offset);
 	if ( SKIT_SLICE_IS_CSTR(slice) )
-		result.meta |= META_CSTR_BIT;
+		SKIT_STRING_SET_ALLOC_TYPE(result.meta, skit_string_alloc_type_cstr);
 	
 	return result;
 }
@@ -728,18 +816,24 @@ skit_loaf *skit_loaf_free(skit_loaf *loaf)
 	sASSERT(loaf != NULL);
 	sASSERT(sLPTR(*loaf) != NULL);
 	sASSERT(skit_loaf_check_init(*loaf));
+	skit_string_alloc_type alloc_type = SKIT_STRING_GET_ALLOC_TYPE(loaf->as_slice.meta);
 	
 	skit_utf8c **handle_ptr = (skit_utf8c**)loaf->chars_handle;
 	if ( *handle_ptr == NULL )
 	{
 		/* Shallow string storage configuration.  Only 1 free needed. */
-		skit_free(loaf->chars_handle);
+		if ( alloc_type == skit_string_alloc_type_malloc )
+			skit_free(loaf->chars_handle);
 	}
 	else
 	{
 		/* Deeper storage configuration with an extra layer of indirection. */
 		skit_free(*handle_ptr);
-		skit_free(loaf->chars_handle);
+		
+		/* The original block might not come from malloc, so we have to check
+		  its allocation type and make sure. */
+		if ( alloc_type == skit_string_alloc_type_malloc )
+			skit_free(loaf->chars_handle);
 	}
 	
 	*loaf = skit_loaf_null();
@@ -750,9 +844,28 @@ static void skit_loaf_free_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
 	sASSERT(sLPTR(loaf) != NULL);
+	sASSERT_EQ(sLLENGTH(loaf), 10, "%d");
 	skit_loaf_free(&loaf);
 	sASSERT(sLPTR(loaf) == NULL);
-	sASSERT(skit_loaf_len(loaf) == 0);
+	sASSERT_EQ(sLLENGTH(loaf), 0, "%d");
+	
+	SKIT_LOAF_ON_STACK(stack_loaf1, 32);
+	sASSERT(sLPTR(stack_loaf1) != NULL);
+	sASSERT_EQ(sLLENGTH(stack_loaf1), 32, "%d");
+	skit_loaf_free(&stack_loaf1);
+	sASSERT(sLPTR(stack_loaf1) == NULL);
+	sASSERT_EQ(sLLENGTH(stack_loaf1), 0, "%d");
+	
+	SKIT_LOAF_ON_STACK(stack_loaf2, 64);
+	sASSERT(sLPTR(stack_loaf2) != NULL);
+	sASSERT_EQ(sLLENGTH(stack_loaf2), 64, "%d");
+	skit_loaf_resize(&stack_loaf2, 128);
+	sASSERT(sLPTR(stack_loaf2) != NULL);
+	sASSERT_EQ(sLLENGTH(stack_loaf2), 128, "%d");
+	skit_loaf_free(&stack_loaf2);
+	sASSERT(sLPTR(stack_loaf2) == NULL);
+	sASSERT_EQ(sLLENGTH(stack_loaf2), 0, "%d");
+	
 	printf("  skit_loaf_free_test passed.\n");
 }
 
@@ -1161,6 +1274,8 @@ static void skit_slice_match_test_nl()
 void skit_string_unittest()
 {
 	printf("skit_slice_unittest()\n");
+	skit_loaf_emplace_test();
+	skit_loaf_on_stack_test();
 	skit_slice_len_test();
 	skit_slice_ptr_test();
 	skit_slice_is_null_test();
