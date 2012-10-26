@@ -84,7 +84,7 @@ SKIT_T_DIE_ON_ERROR (optional) -
 #error "SKIT_T_ELEM_TYPE is needed but was not defined."
 #endif
 
-const int SKIT_T(loaf_stride) = sizeof(SKIT_T_ELEM_TYPE);
+extern const int SKIT_T(loaf_stride);
 
 #ifndef SKIT_TEMPLATES_ARRAY_COMMON_DEFINED
 #define SKIT_TEMPLATES_ARRAY_COMMON_DEFINED
@@ -114,22 +114,24 @@ See that macro for specifics on usage and behavior.
 This is analogous to a skit_slice, except that operations on it will return
 elements of type SKIT_T_ELEM_TYPE instead of individual characters.
 */
-typedef struct SKIT_T(slice) SKIT_T(slice);
-struct SKIT_T(slice)
+typedef union SKIT_T(slice) SKIT_T(slice);
+union SKIT_T(slice)
 {
-	void              *data_handle;
-	skit_string_meta  meta;
+	void         *data_handle;
+	skit_slice   as_skit_slice;
 };
 
 /**
 This is analogous to a skit_loaf, except that operations on it will return
 elements of type SKIT_T_ELEM_TYPE instead of individual characters.
 */
-typedef struct SKIT_T(loaf) SKIT_T(loaf);
-struct SKIT_T(loaf)
+typedef union SKIT_T(loaf) SKIT_T(loaf);
+union SKIT_T(loaf)
 {
 	void          *data_handle;
-	SKIT_T(arr)   as_slice;
+	SKIT_T(slice) as_slice;
+	skit_loaf     as_skit_loaf;
+	skit_slice    as_skit_slice;
 };
 
 
@@ -221,8 +223,8 @@ Example:
 	sASSERT_EQS(slice, sSLICE("bar"));
 	skit_loaf_free(&loaf);
 */
-skit_utf8c *SKIT_T(loaf_ptr) ( SKIT_T(loaf)  loaf );
-skit_utf8c *SKIT_T(slice_ptr)( SKIT_T(slice) slice ); /** ditto */
+SKIT_T_ELEM_TYPE *SKIT_T(loaf_ptr) ( SKIT_T(loaf)  loaf );
+SKIT_T_ELEM_TYPE *SKIT_T(slice_ptr)( SKIT_T(slice) slice ); /** ditto */
 
 
 /**
@@ -236,8 +238,8 @@ int SKIT_T(slice_is_null)(SKIT_T(slice) slice);
 These are analogous to functions in "survival_kit/string.h".
 See those functions for specifics on usage and behavior.
 */
-int SKIT_T(slice_check_init)(SKIT_T(slice) slice);
 int SKIT_T(loaf_check_init) (SKIT_T(loaf) loaf);
+int SKIT_T(slice_check_init)(SKIT_T(slice) slice);
 
 /**
 Creates a slice of the given C-style pointer-as-array.
@@ -255,7 +257,7 @@ SKIT_T(loaf) *SKIT_T(loaf_resize)(SKIT_T(loaf) *loaf, size_t length);
 This is analogous to skit_loaf_append in "survival_kit/string.h".
 See that function for specifics on usage and behavior.
 */
-SKIT_T(loaf) *SKIT_T(loaf)(SKIT_T(loaf) *loaf1, SKIT_T(slice) str2);
+SKIT_T(loaf) *SKIT_T(loaf_append)(SKIT_T(loaf) *loaf1, SKIT_T(slice) str2);
 
 /** 
 This is analogous to skit_slice_concat in "survival_kit/string.h".
@@ -294,7 +296,7 @@ See that function for specifics on usage and behavior.
 (The name "xfer" is short for "transfer" and is used instead of "assign" as a
 way to shorten the symbol name due to OpenVMS linker limitations.)
 */
-SKIT_T(slice) SKIT_T(loaf_xfer_carr)(SKIT_T(loaf) *loaf, const SKIT_T_ELEM_TYPE array[]);
+SKIT_T(slice) SKIT_T(loaf_xfer_carr)(SKIT_T(loaf) *loaf, const SKIT_T_ELEM_TYPE array[], size_t length);
 
 /**
 This is analogous to skit_loaf_assign_slice in "survival_kit/string.h".
@@ -309,7 +311,7 @@ SKIT_T(slice) SKIT_T(loaf_xfer_slice)(SKIT_T(loaf) *loaf, SKIT_T(slice) slice);
 This is analogous to skit_slice_of in "survival_kit/string.h".
 See that function for specifics on usage and behavior.
 */
-SKIT_T(slice) SKIT_T(slice_of)(SKIT_T(slice) slice, ssize_t index1, ssize_t index);
+SKIT_T(slice) SKIT_T(slice_of)(SKIT_T(slice) slice, ssize_t index1, ssize_t index2);
 
 /** 
 Returns the loaf's contents as a C-style pointer-as-array.  Since C pointers
@@ -326,7 +328,7 @@ The caller is responsible for free'ing the returned C array.
 The returned array will have the same length as that returned from
 skit_<prefix>_slice_len(slice).
 */
-char *SKIT_T(slice_dup_carr)(SKIT_T(slice) slice);
+SKIT_T_ELEM_TYPE *SKIT_T(slice_dup_carr)(SKIT_T(slice) slice);
 
 /**
 This is analogous to skit_loaf_free in "survival_kit/string.h".

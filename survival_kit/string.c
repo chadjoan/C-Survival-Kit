@@ -114,13 +114,13 @@ very temporary manner.
 #define META_OFFSET_MASK  (0x00FFFFFFF0000000ULL)
 #define META_OFFSET_SHIFT (28)
 
-typedef enum skit_string_alloc_type skit_string_alloc_type;
 enum skit_string_alloc_type
 {
 	skit_string_alloc_type_malloc = 0,  /* skit_malloc, to be exact. */
 	skit_string_alloc_type_user   = 1,  /* Probably stack memory.  Don't free. */
 	skit_string_alloc_type_cstr   = 2,  /* Handle doesn't exist.  Don't resize or free. */
 };
+typedef enum skit_string_alloc_type skit_string_alloc_type;
 
 #define SKIT_STRING_GET_ALLOC_TYPE(meta)     (((meta) & META_ALLOC_MASK) >> META_ALLOC_SHIFT)
 #define SKIT_STRING_SET_ALLOC_TYPE(meta,val) \
@@ -381,14 +381,14 @@ static void skit_slice_is_null_test()
 
 /* ------------------------------------------------------------------------- */
 
+int skit_loaf_check_init (skit_loaf loaf)   { return skit_slice_check_init(loaf.as_slice);  }
+
 int skit_slice_check_init(skit_slice slice)
 {
 	if ( META_CHECK_VAL == (slice.meta & META_CHECK_MASK) )
 		return 1;
 	return 0;
 }
-
-int skit_loaf_check_init (skit_loaf loaf)   { return skit_slice_check_init(loaf.as_slice);  }
 
 static void skit_slice_check_init_test()
 {
@@ -694,6 +694,7 @@ static void skit_loaf_dup_test()
 
 skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
 {
+	sASSERT( loaf != NULL );
 	sASSERT(!skit_loaf_is_null(*loaf));
 	ssize_t length = strlen(cstr);
 	if ( length > sLLENGTH(*loaf) )

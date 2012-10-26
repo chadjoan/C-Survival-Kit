@@ -288,8 +288,8 @@ to catch whatever bugs are possible to catch by this method.
 	else
 		printf("skit_slice_check_init: Caught an uninitialized slice!\n");
 */
-int skit_slice_check_init(skit_slice slice);
 int skit_loaf_check_init (skit_loaf loaf);
+int skit_slice_check_init(skit_slice slice);
 
 /**
 Like skit_slice_of_cstr, but only takes a slice with 'length' characters
