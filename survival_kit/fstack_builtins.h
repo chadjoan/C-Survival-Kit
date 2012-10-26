@@ -71,9 +71,9 @@
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
 
-/** Define skit_cstring_fstack  (SKIT_T_ELEM_TYPE==char*) */
+/** Define skit_cstr_fstack  (SKIT_T_ELEM_TYPE==char*) */
 #define SKIT_T_ELEM_TYPE char*
-#define SKIT_T_PREFIX cstring
+#define SKIT_T_PREFIX cstr
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
