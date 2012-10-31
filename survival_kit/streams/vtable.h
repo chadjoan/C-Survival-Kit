@@ -19,6 +19,7 @@ struct SKIT_VTABLE_T
 	/* Basic stream operations. */
 	skit_slice (*readln)       (SKIT_STREAM_T*,skit_loaf*);
 	skit_slice (*read)         (SKIT_STREAM_T*,skit_loaf*,size_t);
+	skit_slice (*read_regex)   (SKIT_STREAM_T*,skit_loaf*,skit_slice);
 	void       (*appendln)     (SKIT_STREAM_T*,skit_slice);
 	void       (*appendfln_va) (SKIT_STREAM_T*,const char*,va_list);
 	void       (*append)       (SKIT_STREAM_T*,skit_slice);

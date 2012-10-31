@@ -121,6 +121,28 @@ void skit_stream_read_unittest(skit_stream *stream)
 */
 skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes);
 
+
+/**
+(virtual)
+Reads the into the given stream until the regular expression is matched,
+the regular expression rejects what is being read, or the end of the stream
+is reached.  
+If the expression fails to match before the end of the stream is reached,
+then the string read up to that point will be placed into the return value.
+
+Implementation of this method is optional for derivative streams: a default
+implementation is provided for all streams that reads characters one at a
+time and feeds them into the regex engine.  The method is left virtual to
+allow for a deriver to implement a faster version using knowledge of the
+underlying data source.
+
+TODO: there is no regex engine.  This can be used to read up to the next
+null-terminated byte by passing sSLICE(".*\0") as the regex.  It is expressed
+as a regex match to allow for future expansion of functionality without
+deprecating special-cased functions later.
+*/
+skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex );
+
 /**
 (virtual)
 Positions the cursor to the end of the stream and then writes the given slice
@@ -328,6 +350,37 @@ const char *skit_stream_get_indent_char(skit_stream *stream);
 void skit_stream_set_indent_char(skit_stream *stream, const char *c);
 
 /**
+These read an integer of the desired size and signed-ness from the stream.
+(The signed-ness doesn't actually matter to this operation, but is provided 
+to allow avoidance of casting.)
+*/
+uint64_t skit_stream_read_u64(skit_stream *stream);
+uint32_t skit_stream_read_u32(skit_stream *stream);
+uint16_t skit_stream_read_u16(skit_stream *stream);
+uint8_t  skit_stream_read_u8 (skit_stream *stream);
+int64_t  skit_stream_read_i64(skit_stream *stream);
+int32_t  skit_stream_read_i32(skit_stream *stream);
+int16_t  skit_stream_read_i16(skit_stream *stream);
+int8_t   skit_stream_read_i8 (skit_stream *stream);
+
+/**
+These write an integer of the desired size and signed-ness to the 
+end of the stream.
+(The signed-ness doesn't actually matter to this operation, but is provided
+to allow avoidance of casting.)
+*/
+void skit_stream_append_u64(skit_stream *stream, uint64_t val);
+void skit_stream_append_u32(skit_stream *stream, uint32_t val);
+void skit_stream_append_u16(skit_stream *stream, uint16_t val);
+void skit_stream_append_u8 (skit_stream *stream, uint8_t val);
+void skit_stream_append_i64(skit_stream *stream, int64_t val);
+void skit_stream_append_i32(skit_stream *stream, int32_t val);
+void skit_stream_append_i16(skit_stream *stream, int16_t val);
+void skit_stream_append_i8 (skit_stream *stream, int8_t val);
+
+/* -------------------------- Useful internals ----------------------------- */
+
+/**
 This throws an exception with the given code and message.
 Additionally, it will call the given stream's skit_stream_dump method and
   dump that information into the exception text.
@@ -378,6 +431,13 @@ void skit_stream_read_unittest(
 	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_READ_UNITTEST_CONTENTS "foobarbaz"
 
+// The given stream has the contents "XYYdoodabcddcba"
+void skit_stream_read_xNN_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
+#define SKIT_READ_XNN_UNITTEST_CONTENTS "XYYdoodabcddcba"
+
 // The given stream has the contents ""
 void skit_stream_appendln_unittest(
 	skit_stream *stream,
@@ -398,6 +458,13 @@ void skit_stream_append_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_APPEND_UNITTEST_CONTENTS ""
+
+// The given stream has the contents ""
+void skit_stream_append_xNN_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
+#define SKIT_APPEND_XNN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents "".  The cursor starts at the begining.
 void skit_stream_rewind_unittest(

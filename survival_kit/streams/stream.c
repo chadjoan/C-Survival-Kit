@@ -17,6 +17,8 @@
 #undef SKIT_STREAM_T
 #undef SKIT_VTABLE_T
 
+static skit_slice skit_stream_read_regex_base(skit_stream *stream, skit_loaf *buffer, skit_slice regex );
+
 /* ------------------------- vtable stuff ---------------------------------- */
 static int skit_stream_initialized = 0;
 static skit_stream_vtable_t skit_stream_vtable;
@@ -72,9 +74,10 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	skit_stream_vtable_base *table = (skit_stream_vtable_base*)arg_table;
 	table->readln        = &skit_stream_read_not_impl;
 	table->read          = &skit_stream_readn_not_impl;
-	table->appendln       = &skit_stream_append_not_impl;
-	table->appendfln_va   = &skit_stream_appendva_not_impl;
-	table->append         = &skit_stream_append_not_impl;
+	table->read_regex    = &skit_stream_read_regex_base;
+	table->appendln      = &skit_stream_append_not_impl;
+	table->appendfln_va  = &skit_stream_appendva_not_impl;
+	table->append        = &skit_stream_append_not_impl;
 	table->flush         = &skit_stream_func_not_impl;
 	table->rewind        = &skit_stream_func_not_impl;
 	table->slurp         = &skit_stream_read_not_impl;
@@ -113,6 +116,21 @@ skit_slice skit_stream_readln(skit_stream *stream, skit_loaf *buffer)
 skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbytes )
 {
 	return SKIT_STREAM_DISPATCH(stream, read, buffer, nbytes);
+}
+
+skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
+{
+	return SKIT_STREAM_DISPATCH(stream, read_regex, buffer, regex);
+}
+
+static skit_slice skit_stream_read_regex_base(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
+{
+	SKIT_USE_FEATURE_EMULATION;
+	if ( skit_slice_nes(regex, sSLICE(".*\0")) )
+		sTHROW(SKIT_EXCEPTION, "skit_stream_read_regex only accepts the expression \".*\\0\" right now.");
+	
+	sTHROW(SKIT_EXCEPTION, "skit_stream_read_regex_base actually isn't implemented at all yet.");
+	return skit_slice_null();
 }
 
 void skit_stream_appendln(skit_stream *stream, skit_slice line)
@@ -199,6 +217,51 @@ const char *skit_stream_get_indent_str(skit_stream *stream)
 void skit_stream_set_indent_str(skit_stream *stream, const char *c)
 {
 }
+
+/* ------------------------------------------------------------------------- */
+
+/* This is probably a slow way to do it. */
+/* But it's convenient, and there isn't a need for speed right now. */
+#define read_xNN_impl(T) \
+	SKIT_LOAF_ON_STACK(buffer, sizeof(T)); \
+	skit_slice ret = skit_stream_read(stream, &buffer, sizeof(T)); \
+	T result = *(T*)sSPTR(ret); \
+	skit_loaf_free(&buffer); \
+	return result;
+
+/**
+These read an integer of the desired size and signed-ness from the stream.
+(The signed-ness doesn't actually matter to this operation, but is provided 
+to allow avoidance of casting.)
+*/
+uint64_t skit_stream_read_u64(skit_stream *stream) { read_xNN_impl(uint64_t) }
+uint32_t skit_stream_read_u32(skit_stream *stream) { read_xNN_impl(uint32_t) }
+uint16_t skit_stream_read_u16(skit_stream *stream) { read_xNN_impl(uint16_t) }
+uint8_t  skit_stream_read_u8 (skit_stream *stream) { read_xNN_impl(uint8_t) }
+int64_t  skit_stream_read_i64(skit_stream *stream) { read_xNN_impl(int64_t) }
+int32_t  skit_stream_read_i32(skit_stream *stream) { read_xNN_impl(int32_t) }
+int16_t  skit_stream_read_i16(skit_stream *stream) { read_xNN_impl(int16_t) }
+int8_t   skit_stream_read_i8 (skit_stream *stream) { read_xNN_impl(int8_t) }
+
+#define write_xNN_impl \
+	typeof(val)* buf = &val; \
+	skit_slice outgoing = skit_slice_of_cstrn((char*)buf, sizeof(val)); \
+	skit_stream_append(stream, outgoing);
+
+/**
+These write an integer of the desired size and signed-ness to the 
+end of the stream.
+(The signed-ness doesn't actually matter to this operation, but is provided
+to allow avoidance of casting.)
+*/
+void skit_stream_append_u64(skit_stream *stream, uint64_t val) { write_xNN_impl }
+void skit_stream_append_u32(skit_stream *stream, uint32_t val) { write_xNN_impl }
+void skit_stream_append_u16(skit_stream *stream, uint16_t val) { write_xNN_impl }
+void skit_stream_append_u8 (skit_stream *stream, uint8_t val)  { write_xNN_impl }
+void skit_stream_append_i64(skit_stream *stream, int64_t val)  { write_xNN_impl }
+void skit_stream_append_i32(skit_stream *stream, int32_t val)  { write_xNN_impl }
+void skit_stream_append_i16(skit_stream *stream, int16_t val)  { write_xNN_impl }
+void skit_stream_append_i8 (skit_stream *stream, int8_t val)   { write_xNN_impl }
 
 /* --------------------- Useful non-virtual stuff -------------------------- */
 
@@ -349,6 +412,29 @@ void skit_stream_read_unittest(
 	printf("  skit_stream_read_unittest passed.\n");
 }
 
+// The given stream has the contents "XYYdoodabcddcba"
+void skit_stream_read_xNN_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) )
+{
+	sASSERT_EQ( skit_stream_read_i8(stream), 'X', "%c");
+	
+	int16_t i16res = skit_stream_read_i16(stream);
+	skit_slice i16slice = skit_slice_of_cstrn( (char*)&i16res, 2 );
+	sASSERT_EQS( i16slice, sSLICE("YY") );
+	
+	int32_t i32res = skit_stream_read_i32(stream);
+	skit_slice i32slice = skit_slice_of_cstrn( (char*)&i32res, 4 );
+	sASSERT_EQS( i32slice, sSLICE("dood") );
+	
+	int64_t i64res = skit_stream_read_i64(stream);
+	skit_slice i64slice = skit_slice_of_cstrn( (char*)&i64res, 8 );
+	sASSERT_EQS( i64slice, sSLICE("abcddcba") );
+	
+	printf("  skit_stream_read_xNN_unittest passed.\n");
+}
+
 // The given stream has the contents ""
 void skit_stream_appendln_unittest(
 	skit_stream *stream,
@@ -405,6 +491,24 @@ void skit_stream_append_unittest(
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foobarbaz"));
 	skit_loaf_free(&buf);
 	printf("  skit_stream_append_unittest passed.\n");
+}
+
+// The given stream has the contents ""
+void skit_stream_append_xNN_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) )
+{
+	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	skit_stream_append_i8(stream, 'X');
+	sASSERT_EQS(get_stream_contents(context), sSLICE("X"));
+	skit_stream_append_i16(stream, *(int16_t*)"YY");
+	sASSERT_EQS(get_stream_contents(context), sSLICE("XYY"));
+	skit_stream_append_i32(stream, *(int32_t*)"dood");
+	sASSERT_EQS(get_stream_contents(context), sSLICE("XYYdood"));
+	skit_stream_append_i64(stream, *(int64_t*)"abcddbca");
+	sASSERT_EQS(get_stream_contents(context), sSLICE("XYYdoodabcddbca"));
+	printf("  skit_stream_append_xNN_unittest passed.\n");
 }
 
 // The given stream has the contents "".  The cursor starts at the begining.

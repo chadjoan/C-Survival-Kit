@@ -680,10 +680,12 @@ void skit_tcp_stream_unittests()
 	/* Not implemented. */
 	/*skit_tcp_run_read_utest(&test_port, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),    &skit_stream_readln_unittest);*/
 	
-	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_UNITTEST_CONTENTS),      &skit_stream_read_unittest);
-	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),  &skit_stream_appendln_unittest);
-	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS), &skit_stream_appendfln_unittest);
-	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),    &skit_stream_append_unittest);
+	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_UNITTEST_CONTENTS),       &skit_stream_read_unittest);
+	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS),   &skit_stream_read_xNN_unittest);
+	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),   &skit_stream_appendln_unittest);
+	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS),  &skit_stream_appendfln_unittest);
+	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),     &skit_stream_append_unittest);
+	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS), &skit_stream_append_xNN_unittest);
 	
 	/* Not possible. */
 	/* skit_tcp_run_write_utest(sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),    &skit_stream_rewind_unittest); */

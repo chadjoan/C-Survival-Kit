@@ -633,12 +633,14 @@ void skit_pfile_stream_unittests()
 	
 	skit_pfile_stream_init(&pstream);
 	
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),    &skit_stream_readln_unittest);
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS),      &skit_stream_read_unittest);
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),  &skit_stream_appendln_unittest);
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS), &skit_stream_appendfln_unittest);
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),    &skit_stream_append_unittest);
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),    &skit_stream_rewind_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),     &skit_stream_readln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS),       &skit_stream_read_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS),   &skit_stream_read_xNN_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),   &skit_stream_appendln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS),  &skit_stream_appendfln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),     &skit_stream_append_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS), &skit_stream_append_xNN_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),     &skit_stream_rewind_unittest);
 	
 	skit_pfile_stream_dtor(&pstream);
 
