@@ -23,18 +23,7 @@
 
 static skit_loaf *skit_pfile_get_read_buffer( skit_pfile_stream_internal *pstreami, skit_loaf *arg_buffer )
 {
-	skit_loaf *buffer_to_use;
-	if ( arg_buffer == NULL )
-	{
-		if ( skit_loaf_is_null(pstreami->read_buffer) )
-			pstreami->read_buffer = skit_loaf_alloc(16);
-		
-		buffer_to_use = &pstreami->read_buffer;
-	}
-	else
-		buffer_to_use = arg_buffer;
-	
-	return buffer_to_use;
+	return skit_stream_get_read_buffer(&(pstreami->read_buffer), arg_buffer);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -119,7 +108,6 @@ void skit_pfile_stream_init(skit_pfile_stream *pstream)
 	skit_pfile_stream_internal *pstreami = &(pstream->as_internal);
 	pstreami->name = skit_loaf_null();
 	pstreami->read_buffer = skit_loaf_null();
-	pstreami->err_msg_buf = skit_loaf_null();
 	pstreami->file_handle = NULL;
 }
 
@@ -337,6 +325,7 @@ void skit_pfile_stream_appendfln_va(skit_pfile_stream *stream, const char *fmtst
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
+	sASSERT(fmtstr != NULL);
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
 		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
@@ -402,64 +391,39 @@ void skit_pfile_stream_rewind(skit_pfile_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
+static size_t skit_pfile_slurp_source(void *context, void *sink, size_t requested_chunk_size)
+{
+	SKIT_USE_FEATURE_EMULATION;
+	
+	skit_pfile_stream *stream = context;
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
+
+	/* Read the next chunk of bytes from the file. */
+	size_t nbytes_read = fread( sink, 1, requested_chunk_size, pstreami->file_handle );
+	if ( ferror(pstreami->file_handle) )
+	{
+		char errbuf[1024];
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+	}
+	
+	return nbytes_read;
+}
+
 skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	const size_t default_chunk_size = 1024;
-	/*char chunk_buf[default_chunk_size]; */ /* This number is completely unoptimized. */
+	
 	sASSERT(stream != NULL);
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	skit_loaf *read_buf;
-	ssize_t buf_length;
 	
 	/* Figure out which buffer to use. */
 	read_buf = skit_pfile_get_read_buffer(pstreami, buffer);
-	buf_length = sLLENGTH(*read_buf);
 	
-	/* If we're using our own other the provided one is impossible to use, */
-	/*   we'll make sure it's suitably large enough for buffering disk I/O. */
-	if ( (buffer == NULL && buf_length < default_chunk_size) || sLLENGTH(*buffer) < 8 )
-	{
-		skit_loaf_resize(read_buf, default_chunk_size);
-		buf_length = sLLENGTH(*read_buf);
-	}
-	
-	/* Do the read. */
-	size_t offset = 0;
-	size_t chunk_length = buf_length;
-	size_t nbytes_read = 0;
-	while ( 1 )
-	{
-		/* Grow read_buf as needed. */
-		while ( (offset + chunk_length) < buf_length )
-		{
-			skit_loaf_resize(read_buf, (buf_length * 3)/2);
-			buf_length = sLLENGTH(*read_buf);
-		}
-		
-		/* Read the next chunk of bytes from the file. */
-		nbytes_read = fread( sLPTR(*read_buf) + offset, 1, chunk_length, pstreami->file_handle );
-		if ( ferror(pstreami->file_handle) )
-		{
-			char errbuf[1024];
-			sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
-		}
-		
-		/* Check for EOF. */
-		if ( nbytes_read < chunk_length )
-			break;
-		
-		/* ... */
-		offset += nbytes_read;
-		chunk_length = default_chunk_size; /* After the first resize, start reading this many bytes at a time. */
-	}
-
-	/* The slurp's total size will be the offset to the last chunk read plus */
-	/*   the number of bytes read into the last chunk. */
-	size_t slurp_length = offset + nbytes_read;
-	
-	/* done. */
-	return skit_slice_of(read_buf->as_slice, 0, slurp_length);
+	/* Delegate the ugly stuff to the skit_stream_buffered_slurp function. */
+	skit_slice result;
+	sCALL(result = skit_stream_buffered_slurp(stream, read_buf, &skit_pfile_slurp_source));
+	return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -512,8 +476,8 @@ void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if ( pstreami->file_handle != NULL )
 	{
 		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), 
@@ -526,9 +490,6 @@ void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 	
 	if ( !skit_loaf_is_null(pstreami->read_buffer) )
 		skit_loaf_free(&pstreami->read_buffer);
-	
-	if ( !skit_loaf_is_null(pstreami->err_msg_buf) )
-		skit_loaf_free(&pstreami->err_msg_buf);
 	
 	if ( !skit_loaf_is_null(pstreami->access_mode) )
 		skit_loaf_free(&pstreami->access_mode);
@@ -584,6 +545,35 @@ void skit_pfile_stream_close(skit_pfile_stream *stream)
 
 #define SKIT_PFILE_UTEST_FILE "skit_pfile_unittest.txt"
 
+typedef struct skit_pfile_utest_context skit_pfile_utest_context;
+struct skit_pfile_utest_context
+{
+	skit_pfile_stream *under_test;
+	skit_loaf *content_buffer;
+};
+
+static skit_slice skit_pfile_utest_contents( void *context )
+sSCOPE
+	SKIT_USE_FEATURE_EMULATION;
+	
+	skit_pfile_utest_context *ctx = context;
+	
+	/* Flush the stream under test: otherwise we might not see its writes. */
+	skit_pfile_stream_flush(ctx->under_test);
+	
+	skit_pfile_stream pstream;
+	skit_pfile_stream_init(&pstream);
+	skit_pfile_stream_open(&pstream, sSLICE(SKIT_PFILE_UTEST_FILE), "r");
+	sSCOPE_EXIT_BEGIN
+		skit_pfile_stream_close(&pstream);
+		skit_pfile_stream_dtor(&pstream);
+	sEND_SCOPE_EXIT
+	
+	skit_slice file_contents = skit_pfile_stream_slurp(&pstream, ctx->content_buffer);
+	
+	sRETURN(file_contents);
+sEND_SCOPE
+
 static void skit_pfile_utest_prep_file(skit_slice contents)
 {
 	SKIT_USE_FEATURE_EMULATION;
@@ -617,14 +607,23 @@ static void skit_pfile_utest_rm()
 static void skit_pfile_run_utest(
 	skit_pfile_stream *stream,
 	skit_slice initial_file_contents,
-	void (*utest_function)(skit_stream*)
+	void (*utest_function)(
+		skit_stream *stream,
+		void *context,
+		skit_slice (*get_stream_contents)(void *context) )
 )
 {
+	skit_pfile_utest_context ctx;
+	SKIT_LOAF_ON_STACK(content_buffer, 1024);
+	ctx.content_buffer = &content_buffer;
+	
 	skit_pfile_utest_prep_file(initial_file_contents);
 	skit_pfile_stream_open(stream, sSLICE(SKIT_PFILE_UTEST_FILE), "r+");
-	utest_function(&(stream->as_stream));
+	ctx.under_test = stream;
+	utest_function(&(stream->as_stream), &ctx, &skit_pfile_utest_contents);
 	skit_pfile_stream_close(stream);
 	skit_pfile_utest_rm();
+	skit_loaf_free(&content_buffer);
 }
 
 void skit_pfile_stream_unittests()

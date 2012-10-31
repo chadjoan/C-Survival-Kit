@@ -36,6 +36,7 @@ OBJECT_FILES= \
 	obj/streams/text_stream.o \
 	obj/streams/file_stream.o \
 	obj/streams/pfile_stream.o \
+	obj/streams/tcp_stream.o \
 	obj/streams/init.o \
 	obj/sockn.o \
 	obj/init.o

@@ -51,7 +51,7 @@ void skit_text_stream_static_init()
 
 skit_text_stream *skit_text_stream_new()
 {
-	skit_text_stream *result = (skit_text_stream*)skit_malloc(sizeof(skit_text_stream));
+	skit_text_stream *result = skit_malloc(sizeof(skit_text_stream));
 	skit_text_stream_init(result);
 	return result;
 }
@@ -322,12 +322,43 @@ void skit_text_stream_dtor(skit_text_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_unittests()
+static skit_slice skit_text_stream_utest_contents( void *context )
+{
+	skit_text_stream *stream = context;
+	skit_text_stream_internal *tstreami = &stream->as_internal;
+	
+	return tstreami->text;
+}
+
+static void skit_text_stream_run_utest(
+	void (*utest_function)(
+		skit_stream *stream,
+		void *context,
+		skit_slice (*get_stream_contents)(void *context) ),
+	skit_slice initial_contents
+)
 {
 	skit_text_stream tstream;
 	skit_stream *stream = &tstream.as_stream;
+	skit_text_stream_init_str(&tstream, initial_contents);
+	
+	utest_function(stream, stream, &skit_text_stream_utest_contents);
+	
+	skit_text_stream_dtor(&tstream);
+}
+
+void skit_text_stream_unittests()
+{
 	printf("skit_text_stream_unittests()\n");
 	
+	skit_text_stream_run_utest(&skit_stream_readln_unittest,    sSLICE(SKIT_READLN_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_read_unittest,      sSLICE(SKIT_READ_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_appendln_unittest,  sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_appendfln_unittest, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_append_unittest,    sSLICE(SKIT_APPEND_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_rewind_unittest,    sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));
+	
+#if 0
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS));
 	/*printf("%s\n", sLPTR(tstreami->buffer));*/
 	skit_stream_readln_unittest(stream);
@@ -352,6 +383,7 @@ void skit_text_stream_unittests()
 	skit_text_stream_init_str(&tstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));
 	skit_stream_rewind_unittest(stream);
 	skit_text_stream_dtor(&tstream);
+#endif
 	
 	printf("  skit_text_stream_unittests passed!\n");
 	printf("\n");

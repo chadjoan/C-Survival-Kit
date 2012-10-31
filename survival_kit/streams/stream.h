@@ -336,30 +336,74 @@ This is the preferred way to throw exceptions with streams because of the
 */
 void skit_stream_throw_exc( skit_err_code ecode, skit_stream *stream, const char *msg, ... );
 
+/**
+This is a function used internally by streams that use an internal buffer to
+store line output when the caller doesn't provide such a buffer.
+It allows such streams to quickly implement the typical 
+skit_streamname_get_read_buffer function that is used to select which
+buffer should be the destination of data retreived from the stream.
+*/
+skit_loaf *skit_stream_get_read_buffer( skit_loaf *internal_buf, skit_loaf *arg_buffer );
+
+/**
+This is a function used internally by streams that can read chunks of data
+at a time but don't know when the end-of-stream is until it's hit.
+It allows such streams to quickly implement the _slurp method.  All they need
+to do is define the "data_source" function that describes how to pull some
+bytes from the stream and place them into a buffer.
+
+The return value for data_source should indicate the number of bytes read
+from the stream and written into 'sink'.  A return value less than the
+requested_chunk_size shall indicate an end-of-stream condition.
+*/
+skit_slice skit_stream_buffered_slurp(
+	void *context,
+	skit_loaf *buffer,
+	size_t (*data_source)(void *context, void *sink, size_t requested_chunk_size)
+	);
+
 /* ------------------------- generic unittests ----------------------------- */
 
 // The given stream has the contents "foo\n\n\0bar\nbaz\n"
-void skit_stream_readln_unittest(skit_stream *stream);
+void skit_stream_readln_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_READLN_UNITTEST_CONTENTS "foo\n\n\0bar\nbaz\n"
 
 // The given stream has the contents "foobarbaz"
-void skit_stream_read_unittest(skit_stream *stream);
+void skit_stream_read_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_READ_UNITTEST_CONTENTS "foobarbaz"
 
 // The given stream has the contents ""
-void skit_stream_appendln_unittest(skit_stream *stream);
+void skit_stream_appendln_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_APPENDLN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
-void skit_stream_appendfln_unittest(skit_stream *stream);
+void skit_stream_appendfln_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_APPENDFLN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
-void skit_stream_append_unittest(skit_stream *stream);
+void skit_stream_append_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_APPEND_UNITTEST_CONTENTS ""
 
 // The given stream has the contents "".  The cursor starts at the begining.
-void skit_stream_rewind_unittest(skit_stream *stream);
+void skit_stream_rewind_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_REWIND_UNITTEST_CONTENTS ""
 
 #endif

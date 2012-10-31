@@ -15,7 +15,7 @@ int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 );
 /*   (Easy calculation: take the last ID and add 1.) */
 /* The rest of the numbers must appear consecutively, or it will mess up the inheritance table. */
 /*	X(EXCEPTION_NAME,             PARENT_NAME,           ID,  "MESSAGE") */
-#define __SKIT_EXC_TABLE_SIZE 12
+#define __SKIT_EXC_TABLE_SIZE 13
 #define SKIT_EXCEPTION_LIST(X) \
 	X(SKIT_EXCEPTION,             SKIT_EXCEPTION,          2, "An exception was thrown.") \
 	X(SKIT_FATAL_EXCEPTION,       SKIT_FATAL_EXCEPTION,    3, "An unrecoverable exception was thrown.") \
@@ -26,8 +26,9 @@ int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 );
 	X(SKIT_NOT_IMPLEMENTED,       SKIT_EXCEPTION,          8, "The requested feature is not implemented.") \
 	X(SKIT_IO_EXCEPTION,          SKIT_EXCEPTION,          9, "Generic I/O exception.") \
 	X(SKIT_FILE_IO_EXCEPTION,     SKIT_IO_EXCEPTION,      10, "File I/O exception.") \
-	X(SKIT_FILE_NOT_FOUND,        SKIT_FILE_IO_EXCEPTION, 11, "File not found.")
-/*               Don't forget to change __SKIT_EXC_TABLE_SIZE ^^           */
+	X(SKIT_TCP_IO_EXCEPTION,      SKIT_IO_EXCEPTION,      11, "TCP Network I/O exception.") \
+	X(SKIT_FILE_NOT_FOUND,        SKIT_FILE_IO_EXCEPTION, 12, "File not found.")
+/*           Don't forget to change __SKIT_EXC_TABLE_SIZE ^^           */
 
 #define SKIT_DEFINE_EXCEPTION_IDS(EXC_NAME, PARENT_NAME, UID, ERR_TXT) \
 	EXC_NAME = UID,

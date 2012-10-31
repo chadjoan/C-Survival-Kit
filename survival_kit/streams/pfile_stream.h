@@ -14,7 +14,6 @@ struct skit_pfile_stream_internal
 	skit_stream_common_fields common_fields;
 	skit_loaf                 name;
 	skit_loaf                 read_buffer;
-	skit_loaf                 err_msg_buf;
 	skit_loaf                 access_mode;
 	FILE                      *file_handle;
 };
