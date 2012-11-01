@@ -6,6 +6,7 @@
 #include "survival_kit/feature_emulation.h"
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/string.h"
+#include "survival_kit/regex.h"
 #include "survival_kit/array_builtins.h"
 #include "survival_kit/streams/text_stream.h"
 #include "survival_kit/streams/pfile_stream.h"
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
 	skit_fstack_unittest();
 	skit_unittest_features();
 	skit_string_unittest();
+	skit_regex_unittest();
 	skit_array_unittest();
 	skit_text_stream_unittests();
 	skit_pfile_stream_unittests();

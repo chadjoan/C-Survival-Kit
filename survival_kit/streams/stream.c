@@ -7,6 +7,7 @@
 
 #include "survival_kit/feature_emulation.h"
 
+#include "survival_kit/regex.h"
 #include "survival_kit/streams/meta.h"
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/streams/text_stream.h" /* Used in skit_stream_throw_exc(...) */
@@ -260,11 +261,10 @@ void skit_stream_append_i8 (skit_stream *stream, int8_t val)   { write_xNN_impl 
 
 /* ------------------------------------------------------------------------- */
 
-
 skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sTHROW(SKIT_EXCEPTION,"skit_stream_read_regex is not implemented yet.");
+	sTHROW(SKIT_EXCEPTION, "skit_stream_read_regex is not implemented.");
 	return skit_slice_null();
 }
 
