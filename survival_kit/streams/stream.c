@@ -17,8 +17,6 @@
 #undef SKIT_STREAM_T
 #undef SKIT_VTABLE_T
 
-static skit_slice skit_stream_read_regex_base(skit_stream *stream, skit_loaf *buffer, skit_slice regex );
-
 /* ------------------------- vtable stuff ---------------------------------- */
 static int skit_stream_initialized = 0;
 static skit_stream_vtable_t skit_stream_vtable;
@@ -38,6 +36,12 @@ static skit_slice skit_stream_read_not_impl(skit_stream* stream, skit_loaf *buff
 }
 
 static skit_slice skit_stream_readn_not_impl(skit_stream* stream, skit_loaf *buffer, size_t nbytes )
+{
+	skit_stream_func_not_impl(stream);
+	return skit_slice_null();
+}
+
+static skit_slice skit_stream_read_fn_not_impl(skit_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)(skit_custom_read_context *ctx))
 {
 	skit_stream_func_not_impl(stream);
 	return skit_slice_null();
@@ -74,7 +78,7 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	skit_stream_vtable_base *table = (skit_stream_vtable_base*)arg_table;
 	table->readln        = &skit_stream_read_not_impl;
 	table->read          = &skit_stream_readn_not_impl;
-	table->read_regex    = &skit_stream_read_regex_base;
+	table->read_fn       = &skit_stream_read_fn_not_impl;
 	table->appendln      = &skit_stream_append_not_impl;
 	table->appendfln_va  = &skit_stream_appendva_not_impl;
 	table->append        = &skit_stream_append_not_impl;
@@ -118,19 +122,9 @@ skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbyte
 	return SKIT_STREAM_DISPATCH(stream, read, buffer, nbytes);
 }
 
-skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
+skit_slice skit_stream_read_fn(skit_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ))
 {
-	return SKIT_STREAM_DISPATCH(stream, read_regex, buffer, regex);
-}
-
-static skit_slice skit_stream_read_regex_base(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
-{
-	SKIT_USE_FEATURE_EMULATION;
-	if ( skit_slice_nes(regex, sSLICE(".*\0")) )
-		sTHROW(SKIT_EXCEPTION, "skit_stream_read_regex only accepts the expression \".*\\0\" right now.");
-	
-	sTHROW(SKIT_EXCEPTION, "skit_stream_read_regex_base actually isn't implemented at all yet.");
-	return skit_slice_null();
+	return SKIT_STREAM_DISPATCH(stream, read_fn, buffer, context, accept_char);
 }
 
 void skit_stream_appendln(skit_stream *stream, skit_slice line)
@@ -222,6 +216,7 @@ void skit_stream_set_indent_str(skit_stream *stream, const char *c)
 
 /* This is probably a slow way to do it. */
 /* But it's convenient, and there isn't a need for speed right now. */
+/* TODO: BUG: end of stream conditions! */
 #define read_xNN_impl(T) \
 	SKIT_LOAF_ON_STACK(buffer, sizeof(T)); \
 	skit_slice ret = skit_stream_read(stream, &buffer, sizeof(T)); \
@@ -262,6 +257,16 @@ void skit_stream_append_i64(skit_stream *stream, int64_t val)  { write_xNN_impl 
 void skit_stream_append_i32(skit_stream *stream, int32_t val)  { write_xNN_impl }
 void skit_stream_append_i16(skit_stream *stream, int16_t val)  { write_xNN_impl }
 void skit_stream_append_i8 (skit_stream *stream, int8_t val)   { write_xNN_impl }
+
+/* ------------------------------------------------------------------------- */
+
+
+skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
+{
+	SKIT_USE_FEATURE_EMULATION;
+	sTHROW(SKIT_EXCEPTION,"skit_stream_read_regex is not implemented yet.");
+	return skit_slice_null();
+}
 
 /* --------------------- Useful non-virtual stuff -------------------------- */
 
@@ -433,6 +438,53 @@ void skit_stream_read_xNN_unittest(
 	sASSERT_EQS( i64slice, sSLICE("abcddcba") );
 	
 	printf("  skit_stream_read_xNN_unittest passed.\n");
+}
+
+static int skit_stream_read_fn_accept1( skit_custom_read_context *ctx )
+{
+	int *count = ctx->caller_context;
+	if ( *count == 0 )
+	{
+		(*count)++;
+		sASSERT_EQ(ctx->current_char, 'a', "%c");
+		sASSERT_EQS(ctx->current_slice, sSLICE("a"));
+		return 1;
+	}
+	else if ( *count == 1 )
+	{
+		(*count)++;
+		sASSERT_EQ(ctx->current_char, 'b', "%c");
+		sASSERT_EQS(ctx->current_slice, sSLICE("ab"));
+		return 0;
+	}
+	else
+	{
+		sASSERT(0);
+	}
+	return 0;
+}
+
+static int skit_stream_read_fn_accept2( skit_custom_read_context *ctx )
+{
+	sASSERT_EQ(ctx->current_char, 'c', "%c");
+	sASSERT_EQS(ctx->current_slice, sSLICE("c"));
+	return 1;
+}
+
+// The given stream has the contents "abc"
+void skit_stream_read_fn_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) )
+{
+	int count = 0;
+	skit_slice result;
+	result = skit_stream_read_fn( stream, NULL, &count, &skit_stream_read_fn_accept1 );
+	sASSERT_EQS(result, sSLICE("ab"));
+	result = skit_stream_read_fn( stream, NULL, &count, &skit_stream_read_fn_accept2 );
+	sASSERT_EQS(result, sSLICE("c"));
+	
+	printf("  skit_stream_read_fn_unittest passed.\n");
 }
 
 // The given stream has the contents ""

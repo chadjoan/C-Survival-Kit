@@ -40,6 +40,21 @@ union skit_stream
 	skit_stream_internal as_internal;
 };
 
+/** */
+typedef struct skit_custom_read_context skit_custom_read_context;
+struct skit_custom_read_context
+{
+	void        *caller_context;
+	skit_slice  current_slice;   /** Read-only. Includes current_char. */
+	skit_utf8c  current_char;
+};
+
+#define SKIT_STREAM_T void
+#define SKIT_VTABLE_T skit_stream_vtable_t
+#include "survival_kit/streams/vtable.h"
+#undef SKIT_STREAM_T
+#undef SKIT_VTABLE_T
+
 void skit_stream_vtable_init(skit_stream_vtable_t *table);
 void skit_stream_static_init();
 
@@ -124,24 +139,44 @@ skit_slice skit_stream_read(skit_stream *stream, skit_loaf *buffer, size_t nbyte
 
 /**
 (virtual)
-Reads the into the given stream until the regular expression is matched,
-the regular expression rejects what is being read, or the end of the stream
-is reached.  
-If the expression fails to match before the end of the stream is reached,
-then the string read up to that point will be placed into the return value.
+For more complex reading operations, this method exposes a way for the stream
+to feed the caller a character at a time while still maintaining the entire
+result in a buffer that may be provided by the stream.  
 
-Implementation of this method is optional for derivative streams: a default
-implementation is provided for all streams that reads characters one at a
-time and feeds them into the regex engine.  The method is left virtual to
-allow for a deriver to implement a faster version using knowledge of the
-underlying data source.
+The caller is expected to provide an "accept_char" function.  Once the read_fn
+method is entered, accept_char will be called repeatedly by the stream until
+one of two things happens:
+(1) accept_char returns 0.
+(2) The end of the stream is reached.
 
-TODO: there is no regex engine.  This can be used to read up to the next
-null-terminated byte by passing sSLICE(".*\0") as the regex.  It is expressed
-as a regex match to allow for future expansion of functionality without
-deprecating special-cased functions later.
+When one of the above happens, the skit_stream_read_fn call will return
+whatever slice was last found in the custom read context's "current_slice"
+member.
+
+It is also possible for the stream to throw an exception before the iteration
+is finished.  This is most likely to happen when the stream attempts to read
+the next character and receives an I/O error from the underlying layer.
+
+Do not call the stream's methods while in the accept_char callback.  This
+could potentially cause strange things to happen, especially if the method
+called requires use of the stream's internal buffer that is being used to
+provide the "current_slice" member of the custom read context.  
+
+'context' is an optional (but recommended) parameter that allows the caller
+to pass its own variables and state into the accept_char function.  It is
+exposed in calls to accept_char through the 'caller_context' member of the
+skit_custom_read_context structure.
+
+'buffer' is an optional parameter.  
+If it is provided, then the stream /may/ use it to store the returned slice.
+The stream may also resize this buffer as required.
+If NULL is passed for 'buffer', then the stream must use an internally 
+allocated buffer to store the returned slice.
+It is not guaranteed that the stream will actually use the buffer parameter, 
+since some streams, like skit_text_stream, can avoid copying by returning a 
+slice into the stream's internal buffers.
 */
-skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex );
+skit_slice skit_stream_read_fn(skit_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));
 
 /**
 (virtual)
@@ -378,6 +413,21 @@ void skit_stream_append_i32(skit_stream *stream, int32_t val);
 void skit_stream_append_i16(skit_stream *stream, int16_t val);
 void skit_stream_append_i8 (skit_stream *stream, int8_t val);
 
+/**
+(final)
+Reads the into the given stream until the regular expression is matched,
+the regular expression rejects what is being read, or the end of the stream
+is reached.  
+If the expression fails to match before the end of the stream is reached,
+then the string read up to that point will be placed into the return value.
+
+TODO: there is no regex engine.  This can be used to read up to the next
+null-terminated byte by passing sSLICE(".*\0") as the regex.  It is expressed
+as a regex match to allow for future expansion of functionality without
+deprecating special-cased functions later.
+*/
+skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex );
+
 /* -------------------------- Useful internals ----------------------------- */
 
 /**
@@ -437,6 +487,13 @@ void skit_stream_read_xNN_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_READ_XNN_UNITTEST_CONTENTS "XYYdoodabcddcba"
+
+// The given stream has the contents "abc"
+void skit_stream_read_fn_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
+#define SKIT_READ_FN_UNITTEST_CONTENTS "abc"
 
 // The given stream has the contents ""
 void skit_stream_appendln_unittest(

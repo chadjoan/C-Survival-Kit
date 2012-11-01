@@ -42,6 +42,7 @@ skit_tcp_stream *skit_tcp_stream_downcast(skit_stream *stream);
 void skit_tcp_stream_init(skit_tcp_stream *tstream);
 skit_slice skit_tcp_stream_readln(skit_tcp_stream *stream, skit_loaf *buffer);
 skit_slice skit_tcp_stream_read(skit_tcp_stream *stream, skit_loaf *buffer, size_t nbytes);
+skit_slice skit_tcp_stream_read_fn(skit_tcp_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));
 void skit_tcp_stream_appendln(skit_tcp_stream *stream, skit_slice line);
 
 /** TODO: the number of characters that can be written this way is currently

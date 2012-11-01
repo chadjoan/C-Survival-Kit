@@ -43,6 +43,7 @@ void skit_text_stream_init(skit_text_stream *tstream);
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
 skit_slice skit_text_stream_readln(skit_text_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_read(skit_text_stream *stream, skit_loaf *buffer, size_t nbytes);
+skit_slice skit_text_stream_read_fn(skit_text_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));
 void skit_text_stream_appendln(skit_text_stream *stream, skit_slice line);
 
 /** TODO: the number of characters that can be written this way is currently

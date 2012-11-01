@@ -25,6 +25,7 @@ void skit_text_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	skit_stream_vtable_text *table = (skit_stream_vtable_text*)arg_table;
 	table->readln        = &skit_text_stream_readln;
 	table->read          = &skit_text_stream_read;
+	table->read_fn       = &skit_text_stream_read_fn;
 	table->appendln      = &skit_text_stream_appendln;
 	table->appendfln_va  = &skit_text_stream_appendfln_va;
 	table->append        = &skit_text_stream_append;
@@ -182,6 +183,45 @@ skit_slice skit_text_stream_read(skit_text_stream *stream, skit_loaf *buffer, si
 	}
 	
 	return skit_slice_of( text, block_begin, block_end );
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_text_stream_read_fn(skit_text_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ))
+{
+	skit_custom_read_context ctx;
+	
+	sASSERT(stream != NULL);
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
+	
+	size_t block_begin = tstreami->cursor;
+	size_t block_end = block_begin;
+	skit_slice text = tstreami->text;
+	ssize_t length = sSLENGTH(text);
+	
+	/* Return null when reading past the end of the stream. */
+	if ( block_begin >= length )
+		return skit_slice_null();
+	
+	skit_utf8c *text_ptr = sSPTR(text);
+	ctx.caller_context = context; /* Pass the caller's context along. */
+	
+	int done = 0;
+	while ( !done )
+	{
+		if ( block_end >= length )
+			break;
+
+		ctx.current_char = text_ptr[block_end];
+		block_end++;
+		ctx.current_slice = skit_slice_of(text, block_begin, block_end);
+		if ( !accept_char( &ctx ) )
+			break;
+	}
+	
+	tstreami->cursor = block_end;
+	
+	return ctx.current_slice;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -354,6 +394,7 @@ void skit_text_stream_unittests()
 	skit_text_stream_run_utest(&skit_stream_readln_unittest,     sSLICE(SKIT_READLN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_read_unittest,       sSLICE(SKIT_READ_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_read_xNN_unittest,   sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_read_fn_unittest,    sSLICE(SKIT_READ_FN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_appendln_unittest,   sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_appendfln_unittest,  sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_append_unittest,     sSLICE(SKIT_APPEND_UNITTEST_CONTENTS));

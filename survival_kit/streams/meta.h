@@ -4,20 +4,14 @@
 
 #include "survival_kit/string.h"
 
-union skit_stream;
-
-#define SKIT_STREAM_T void
-#define SKIT_VTABLE_T skit_stream_vtable_t
-#include "survival_kit/streams/vtable.h"
-#undef SKIT_STREAM_T
-#undef SKIT_VTABLE_T
+struct skit_stream_vtable_t;
 
 typedef struct skit_stream_metadata skit_stream_metadata;
 struct skit_stream_metadata
 {
 	/* Inheritence/polymorphism stuff. */
-	skit_slice           class_name;
-	skit_stream_vtable_t *vtable_ptr;
+	skit_slice                  class_name;
+	struct skit_stream_vtable_t *vtable_ptr;
 };
 
 /* These haven't been needed yet.

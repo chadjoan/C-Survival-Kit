@@ -66,6 +66,7 @@ void skit_tcp_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	skit_stream_vtable_tcp *table = (skit_stream_vtable_tcp*)arg_table;
 	table->readln        = &skit_tcp_stream_readln;
 	table->read          = &skit_tcp_stream_read;
+	table->read_fn       = &skit_tcp_stream_read_fn;
 	table->appendln      = &skit_tcp_stream_appendln;
 	table->appendfln_va  = &skit_tcp_stream_appendfln_va;
 	table->append        = &skit_tcp_stream_append;
@@ -141,7 +142,7 @@ skit_slice skit_tcp_stream_read(skit_tcp_stream *stream, skit_loaf *buffer, size
 	skit_tcp_stream_internal *tstreami = &(stream->as_internal);
 	skit_loaf *read_buf;
 	
-	/* Return NULL slices when attempting to read from an already-exhausted stream. */
+	/* Freak out when weird crap happens. */
 	if ( tstreami->connection_fd <= 0 )
 		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Attempt to read from an unopened stream."));
 	
@@ -165,6 +166,62 @@ skit_slice skit_tcp_stream_read(skit_tcp_stream *stream, skit_loaf *buffer, size
 		return skit_slice_null();
 	
 	return skit_slice_of(read_buf->as_slice, 0, nbytes_read);
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_tcp_stream_read_fn(skit_tcp_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ))
+{
+	SKIT_USE_FEATURE_EMULATION;
+	sASSERT(stream != NULL);
+	skit_tcp_stream_internal *tstreami = &(stream->as_internal);
+	skit_loaf *read_buf;
+	skit_custom_read_context ctx;
+	
+	/* Freak out when weird crap happens. */
+	if ( tstreami->connection_fd <= 0 )
+		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Attempt to read from an unopened stream."));
+	
+	/* Figure out which buffer to use. */
+	read_buf = skit_tcp_get_read_buffer(tstreami, buffer);
+	ssize_t length = sLLENGTH(*read_buf);
+	skit_utf8c *buf_ptr = sLPTR(*read_buf);
+	ctx.caller_context = context; /* Pass the caller's context along. */
+	
+	/* Grab 1 character at a time and feed it to the caller. */
+	int nbytes = 0;
+	int done = 0;
+	while ( !done )
+	{
+		/* Grab a byte. */
+		skit_utf8c c;
+		int success = skit_tcp_read_bytes(stream, &c, 1);
+		
+		/* Check for those times when the other end hung up. */
+		if ( !success )
+			break;
+		
+		/* Upsize buffer as needed. */
+		nbytes++;
+		if ( length < nbytes )
+		{
+			/* Slow, but w/e. */
+			skit_loaf_resize(read_buf, nbytes+64);
+			length = sLLENGTH(*read_buf);
+			buf_ptr = sLPTR(*read_buf);
+		}
+		
+		/* Place the new character into the read buffer. */
+		buf_ptr[nbytes-1] = c;
+		
+		/* Push the character to the caller. */
+		ctx.current_char = c;
+		ctx.current_slice = skit_slice_of(read_buf->as_slice, 0, nbytes);
+		if ( !accept_char(&ctx) )
+			break;
+	}
+	
+	return ctx.current_slice;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -682,6 +739,7 @@ void skit_tcp_stream_unittests()
 	
 	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_UNITTEST_CONTENTS),       &skit_stream_read_unittest);
 	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS),   &skit_stream_read_xNN_unittest);
+	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_FN_UNITTEST_CONTENTS),    &skit_stream_read_fn_unittest);
 	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),   &skit_stream_appendln_unittest);
 	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS),  &skit_stream_appendfln_unittest);
 	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),     &skit_stream_append_unittest);

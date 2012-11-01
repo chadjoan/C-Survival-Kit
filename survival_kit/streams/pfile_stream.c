@@ -52,6 +52,7 @@ void skit_pfile_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	skit_stream_vtable_pfile *table = (skit_stream_vtable_pfile*)arg_table;
 	table->readln        = &skit_pfile_stream_readln;
 	table->read          = &skit_pfile_stream_read;
+	table->read_fn       = &skit_pfile_stream_read_fn;
 	table->appendln      = &skit_pfile_stream_appendln;
 	table->appendfln_va  = &skit_pfile_stream_appendfln_va;
 	table->append        = &skit_pfile_stream_append;
@@ -295,6 +296,70 @@ skit_slice skit_pfile_stream_read(skit_pfile_stream *stream, skit_loaf *buffer, 
 	}
 	
 	return skit_slice_of(read_buf->as_slice, 0, nbytes_read);
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_pfile_stream_read_fn(skit_pfile_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ))
+{
+	SKIT_USE_FEATURE_EMULATION;
+	sASSERT(stream != NULL);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
+	skit_custom_read_context ctx;
+	skit_loaf *read_buf;
+	
+	/* Return NULL slices when attempting to read from an already-exhausted stream. */
+	if ( feof(pstreami->file_handle) )
+		return skit_slice_null();
+	
+	/* Figure out which buffer to use. */
+	read_buf = skit_pfile_get_read_buffer(pstreami, buffer);
+	ssize_t length = sLLENGTH(*read_buf);
+	skit_utf8c *buf_ptr = sLPTR(*read_buf);
+	ctx.caller_context = context; /* Pass the caller's context along. */
+	
+	/* Iterate and feed the caller 1 character at a time. */
+	FILE *fhandle = pstreami->file_handle;
+	ssize_t nbytes = 0;
+	int done = 0;
+	while ( !done )
+	{
+		/* Get the next character. */
+		int c = fgetc(fhandle);
+		
+		/* EOF check. */
+		if ( c == EOF )
+			break;
+		
+		/* Upsize buffer as needed. */
+		nbytes++;
+		if ( length < nbytes )
+		{
+			/* Slow, but w/e. */
+			skit_loaf_resize(read_buf, nbytes+64);
+			length = sLLENGTH(*read_buf);
+			buf_ptr = sLPTR(*read_buf);
+		}
+		
+		/* Place the new character into the read buffer. */
+		buf_ptr[nbytes-1] = c;
+		
+		/* Push the character to the caller. */
+		ctx.current_char = c;
+		ctx.current_slice = skit_slice_of(read_buf->as_slice, 0, nbytes);
+		if ( !accept_char(&ctx) )
+			break;
+	}
+	
+	/* fgetc returns EOF to signal errors as well. */
+	/* To distinguish that from legit EOFs, we need to check the ferror function. */
+	if ( ferror(fhandle) )
+	{
+		char errbuf[1024];
+		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+	}
+	
+	return ctx.current_slice;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -636,6 +701,7 @@ void skit_pfile_stream_unittests()
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),     &skit_stream_readln_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS),       &skit_stream_read_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS),   &skit_stream_read_xNN_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_FN_UNITTEST_CONTENTS),    &skit_stream_read_fn_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),   &skit_stream_appendln_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS),  &skit_stream_appendfln_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),     &skit_stream_append_unittest);
