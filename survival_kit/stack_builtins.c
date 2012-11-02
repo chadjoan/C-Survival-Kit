@@ -3,8 +3,14 @@
 #pragma module skit_stack_builtins
 #endif
 
+#define SKIT_T_HEADER "survival_kit/templates/stack.h"
+#include "survival_kit/stack_builtins.h"
+#undef SKIT_T_HEADER
+#undef SKIT_STACK_BUILTINS_INCLUDED
+
 #define SKIT_T_HEADER "survival_kit/templates/stack.c"
 #include "survival_kit/stack_builtins.h"
+#undef SKIT_T_HEADER
 
 #include <stdio.h>
 #include <assert.h>
@@ -13,7 +19,8 @@
 #define SKIT_T_ELEM_TYPE int
 #define SKIT_T_PREFIX utest_int
 #define SKIT_T_FUNC_ATTR static
-#include SKIT_T_HEADER
+#include "survival_kit/templates/stack.h"
+#include "survival_kit/templates/stack.c"
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
 #undef SKIT_T_FUNC_ATTR

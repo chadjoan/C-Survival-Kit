@@ -23,7 +23,6 @@ void skit_throw_exception_no_ctx(
 
 #include "survival_kit/misc.h"
 #include "survival_kit/assert.h"
-#include "survival_kit/templates/fstack.h"
 
 #include <stdlib.h> /* for size_t */
 #include <stdio.h>

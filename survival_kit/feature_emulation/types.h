@@ -7,16 +7,6 @@
 #include "survival_kit/feature_emulation/setjmp/jmp_fstack.h"
 #include "survival_kit/feature_emulation/generated_exception_defs.h"
 
-/* SKIT_T_HEADER allows the template header file to be overridden. */
-/* It is used by the corresponding _builtins.c file to provide linkable */
-/*   implementations for all of these template instances. */
-/* It is not recommended that any calling code use SKIT_T_HEADER. */
-#ifndef SKIT_T_STACK_HEADER
-#	define SKIT_T_STACK_HEADER "survival_kit/templates/stack.h"
-#	define SKIT_T_FREESTACK_HEADER "survival_kit/templates/fstack.h"
-#	define SKIT_CLEAN_HEADER_MACROS 1
-#endif
-
 /* Implementation details. */
 typedef struct skit_frame_info skit_frame_info;
 struct skit_frame_info
@@ -43,13 +33,8 @@ struct skit_thread_context_pos
 
 #define SKIT_T_ELEM_TYPE skit_frame_info
 #define SKIT_T_PREFIX debug
-#include SKIT_T_STACK_HEADER
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-#define SKIT_T_ELEM_TYPE skit_frame_info
-#define SKIT_T_PREFIX debug
-#include SKIT_T_FREESTACK_HEADER
+#include "survival_kit/templates/stack.h"
+#include "survival_kit/templates/fstack.h"
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
 
@@ -67,13 +52,8 @@ struct skit_exception
 
 #define SKIT_T_ELEM_TYPE skit_exception
 #define SKIT_T_PREFIX exc
-#include SKIT_T_STACK_HEADER
-#undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
-
-#define SKIT_T_ELEM_TYPE skit_exception
-#define SKIT_T_PREFIX exc
-#include SKIT_T_FREESTACK_HEADER
+#include "survival_kit/templates/stack.h"
+#include "survival_kit/templates/fstack.h"
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
 
@@ -107,11 +87,5 @@ struct skit_scope_context
 	char scope_guards_used;
 	char exit_status;
 };
-
-#ifdef SKIT_CLEAN_HEADER_MACROS
-#	undef SKIT_T_STACK_HEADER
-#	undef SKIT_T_FREESTACK_HEADER
-#	undef SKIT_CLEAN_HEADER_MACROS
-#endif
 
 #endif

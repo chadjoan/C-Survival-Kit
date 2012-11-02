@@ -92,8 +92,14 @@
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
 
+/* Double guard this: stack_builtins.h will #undef the normal include guards
+because it needs to expand this file twice: once for the definitions and again
+for the implementations. */
+#ifndef SKIT_STACK_UNITTEST_INCLUDED
+#define SKIT_STACK_UNITTEST_INCLUDED
 /** */
 void skit_array_unittest();
+#endif
 
 #ifdef SKIT_CLEAN_ARRAY_BUILTINS
 #	undef SKIT_T_HEADER

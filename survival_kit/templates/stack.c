@@ -23,7 +23,6 @@
 
 #include "survival_kit/misc.h"
 #include "survival_kit/assert.h"
-#include "survival_kit/templates/stack.h"
 
 #include <stdio.h>
 

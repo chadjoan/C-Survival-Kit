@@ -11,9 +11,16 @@
 /* Make sure SKIT_T_HEADER isn't defined when #include'ing this. */
 #include "survival_kit/stack_builtins.h"
 
+#define SKIT_T_HEADER "survival_kit/templates/fstack.h"
+#include "survival_kit/fstack_builtins.h"
+#undef SKIT_T_HEADER
+#undef SKIT_FSTACK_BUILTINS_INCLUDED
+
 #define SKIT_T_HEADER "survival_kit/templates/fstack.c"
 #include "survival_kit/fstack_builtins.h"
+#undef SKIT_T_HEADER
 
+#include "survival_kit/assert.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/cstr.h"
 

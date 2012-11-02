@@ -6,6 +6,7 @@
 #define SKIT_T_HEADER "survival_kit/templates/array.h"
 #include "survival_kit/array_builtins.h"
 #undef SKIT_T_HEADER
+#undef SKIT_ARRAY_BUILTINS_INCLUDED
 
 #define SKIT_T_HEADER "survival_kit/templates/array.c"
 #include "survival_kit/array_builtins.h"
