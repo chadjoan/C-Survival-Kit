@@ -3,8 +3,13 @@
 #pragma module skit_array_builtins
 #endif
 
+#define SKIT_T_HEADER "survival_kit/templates/array.h"
+#include "survival_kit/array_builtins.h"
+#undef SKIT_T_HEADER
+
 #define SKIT_T_HEADER "survival_kit/templates/array.c"
 #include "survival_kit/array_builtins.h"
+#undef SKIT_T_HEADER
 
 #include "survival_kit/assert.h"
 
@@ -14,7 +19,8 @@
 #define SKIT_T_ELEM_TYPE int
 #define SKIT_T_PREFIX utest_int
 #define SKIT_T_FUNC_ATTR static
-#include SKIT_T_HEADER
+#include "survival_kit/templates/array.h"
+#include "survival_kit/templates/array.c"
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_PREFIX
 #undef SKIT_T_FUNC_ATTR

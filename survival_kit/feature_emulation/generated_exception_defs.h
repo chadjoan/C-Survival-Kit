@@ -8,6 +8,19 @@
 
 int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 );
 
+/*
+TODO:
+extern skit_err_code SKIT_EXCEPTION;
+extern skit_err_code SKIT_FATAL_EXCEPTION;
+#define SKIT_REGISTER_EXCEPTION(ecode, parent, msg) (_skit__register_exception((ecode), (parent), #ecode#, (msg)))
+void _skit__register_exception( skit_err_code ecode, skit_err_code parent, const char *ecode_name, const char *default_msg );
+
+void skit_xx_init()
+{
+	skit_register_exception(SKIT_SOCKET_EXCEPTION, SKIT_EXCEPTION, "socket exception.");
+}
+*/
+
 /* Exception list notes: */
 /* Never use 0, it has a special meaning for setjmp/longjmp. */
 /* 1 is pretty dangerous too. */

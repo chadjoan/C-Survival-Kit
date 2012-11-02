@@ -8,7 +8,6 @@ simpler string API first, and then learn the array API by analogy. */
 #include "survival_kit/misc.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/assert.h"
-#include "survival_kit/templates/array.h"
 #include "survival_kit/string.h"
 
 #include <stdio.h>
