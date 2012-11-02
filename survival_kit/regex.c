@@ -1,4 +1,8 @@
 
+#if defined(__DECC)
+#pragma module skit_regex
+#endif
+
 #include "survival_kit/misc.h"
 #include "survival_kit/feature_emulation.h"
 #include "survival_kit/regex.h"
