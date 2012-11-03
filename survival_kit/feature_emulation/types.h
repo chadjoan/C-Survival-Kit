@@ -5,7 +5,7 @@
 #include <setjmp.h>
 
 #include "survival_kit/feature_emulation/setjmp/jmp_fstack.h"
-#include "survival_kit/feature_emulation/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/exceptions.h"
 
 /* Implementation details. */
 typedef struct skit_frame_info skit_frame_info;

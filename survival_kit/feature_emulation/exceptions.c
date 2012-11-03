@@ -1,6 +1,6 @@
 
 #ifdef __DECC
-#pragma module skit_feature_emu_gen_exc_defs
+#pragma module skit_feature_emu_exceptions
 #endif
 
 #include <inttypes.h>
@@ -8,7 +8,7 @@
 #include <stdio.h> /* printf */
 
 #include "survival_kit/memory.h"
-#include "survival_kit/feature_emulation/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/exceptions.h"
 
 skit_err_code SKIT_EXCEPTION;
 skit_err_code SKIT_FATAL_EXCEPTION;

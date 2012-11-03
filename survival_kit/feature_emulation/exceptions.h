@@ -1,5 +1,5 @@
-#ifndef SKIT_GENERATED_EXCEPTION_DEFS_INCLUDED
-#define SKIT_GENERATED_EXCEPTION_DEFS_INCLUDED
+#ifndef SKIT_EXCEPTIONS_INCLUDED
+#define SKIT_EXCEPTIONS_INCLUDED
 
 #include <unistd.h> /* For ssize_t */
 #include <inttypes.h>

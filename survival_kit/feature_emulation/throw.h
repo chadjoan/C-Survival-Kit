@@ -6,7 +6,7 @@
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/scope.h"
-#include "survival_kit/feature_emulation/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/exceptions.h"
 
 #if 0
 /**

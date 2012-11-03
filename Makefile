@@ -24,7 +24,7 @@ OBJECT_FILES= \
 	obj/fstack_builtins.o \
 	obj/feature_emulation/setjmp/jmp_stack.o \
 	obj/feature_emulation/setjmp/jmp_fstack.o \
-	obj/feature_emulation/generated_exception_defs.o \
+	obj/feature_emulation/exceptions.o \
 	obj/feature_emulation/funcs.o \
 	obj/feature_emulation/types.o \
 	obj/feature_emulation/unittest.o \

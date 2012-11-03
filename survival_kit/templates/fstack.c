@@ -3,7 +3,7 @@
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
 
-#include "survival_kit/feature_emulation/generated_exception_defs.h"
+#include "survival_kit/feature_emulation/exceptions.h"
 
 	/*
 	This skit_throw_exception_no_ctx definition is used to break macro recursion.
