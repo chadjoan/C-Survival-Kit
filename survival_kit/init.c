@@ -18,6 +18,7 @@ static void skit_thread_dummy_dtor(void *context) {}
 
 void skit_init()
 {
+	skit_init_exceptions();
 	skit_features_init();
 	skit_cstr_init();
 	skit_sig_init();

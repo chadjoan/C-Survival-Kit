@@ -74,7 +74,7 @@ static void skit_thread_context_dtor(void *ctx_ptr)
 
 void skit_features_init()
 {
-	pthread_key_create(&skit_thread_context_key, skit_thread_context_dtor); 
+	pthread_key_create(&skit_thread_context_key, skit_thread_context_dtor);
 }
 
 void skit_features_thread_init()
