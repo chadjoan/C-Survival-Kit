@@ -81,8 +81,8 @@
 /* Double guard this: stack_builtins.h will #undef the normal include guards
 because it needs to expand this file twice: once for the definitions and again
 for the implementations. */
-#ifndef SKIT_STACK_UNITTEST_INCLUDED
-#define SKIT_STACK_UNITTEST_INCLUDED
+#ifndef SKIT_FSTACK_UNITTEST_INCLUDED
+#define SKIT_FSTACK_UNITTEST_INCLUDED
 /** */
 void skit_fstack_unittest();
 #endif
