@@ -42,7 +42,7 @@ static size_t skit_tcp_read_bytes( skit_tcp_stream *stream, void *dst, size_t nb
 	skit_tcp_stream_internal *tstreami = &(stream->as_internal);
 
 	/* Read the next chunk of bytes from the file. */
-	size_t nbytes_read = recv( tstreami->connection_fd, dst, nbytes, 0 );
+	ssize_t nbytes_read = recv( tstreami->connection_fd, dst, nbytes, 0 );
 	if ( nbytes_read < 0 )
 	{
 		char errbuf[1024];
