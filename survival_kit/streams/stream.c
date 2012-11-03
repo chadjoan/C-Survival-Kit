@@ -239,8 +239,8 @@ int32_t  skit_stream_read_i32(skit_stream *stream) { read_xNN_impl(int32_t) }
 int16_t  skit_stream_read_i16(skit_stream *stream) { read_xNN_impl(int16_t) }
 int8_t   skit_stream_read_i8 (skit_stream *stream) { read_xNN_impl(int8_t) }
 
-#define write_xNN_impl \
-	typeof(val)* buf = &val; \
+#define write_xNN_impl(T) \
+	T* buf = &val; \
 	skit_slice outgoing = skit_slice_of_cstrn((char*)buf, sizeof(val)); \
 	skit_stream_append(stream, outgoing);
 
@@ -250,14 +250,14 @@ end of the stream.
 (The signed-ness doesn't actually matter to this operation, but is provided
 to allow avoidance of casting.)
 */
-void skit_stream_append_u64(skit_stream *stream, uint64_t val) { write_xNN_impl }
-void skit_stream_append_u32(skit_stream *stream, uint32_t val) { write_xNN_impl }
-void skit_stream_append_u16(skit_stream *stream, uint16_t val) { write_xNN_impl }
-void skit_stream_append_u8 (skit_stream *stream, uint8_t val)  { write_xNN_impl }
-void skit_stream_append_i64(skit_stream *stream, int64_t val)  { write_xNN_impl }
-void skit_stream_append_i32(skit_stream *stream, int32_t val)  { write_xNN_impl }
-void skit_stream_append_i16(skit_stream *stream, int16_t val)  { write_xNN_impl }
-void skit_stream_append_i8 (skit_stream *stream, int8_t val)   { write_xNN_impl }
+void skit_stream_append_u64(skit_stream *stream, uint64_t val) { write_xNN_impl(uint64_t) }
+void skit_stream_append_u32(skit_stream *stream, uint32_t val) { write_xNN_impl(uint32_t) }
+void skit_stream_append_u16(skit_stream *stream, uint16_t val) { write_xNN_impl(uint16_t) }
+void skit_stream_append_u8 (skit_stream *stream, uint8_t val)  { write_xNN_impl(uint8_t ) }
+void skit_stream_append_i64(skit_stream *stream, int64_t val)  { write_xNN_impl(int64_t ) }
+void skit_stream_append_i32(skit_stream *stream, int32_t val)  { write_xNN_impl(int32_t ) }
+void skit_stream_append_i16(skit_stream *stream, int16_t val)  { write_xNN_impl(int16_t ) }
+void skit_stream_append_i8 (skit_stream *stream, int8_t val)   { write_xNN_impl(int8_t  ) }
 
 /* ------------------------------------------------------------------------- */
 
