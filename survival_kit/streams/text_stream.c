@@ -356,7 +356,7 @@ void skit_text_stream_dtor(skit_text_stream *stream)
 {
 	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
-	tstreami->buffer = *skit_loaf_free(&tstreami->buffer);
+	tstreami->buffer = skit_loaf_free(&tstreami->buffer);
 	tstreami->text = skit_slice_null();
 }
 

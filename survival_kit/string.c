@@ -812,7 +812,7 @@ char *skit_slice_dup_as_cstr(skit_slice slice)
 
 /* ------------------------------------------------------------------------- */
 
-skit_loaf *skit_loaf_free(skit_loaf *loaf)
+skit_loaf skit_loaf_free(skit_loaf *loaf)
 {
 	sASSERT(loaf != NULL);
 	sASSERT(sLPTR(*loaf) != NULL);
@@ -838,7 +838,7 @@ skit_loaf *skit_loaf_free(skit_loaf *loaf)
 	}
 	
 	*loaf = skit_loaf_null();
-	return loaf;
+	return *loaf;
 }
 
 static void skit_loaf_free_test()

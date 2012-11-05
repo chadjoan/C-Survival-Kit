@@ -169,9 +169,9 @@ SKIT_T_ELEM_TYPE *SKIT_T(slice_dup_carr)(SKIT_T(slice) slice)
 	return result;
 }
 
-SKIT_T(loaf) *SKIT_T(loaf_free)(SKIT_T(loaf) *loaf)
+SKIT_T(loaf) SKIT_T(loaf_free)(SKIT_T(loaf) *loaf)
 {
-	return (SKIT_T(loaf)*)skit_loaf_free((skit_loaf*)loaf);
+	return SKIT_T(loaf_templated)(skit_loaf_free((skit_loaf*)loaf));
 }
 
 /* ------------------------- array misc functions ------------------------- */

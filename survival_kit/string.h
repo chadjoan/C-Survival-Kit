@@ -585,7 +585,7 @@ Example:
 	sASSERT(sLLENGTH(loaf) == 0);
 	
 */
-skit_loaf *skit_loaf_free(skit_loaf *loaf);
+skit_loaf skit_loaf_free(skit_loaf *loaf);
 
 /**
 Returns a standard C printf format specifier that can be used with the character

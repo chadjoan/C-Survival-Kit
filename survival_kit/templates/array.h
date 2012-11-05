@@ -334,7 +334,7 @@ SKIT_T_ELEM_TYPE *SKIT_T(slice_dup_carr)(SKIT_T(slice) slice);
 This is analogous to skit_loaf_free in "survival_kit/string.h".
 See that function for specifics on usage and behavior.
 */
-SKIT_T(loaf) *SKIT_T(loaf_free)(SKIT_T(loaf) *loaf);
+SKIT_T(loaf) SKIT_T(loaf_free)(SKIT_T(loaf) *loaf);
 
 /* ------------------------- array misc functions ------------------------- */
 
