@@ -259,6 +259,11 @@ See that function for specifics on usage and behavior.
 */
 SKIT_T(loaf) *SKIT_T(loaf_append)(SKIT_T(loaf) *loaf1, SKIT_T(slice) str2);
 
+/**
+This is similar to loaf_append, except that it appends only a single element.
+*/
+SKIT_T(loaf) *SKIT_T(loaf_put)(SKIT_T(loaf) *loaf1, SKIT_T_ELEM_TYPE elem);
+
 /** 
 This is analogous to skit_slice_concat in "survival_kit/string.h".
 See that function for specifics on usage and behavior.
@@ -282,6 +287,15 @@ SKIT_T(slice) *SKIT_T(slice_bfd_append)(
 	SKIT_T(loaf)  *buffer,
 	SKIT_T(slice) *buf_slice,
 	SKIT_T(slice) suffix);
+
+/**
+This is similar to slice_bfd_append, except that it appends only a single
+element.
+*/
+SKIT_T(slice) *SKIT_T(slice_bfd_put)(
+	SKIT_T(loaf)     *buffer,
+	SKIT_T(slice)    *buf_slice,
+	SKIT_T_ELEM_TYPE elem);
 
 /**
 This is analogous to skit_loaf_dup in "survival_kit/string.h".

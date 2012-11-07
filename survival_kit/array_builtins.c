@@ -42,6 +42,7 @@ static void skit_slice_sanity_check()
 	sASSERT_EQ(ptr[1], 3, "%d");
 	sASSERT_EQ(ptr[2], 3, "%d");
 	sASSERT_EQ(ptr[3], 7, "%d");
+	sASSERT_EQ(ptr[4], 3, "%d");
 	
 	skit_slice slice = skit_slice_of(loaf.as_slice, 2, SKIT_EOT);
 	ptr = skit_slice_ptr(slice);
@@ -49,10 +50,24 @@ static void skit_slice_sanity_check()
 	sASSERT_EQ(ptr[1], 7, "%d");
 	sASSERT_EQ(ptr[2], 3, "%d");
 	
-	slice = skit_slice_of(loaf.as_slice, 2, 3);
+	slice = skit_slice_of(loaf.as_slice, 2, 4);
+	ptr = skit_slice_ptr(slice);
+	sASSERT_EQ(sSLENGTH(slice), 2, "%ld");
+	sASSERT_EQ(ptr[0], 3, "%d");
+	sASSERT_EQ(ptr[1], 7, "%d");
+	
+	skit_slice_buffered_append( &loaf, &slice, sSLICE("\x07") );
 	ptr = skit_slice_ptr(slice);
 	sASSERT_EQ(ptr[0], 3, "%d");
 	sASSERT_EQ(ptr[1], 7, "%d");
+	sASSERT_EQ(ptr[2], 7, "%d");
+	
+	ptr = skit_loaf_ptr(loaf);
+	sASSERT_EQ(ptr[0], 1, "%d");
+	sASSERT_EQ(ptr[1], 3, "%d");
+	sASSERT_EQ(ptr[2], 3, "%d");
+	sASSERT_EQ(ptr[3], 7, "%d");
+	sASSERT_EQ(ptr[4], 7, "%d");
 }
 
 void skit_array_unittest()
@@ -74,6 +89,7 @@ void skit_array_unittest()
 	sASSERT_EQ(ptr[1], 3, "%d");
 	sASSERT_EQ(ptr[2], 3, "%d");
 	sASSERT_EQ(ptr[3], 7, "%d");
+	sASSERT_EQ(ptr[4], 3, "%d");
 	
 	skit_utest_int_slice slice = skit_utest_int_slice_of(loaf.as_slice, 2, SKIT_EOT);
 	ptr = skit_utest_int_slice_ptr(slice);
@@ -81,10 +97,43 @@ void skit_array_unittest()
 	sASSERT_EQ(ptr[1], 7, "%d");
 	sASSERT_EQ(ptr[2], 3, "%d");
 	
-	slice = skit_utest_int_slice_of(loaf.as_slice, 2, 3);
+	slice = skit_utest_int_slice_of(loaf.as_slice, 2, 4);
+	ptr = skit_utest_int_slice_ptr(slice);
+	sASSERT_EQ(skit_utest_int_slice_len(slice), 2, "%ld");
+	sASSERT_EQ(ptr[0], 3, "%d");
+	sASSERT_EQ(ptr[1], 7, "%d");
+	
+	skit_utest_int_slice_bfd_put( &loaf, &slice, 7 );
 	ptr = skit_utest_int_slice_ptr(slice);
 	sASSERT_EQ(ptr[0], 3, "%d");
 	sASSERT_EQ(ptr[1], 7, "%d");
+	sASSERT_EQ(ptr[2], 7, "%d");
+	
+	ptr = skit_utest_int_loaf_ptr(loaf);
+	sASSERT_EQ(ptr[0], 1, "%d");
+	sASSERT_EQ(ptr[1], 3, "%d");
+	sASSERT_EQ(ptr[2], 3, "%d");
+	sASSERT_EQ(ptr[3], 7, "%d");
+	sASSERT_EQ(ptr[4], 7, "%d");
+	
+	skit_utest_int_loaf_put(&loaf, 0);
+	ptr = skit_utest_int_loaf_ptr(loaf);
+	sASSERT_EQ(ptr[0], 1, "%d");
+	sASSERT_EQ(ptr[1], 3, "%d");
+	sASSERT_EQ(ptr[2], 3, "%d");
+	sASSERT_EQ(ptr[3], 7, "%d");
+	sASSERT_EQ(ptr[4], 7, "%d");
+	sASSERT_EQ(ptr[5], 0, "%d");
+	
+	skit_utest_int_loaf_put(&loaf, 8);
+	ptr = skit_utest_int_loaf_ptr(loaf);
+	sASSERT_EQ(ptr[0], 1, "%d");
+	sASSERT_EQ(ptr[1], 3, "%d");
+	sASSERT_EQ(ptr[2], 3, "%d");
+	sASSERT_EQ(ptr[3], 7, "%d");
+	sASSERT_EQ(ptr[4], 7, "%d");
+	sASSERT_EQ(ptr[5], 0, "%d");
+	sASSERT_EQ(ptr[6], 8, "%d");
 	
 	printf("  skit_array_unittest passed!\n");
 	printf("\n");

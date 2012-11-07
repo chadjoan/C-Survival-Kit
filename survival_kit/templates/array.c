@@ -91,6 +91,11 @@ SKIT_T(loaf) *SKIT_T(loaf_append)(SKIT_T(loaf) *loaf1, SKIT_T(slice) str2)
 	return (SKIT_T(loaf)*)skit_loaf_append((skit_loaf*)loaf1, str2.as_skit_slice);
 }
 
+SKIT_T(loaf) *SKIT_T(loaf_put)(SKIT_T(loaf) *loaf1, SKIT_T_ELEM_TYPE elem)
+{
+	return (SKIT_T(loaf)*)skit_loaf_append((skit_loaf*)loaf1, skit_slice_of_cstrn((char*)&elem, sizeof(elem)));
+}
+
 SKIT_T(loaf) SKIT_T(slice_concat)(SKIT_T(slice) str1, SKIT_T(slice) str2)
 {
 	return SKIT_T(loaf_templated)(skit_slice_concat(str1.as_skit_slice, str2.as_skit_slice));
@@ -116,6 +121,17 @@ SKIT_T(slice) *SKIT_T(slice_bfd_append)(
 		(skit_loaf*)buffer,
 		(skit_slice*)buf_slice,
 		suffix.as_skit_slice);
+}
+
+SKIT_T(slice) *SKIT_T(slice_bfd_put)(
+	SKIT_T(loaf)     *buffer,
+	SKIT_T(slice)    *buf_slice,
+	SKIT_T_ELEM_TYPE elem)
+{
+	return (SKIT_T(slice)*)skit_slice_buffered_append(
+		(skit_loaf*)buffer,
+		(skit_slice*)buf_slice,
+		skit_slice_of_cstrn((char*)&elem, sizeof(elem)));
 }
 
 SKIT_T(loaf) SKIT_T(loaf_dup)(SKIT_T(slice) slice)
