@@ -202,6 +202,18 @@ SKIT_T(slice) SKIT_T(slice_rtruncate)(const SKIT_T(slice) slice, size_t nelems)
 	return SKIT_T(slice_templated)(skit_slice_rtruncate(slice.as_skit_slice, nelems * sizeof(SKIT_T_ELEM_TYPE)));
 }
 
+SKIT_T_ELEM_TYPE *SKIT_T(slice_index)( const SKIT_T(slice) slice, size_t index )
+{
+	SKIT_T_ELEM_TYPE *ptr = SKIT_T(slice_ptr)( slice );
+	return &ptr[index];
+}
+
+SKIT_T_ELEM_TYPE *SKIT_T(loaf_index)( const SKIT_T(loaf) loaf, size_t index )
+{
+	SKIT_T_ELEM_TYPE *ptr = SKIT_T(loaf_ptr)( loaf );
+	return &ptr[index];
+}
+
 /*
 TODO:
 slice_find(slice,elem)

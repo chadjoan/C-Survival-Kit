@@ -135,6 +135,9 @@ void skit_array_unittest()
 	sASSERT_EQ(ptr[5], 0, "%d");
 	sASSERT_EQ(ptr[6], 8, "%d");
 	
+	int *elem = skit_utest_int_loaf_index(loaf, 6);
+	sASSERT_EQ(*elem, 8, "%d");
+	
 	printf("  skit_array_unittest passed!\n");
 	printf("\n");
 }

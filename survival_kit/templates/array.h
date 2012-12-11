@@ -362,6 +362,21 @@ See those functions for specifics on usage and behavior.
 SKIT_T(slice) SKIT_T(slice_ltruncate)(const SKIT_T(slice) slice, size_t nelems);
 SKIT_T(slice) SKIT_T(slice_rtruncate)(const SKIT_T(slice) slice, size_t nelems);
 
+/**
+Returns a pointer to the element at the given index in the slice.
+If this appears in a loop, it may be preferable to use skit_t_slice_ptr to get
+a pointer to the slice's data and then increment that to get the pointer
+instead of calling skit_t_slice_index.  Both skit_t_slice_ptr and 
+skit_t_slice_index have potentially more overhead than a mere dereference or
+add, so calling them infrequently may be more performant.  Just be sure to
+always recalculate these pointers any time the slice or it's parent loaf is
+resized: such resizes invalidate pointers.
+*/
+SKIT_T_ELEM_TYPE *SKIT_T(slice_index)( const SKIT_T(slice) slice, size_t index );
+
+/** ditto */
+SKIT_T_ELEM_TYPE *SKIT_T(loaf_index) ( const SKIT_T(loaf) loaf, size_t index );
+
 /*
 TODO:
 slice_find(slice,elem)
