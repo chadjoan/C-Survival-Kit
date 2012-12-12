@@ -17,80 +17,80 @@
 
 /** Define skit_u32_slice and skit_u32_loaf */
 #define SKIT_T_ELEM_TYPE uint32_t
-#define SKIT_T_PREFIX u32
+#define SKIT_T_NAME u32
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_u16_slice and skit_u16_loaf */
 #define SKIT_T_ELEM_TYPE uint16_t
-#define SKIT_T_PREFIX u16
+#define SKIT_T_NAME u16
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_u8_slice and skit_u8_loaf */
 #define SKIT_T_ELEM_TYPE uint8_t
-#define SKIT_T_PREFIX u8
+#define SKIT_T_NAME u8
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_i32_slice and skit_i32_loaf */
 #define SKIT_T_ELEM_TYPE int32_t
-#define SKIT_T_PREFIX i32
+#define SKIT_T_NAME i32
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_i16_slice and skit_i16_loaf */
 #define SKIT_T_ELEM_TYPE int16_t
-#define SKIT_T_PREFIX i16
+#define SKIT_T_NAME i16
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_i8_slice and skit_i8_loaf */
 #define SKIT_T_ELEM_TYPE int8_t
-#define SKIT_T_PREFIX i8
+#define SKIT_T_NAME i8
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_double_slice and skit_double_loaf */
 #define SKIT_T_ELEM_TYPE double
-#define SKIT_T_PREFIX double
+#define SKIT_T_NAME double
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_float_slice and skit_double_loaf */
 #define SKIT_T_ELEM_TYPE float
-#define SKIT_T_PREFIX float
+#define SKIT_T_NAME float
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_cstr_slice and skit_cstr_loaf  (SKIT_T_ELEM_TYPE==char*) */
 #define SKIT_T_ELEM_TYPE char*
-#define SKIT_T_PREFIX cstr
+#define SKIT_T_NAME cstr
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_slice_slice and skit_slice_loaf  (SKIT_T_ELEM_TYPE=slice) */
 #define SKIT_T_ELEM_TYPE skit_slice
-#define SKIT_T_PREFIX slice
+#define SKIT_T_NAME slice
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /** Define skit_loaf_slice and skit_loaf_loaf  (SKIT_T_ELEM_TYPE=slice) */
 #define SKIT_T_ELEM_TYPE skit_loaf
-#define SKIT_T_PREFIX loaf
+#define SKIT_T_NAME loaf
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /* Double guard this: stack_builtins.h will #undef the normal include guards
 because it needs to expand this file twice: once for the definitions and again

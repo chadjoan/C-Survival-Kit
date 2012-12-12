@@ -1,5 +1,10 @@
 /** See survival_kit/templates/stack.h for documentation. */
 
+#ifndef SKIT_T_NAMESPACE
+#define SKIT_T_NAMESPACE skit
+#define SKIT_T_NAMESPACE_IS_DEFAULT 1
+#endif
+
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
 	#include "survival_kit/feature_emulation/exceptions.h"
@@ -77,3 +82,9 @@ SKIT_T(stnode) *SKIT_T(stack_pop)(SKIT_T(stack) *stack)
 	
 	return result;
 }
+
+#ifdef SKIT_T_NAMESPACE_IS_DEFAULT
+#undef SKIT_T_NAMESPACE
+#undef SKIT_T_NAMESPACE_IS_DEFAULT
+#endif
+

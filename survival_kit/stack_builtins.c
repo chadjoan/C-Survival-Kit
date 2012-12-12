@@ -17,12 +17,12 @@
 
 #define SKIT_T_DIE_ON_ERROR 1
 #define SKIT_T_ELEM_TYPE int
-#define SKIT_T_PREFIX utest_int
+#define SKIT_T_NAME utest_int
 #define SKIT_T_FUNC_ATTR static
 #include "survival_kit/templates/stack.h"
 #include "survival_kit/templates/stack.c"
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 #undef SKIT_T_FUNC_ATTR
 
 void skit_stack_unittest()

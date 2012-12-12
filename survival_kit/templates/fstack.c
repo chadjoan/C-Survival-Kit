@@ -1,5 +1,11 @@
 /** See survival_kit/templates/fstack.h for documentation. */
 
+
+#ifndef SKIT_T_NAMESPACE
+#define SKIT_T_NAMESPACE skit
+#define SKIT_T_NAMESPACE_IS_DEFAULT 1
+#endif
+
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
 
@@ -196,3 +202,8 @@ void SKIT_T(fstack_walk)(
 	if ( ((char*)reversing_buffer) != reversing_buffer_stack_mem )
 		free((void*)reversing_buffer);
 }
+
+#ifdef SKIT_T_NAMESPACE_IS_DEFAULT
+#undef SKIT_T_NAMESPACE
+#undef SKIT_T_NAMESPACE_IS_DEFAULT
+#endif

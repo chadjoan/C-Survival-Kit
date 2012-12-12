@@ -42,7 +42,7 @@ The recursion happens when (f)stack.c includes this module which includes
   feature_emulation/types.h which then redefines SKIT_T_ELEM_TYPE and 
   includes stack again.  
 There is no way to save the template parameters (like SKIT_T_ELEM_TYPE or
-  SKIT_T_PREFIX) and forcing callers to '#include "survival_kit/feature_emulation/types.h"'
+  SKIT_T_NAME) and forcing callers to '#include "survival_kit/feature_emulation/types.h"'
   before including (f)stack.c is inconsistent and undesirable.
 The strategy then is to call an exception throwing function directly, without
   the aid of macros.  This requires keeping the definitions of this function

@@ -18,12 +18,12 @@
 
 #define SKIT_T_DIE_ON_ERROR 1
 #define SKIT_T_ELEM_TYPE int
-#define SKIT_T_PREFIX utest_int
+#define SKIT_T_NAME utest_int
 #define SKIT_T_FUNC_ATTR static
 #include "survival_kit/templates/array.h"
 #include "survival_kit/templates/array.c"
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 #undef SKIT_T_FUNC_ATTR
 
 static void skit_slice_sanity_check()

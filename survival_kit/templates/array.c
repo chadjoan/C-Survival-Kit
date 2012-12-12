@@ -12,6 +12,11 @@ simpler string API first, and then learn the array API by analogy. */
 
 #include <stdio.h>
 
+#ifndef SKIT_T_NAMESPACE
+#define SKIT_T_NAMESPACE skit
+#define SKIT_T_NAMESPACE_IS_DEFAULT 1
+#endif
+
 const int SKIT_T(loaf_stride) = sizeof(SKIT_T_ELEM_TYPE);
 
 static SKIT_T(slice) SKIT_T(slice_templated)(skit_slice slice)
@@ -224,4 +229,10 @@ loaf_pop(*loaf, val)
 slice_bsearch(slice,elem)
 slice_qsort(*slice) (maybe sorting functions should be their own template?)
 */
+
+
+#ifdef SKIT_T_NAMESPACE_IS_DEFAULT
+#undef SKIT_T_NAMESPACE
+#undef SKIT_T_NAMESPACE_IS_DEFAULT
+#endif
 

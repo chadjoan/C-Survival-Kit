@@ -32,11 +32,11 @@ struct skit_thread_context_pos
 };
 
 #define SKIT_T_ELEM_TYPE skit_frame_info
-#define SKIT_T_PREFIX debug
+#define SKIT_T_NAME debug
 #include "survival_kit/templates/stack.h"
 #include "survival_kit/templates/fstack.h"
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 
 /** */
@@ -51,11 +51,11 @@ struct skit_exception
 };
 
 #define SKIT_T_ELEM_TYPE skit_exception
-#define SKIT_T_PREFIX exc
+#define SKIT_T_NAME exc
 #include "survival_kit/templates/stack.h"
 #include "survival_kit/templates/fstack.h"
 #undef SKIT_T_ELEM_TYPE
-#undef SKIT_T_PREFIX
+#undef SKIT_T_NAME
 
 /**
 This structure contains thread-local data structures needed to implement the
