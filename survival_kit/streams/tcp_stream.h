@@ -63,6 +63,11 @@ This serves the same function as the Berkeley sockets accept() function, but
 populates a skit_tcp_stream instead of returning a connection file descriptor.
 The stream will free its own connection file descriptor when _dtor is called.
 The stream will NOT free the socket_fd: that is the caller's responsibility.
+
+This will throw a SKIT_TCP_IO_EXCEPTION if the underlying call to the Berkeley
+sockets accept() fails.
+
+This will throw a SKIT_TCP_IO_EXCEPTION if the given stream is already open.
 */
 void skit_tcp_stream_accept(skit_tcp_stream *stream, int socket_fd);
 
