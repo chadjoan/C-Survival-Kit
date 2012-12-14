@@ -123,9 +123,9 @@ void skit_pop_tracing_sig_handler()
 void skit_unittest_signal_subfunc2()
 {
 	/* NOTE: it would be possible to get more specific debugging
-	information by wrapping the dereference in a sTRACE statement:
+	information by wrapping the dereference in a sETRACE statement:
 	    int explode;
-	    sTRACE(explode = *ptr);
+	    explode = sETRACE(*ptr);
 	This is understandably inconvenient, especially when it is unknown
 	  in advance which dereferences could be problematic.
 	*/

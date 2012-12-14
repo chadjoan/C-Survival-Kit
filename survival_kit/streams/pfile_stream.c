@@ -486,8 +486,7 @@ skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer)
 	read_buf = skit_pfile_get_read_buffer(pstreami, buffer);
 	
 	/* Delegate the ugly stuff to the skit_stream_buffered_slurp function. */
-	skit_slice result;
-	sTRACE(result = skit_stream_buffered_slurp(stream, read_buf, &skit_pfile_slurp_source));
+	skit_slice result = sETRACE(skit_stream_buffered_slurp(stream, read_buf, &skit_pfile_slurp_source));
 	return result;
 }
 

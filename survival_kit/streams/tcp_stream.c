@@ -323,10 +323,7 @@ static size_t skit_tcp_slurp_source(void *context, void *sink, size_t requested_
 	skit_tcp_stream *stream = context;
 
 	/* Read the next chunk of bytes from the file. */
-	size_t nbytes_read;
-	sTRACE(nbytes_read = skit_tcp_read_bytes( stream, sink, requested_chunk_size ));
-	
-	return nbytes_read;
+	return sETRACE(skit_tcp_read_bytes( stream, sink, requested_chunk_size ));
 }
 
 skit_slice skit_tcp_stream_slurp(skit_tcp_stream *stream, skit_loaf *buffer)
@@ -341,9 +338,7 @@ skit_slice skit_tcp_stream_slurp(skit_tcp_stream *stream, skit_loaf *buffer)
 	read_buf = skit_tcp_get_read_buffer(tstreami, buffer);
 	
 	/* Delegate the ugly stuff to the skit_stream_buffered_slurp function. */
-	skit_slice result;
-	sTRACE(result = skit_stream_buffered_slurp(stream, read_buf, &skit_tcp_slurp_source));
-	return result;
+	return sETRACE(skit_stream_buffered_slurp(stream, read_buf, &skit_tcp_slurp_source));
 }
 
 /* ------------------------------------------------------------------------- */
