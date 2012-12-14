@@ -8,16 +8,6 @@
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/assert.h"
-
-/** 
-Evaluates the given expression while creating a stack entry at this point
-in the code.  The whole purpose of doing this is to provide better debug
-info in stack traces.  It is tolerable to forget to use this when calling
-into other functions because the exception handling mechanism will still
-be able to return to the nearest enclosing sTRY-sCATCH.  Wrapping function
-calls in this macro is desirable though, because the calling file, line,
-and function name will be absent from stack traces if this is not used.
-*/	
 #define SKIT_TRACE_INTERNAL(assignment, returned_expr) /* */ \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
@@ -60,8 +50,6 @@ and function name will be absent from stack traces if this is not used.
 		returned_expr \
 	)
 
-#define sTRACE(statement) /* */ \
-	do { SKIT_TRACE_INTERNAL((statement), (void)__skit_sTRACE_return_value); } while (0)
 
 /* Here, we exploit a C feature called "compound literals" to create stack */
 /*   space for the temporary used to hold the expression result.  This has */
@@ -75,6 +63,32 @@ and function name will be absent from stack traces if this is not used.
 #define sETRACE_RETURN(expr) /* */ \
 	(*((__typeof__(expr)*)__skit_sTRACE_return_value))
 
+
+/** 
+Evaluates the given expression while creating a stack entry at this point
+in the code.  The whole purpose of doing this is to provide better debug
+info in stack traces.  It is tolerable to forget to use this when calling
+into other functions because the exception handling mechanism will still
+be able to return to the nearest enclosing sTRY-sCATCH.  Wrapping function
+calls in this macro is desirable though, because the calling file, line,
+and function name will be absent from stack traces if this is not used.
+*/	
+#define sTRACE(statement) /* */ \
+	do { SKIT_TRACE_INTERNAL((statement), (void)__skit_sTRACE_return_value); } while (0)
+
+/**
+This serves the same function as sTRACE, but with the advantage that it can
+forward expression values from its argument.  For example, it is possible to
+do this with sETRACE:
+  int bar() { return 42; }
+  ...
+  int foo = sETRACE(bar());
+
+The disadvantage of sETRACE is that it cannot be used on void expressions:
+  void bar() {}
+  ...
+  sETRACE(bar()); // Error!  Attempt to assign a void to a non-void.
+*/
 #define sETRACE(expr) /* */ \
 	SKIT_TRACE_INTERNAL(sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
 
