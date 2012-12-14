@@ -32,8 +32,16 @@ static void bar(int val1, int val2)
 static int foo()
 {
 	SKIT_USE_FEATURE_EMULATION;
-	/* TODO: bar(sTRACE(baz()),sTRACE(qux())); (Not sure it's possible at all.) */
 	sTRACE(bar(baz(), qux()));
+	printf("This shouldn't get executed either.\n");
+	return 42;
+}
+
+static int foo2()
+{
+	SKIT_USE_FEATURE_EMULATION;
+	bar(baz(), sETRACE(qux()));
+	/* TODO: bar(sETRACE(baz()), sETRACE(qux())) without compiler warnings. */
 	printf("This shouldn't get executed either.\n");
 	return 42;
 }
@@ -76,6 +84,18 @@ static void unittest_exceptions()
 		skit_print_exception(e);
 	sEND_TRY
 	
+	printf("------\n");
+	printf("Testing sETRACE(...):\n");
+	
+	sTRY
+		sTRACE(foo2());
+		printf("No exception thrown.\n");
+	sCATCH(SKIT_EXCEPTION, e)
+		skit_print_exception(e);
+	sEND_TRY
+	
+	printf("------\n");
+	
 	sTRY
 		while(1)
 		{
@@ -108,6 +128,9 @@ static void unittest_exceptions()
 	sCATCH(SKIT_CONTINUE_IN_TRY_CATCH, e)
 		skit_print_exception(e);
 	sEND_TRY
+	
+	int etrace_test = sETRACE(42);
+	sASSERT_EQ(etrace_test, 42, "%d");
 	
 	printf("  exception_handling unittest passed!\n");
 }
