@@ -363,7 +363,7 @@ skit_slice skit_stream_buffered_slurp(
 		}
 		
 		/* Read the next chunk of bytes from the source. */
-		sCALL(nbytes_read = data_source(context, sLPTR(*buffer) + offset, chunk_length));
+		sTRACE(nbytes_read = data_source(context, sLPTR(*buffer) + offset, chunk_length));
 		
 		/* Check for EOF. */
 		if ( nbytes_read < chunk_length )

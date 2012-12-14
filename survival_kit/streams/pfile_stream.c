@@ -149,7 +149,7 @@ static void skit_try_fgets(
 	if ( ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, (skit_stream*)pstreami, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, (skit_stream*)pstreami, skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	/* fgets returns NULL when there is an error or when EOF occurs. */
@@ -292,7 +292,7 @@ skit_slice skit_pfile_stream_read(skit_pfile_stream *stream, skit_loaf *buffer, 
 	if ( ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	return skit_slice_of(read_buf->as_slice, 0, nbytes_read);
@@ -356,7 +356,7 @@ skit_slice skit_pfile_stream_read_fn(skit_pfile_stream *stream, skit_loaf *buffe
 	if ( ferror(fhandle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	return ctx.current_slice;
@@ -371,7 +371,7 @@ void skit_pfile_stream_appendln(skit_pfile_stream *stream, skit_slice line)
 	/* The error handling is handled by subsequent calls. */
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	skit_pfile_stream_append(stream, line);
-	sCALL(skit_pfile_stream_newline(pstreami));
+	sTRACE(skit_pfile_stream_newline(pstreami));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -393,10 +393,10 @@ void skit_pfile_stream_appendfln_va(skit_pfile_stream *stream, const char *fmtst
 	sASSERT(fmtstr != NULL);
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	vfprintf( pstreami->file_handle, fmtstr, vl ); /* TODO: error handling? */
-	sCALL(skit_pfile_stream_newline(pstreami));
+	sTRACE(skit_pfile_stream_newline(pstreami));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -408,7 +408,7 @@ void skit_pfile_stream_append(skit_pfile_stream *stream, skit_slice slice)
 	
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	ssize_t length = sSLENGTH(slice);
 	
@@ -422,7 +422,7 @@ void skit_pfile_stream_append(skit_pfile_stream *stream, skit_slice slice)
 	if ( ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 }
 
@@ -434,14 +434,14 @@ void skit_pfile_stream_flush(skit_pfile_stream *stream)
 	sASSERT(stream != NULL);
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to flush an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to flush an unopened stream."));
 	
 	int errval = fflush(pstreami->file_handle);
 	if ( errval != 0 )
 	{
 		char errbuf[1024];
 		/* TODO: throw exception for invalid streams when (errval == EBADF) */
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 }
 
@@ -468,7 +468,7 @@ static size_t skit_pfile_slurp_source(void *context, void *sink, size_t requeste
 	if ( ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	return nbytes_read;
@@ -487,7 +487,7 @@ skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer)
 	
 	/* Delegate the ugly stuff to the skit_stream_buffered_slurp function. */
 	skit_slice result;
-	sCALL(result = skit_stream_buffered_slurp(stream, read_buf, &skit_pfile_slurp_source));
+	sTRACE(result = skit_stream_buffered_slurp(stream, read_buf, &skit_pfile_slurp_source));
 	return result;
 }
 
@@ -545,7 +545,7 @@ void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if ( pstreami->file_handle != NULL )
 	{
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), 
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), 
 			"Attempt to free resources from an open stream.\n"
 			"Use skit_pfile_stream_close(stream) first!"));
 	}
@@ -570,7 +570,7 @@ void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const c
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	
 	if ( pstreami->file_handle != NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Already open to another file."));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Already open to another file."));
 	
 	pstreami->name = skit_loaf_dup(fname);
 	pstreami->access_mode = skit_loaf_copy_cstr(access_mode);
@@ -580,7 +580,7 @@ void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const c
 	if ( pstreami->file_handle == NULL )
 	{
 		/* TODO: generate different kinds of exceptions depending on what went wrong. */
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 }
@@ -593,14 +593,14 @@ void skit_pfile_stream_close(skit_pfile_stream *stream)
 	sASSERT(stream != NULL);
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to close an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to close an unopened stream."));
 	
 	int errval = fclose(pstreami->file_handle);
 	if ( errval != 0 )
 	{
 		char errbuf[1024];
 		/* TODO: throw exception for invalid file handles when (errval == EBADF) */
-		sCALL(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	pstreami->file_handle = NULL;

@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h> /* getpid() */
 
-#include "survival_kit/feature_emulation.h" /* For sCALL; it's important for unittesting. */
+#include "survival_kit/feature_emulation.h" /* For sTRACE; it's important for unittesting. */
 #include "survival_kit/feature_emulation/funcs.h" /* For skit_print_stack_trace() */
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/assert.h"
@@ -123,9 +123,9 @@ void skit_pop_tracing_sig_handler()
 void skit_unittest_signal_subfunc2()
 {
 	/* NOTE: it would be possible to get more specific debugging
-	information by wrapping the dereference in a sCALL statement:
+	information by wrapping the dereference in a sTRACE statement:
 	    int explode;
-	    sCALL(explode = *ptr);
+	    sTRACE(explode = *ptr);
 	This is understandably inconvenient, especially when it is unknown
 	  in advance which dereferences could be problematic.
 	*/
@@ -138,7 +138,7 @@ void skit_unittest_signal_subfunc2()
 void skit_unittest_signal_subfunc()
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sCALL(skit_unittest_signal_subfunc2());
+	sTRACE(skit_unittest_signal_subfunc2());
 }
 
 void skit_unittest_signal_handling()
@@ -148,6 +148,6 @@ void skit_unittest_signal_handling()
 	printf("The unittester will now trigger a segfault by dereferencing NULL.\n");
 	printf("This signal should get handled and print a stacktrace.\n");
 	skit_push_tracing_sig_handler();
-	sCALL(skit_unittest_signal_subfunc());
+	sTRACE(skit_unittest_signal_subfunc());
 	printf("This should never get printed.\n");
 }

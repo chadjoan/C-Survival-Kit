@@ -145,7 +145,7 @@ were used instead of sSCOPE/sEND_SCOPE!
 			skit_scope_ctx->scope_guards_used = 1; \
 			\
 			/* We set a  jump point to catch any exceptions that might be */ \
-			/* thrown from a function that wasn't called with the sCALL macro. */ \
+			/* thrown from a function that wasn't called with the sTRACE macro. */ \
 			/* This is important because we'll need to ensure that the scope */ \
 			/*   guards get scanned during abnormal exit. */ \
 			int skit_jmp_code = setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)); \

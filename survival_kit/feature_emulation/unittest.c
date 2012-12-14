@@ -32,8 +32,8 @@ static void bar(int val1, int val2)
 static int foo()
 {
 	SKIT_USE_FEATURE_EMULATION;
-	/* TODO: bar(sCALL(baz()),sCALL(qux())); (Not sure it's possible at all.) */
-	sCALL(bar(baz(), qux()));
+	/* TODO: bar(sTRACE(baz()),sTRACE(qux())); (Not sure it's possible at all.) */
+	sTRACE(bar(baz(), qux()));
 	printf("This shouldn't get executed either.\n");
 	return 42;
 }
@@ -47,7 +47,7 @@ static void unittest_exceptions()
 	if(  skit_exception_is_a(SKIT_FATAL_EXCEPTION,    SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	
 	sTRY
-		sCALL(baz());
+		sTRACE(baz());
 		printf("No exception thrown.\n");
 	sCATCH(SKIT_EXCEPTION, e)
 		skit_print_exception(e);
@@ -62,7 +62,7 @@ static void unittest_exceptions()
 			skit_print_exception(e);
 		sEND_TRY
 		
-		sCALL(foo());
+		sTRACE(foo());
 		printf("No exception thrown.\n");
 	sCATCH(SKIT_EXCEPTION, e)
 		sTRY
@@ -151,7 +151,7 @@ sSCOPE
 	sSCOPE_EXIT_BEGIN
 		(*result)--;
 	sEND_SCOPE_EXIT
-	sCALL(unittest_scope_fn_that_throws());
+	sTRACE(unittest_scope_fn_that_throws());
 sEND_SCOPE
 
 static void unittest_scope_failure_normal(int *result)

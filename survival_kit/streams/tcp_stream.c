@@ -54,7 +54,7 @@ static size_t skit_tcp_read_bytes( skit_tcp_stream *stream, void *dst, size_t nb
 	if ( nbytes_read < 0 )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
 	/* TODO: this could be a place where EOS detection is placed. */
@@ -137,7 +137,7 @@ void skit_tcp_stream_init(skit_tcp_stream *tstream)
 skit_slice skit_tcp_stream_readln(skit_tcp_stream *stream, skit_loaf *buffer)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "readln not implemented for TCP/IP right now.  Use read instead."));
+	sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "readln not implemented for TCP/IP right now.  Use read instead."));
 	return skit_slice_null();
 }
 
@@ -152,7 +152,7 @@ skit_slice skit_tcp_stream_read(skit_tcp_stream *stream, skit_loaf *buffer, size
 	
 	/* Freak out when weird crap happens. */
 	if ( tstreami->connection_fd <= 0 )
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Attempt to read from an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Attempt to read from an unopened stream."));
 	
 	/* Figure out which buffer to use. */
 	read_buf = skit_tcp_get_read_buffer(tstreami, buffer);
@@ -188,7 +188,7 @@ skit_slice skit_tcp_stream_read_fn(skit_tcp_stream *stream, skit_loaf *buffer, v
 	
 	/* Freak out when weird crap happens. */
 	if ( tstreami->connection_fd <= 0 )
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Attempt to read from an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Attempt to read from an unopened stream."));
 	
 	/* Figure out which buffer to use. */
 	read_buf = skit_tcp_get_read_buffer(tstreami, buffer);
@@ -266,7 +266,7 @@ void skit_tcp_stream_appendfln_va(skit_tcp_stream *stream, const char *fmtstr, v
 	
 	skit_tcp_stream_internal *tstreami = &(stream->as_internal);
 	if( tstreami->connection_fd <= 0 )
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_tcp_stream_append(stream, skit_slice_of_cstrn(buffer, nchars_printed));
@@ -282,7 +282,7 @@ void skit_tcp_stream_append(skit_tcp_stream *stream, skit_slice slice)
 	
 	skit_tcp_stream_internal *tstreami = &(stream->as_internal);
 	if( tstreami->connection_fd <= 0 )
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	ssize_t length = sSLENGTH(slice);
 	
@@ -295,7 +295,7 @@ void skit_tcp_stream_append(skit_tcp_stream *stream, skit_slice slice)
 	if ( nbytes_sent < 0 )
 	{
 		char errbuf[1024];
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 }
 
@@ -304,7 +304,7 @@ void skit_tcp_stream_append(skit_tcp_stream *stream, skit_slice slice)
 void skit_tcp_stream_flush(skit_tcp_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "It is impossible to flush TCP streams."));
+	sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "It is impossible to flush TCP streams."));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -312,7 +312,7 @@ void skit_tcp_stream_flush(skit_tcp_stream *stream)
 void skit_tcp_stream_rewind(skit_tcp_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "It is impossible to rewind TCP streams."));
+	sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "It is impossible to rewind TCP streams."));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -324,7 +324,7 @@ static size_t skit_tcp_slurp_source(void *context, void *sink, size_t requested_
 
 	/* Read the next chunk of bytes from the file. */
 	size_t nbytes_read;
-	sCALL(nbytes_read = skit_tcp_read_bytes( stream, sink, requested_chunk_size ));
+	sTRACE(nbytes_read = skit_tcp_read_bytes( stream, sink, requested_chunk_size ));
 	
 	return nbytes_read;
 }
@@ -342,7 +342,7 @@ skit_slice skit_tcp_stream_slurp(skit_tcp_stream *stream, skit_loaf *buffer)
 	
 	/* Delegate the ugly stuff to the skit_stream_buffered_slurp function. */
 	skit_slice result;
-	sCALL(result = skit_stream_buffered_slurp(stream, read_buf, &skit_tcp_slurp_source));
+	sTRACE(result = skit_stream_buffered_slurp(stream, read_buf, &skit_tcp_slurp_source));
 	return result;
 }
 
@@ -445,12 +445,12 @@ void skit_tcp_stream_accept(skit_tcp_stream *stream, int socket_fd)
 	skit_tcp_stream_internal *tstreami = &stream->as_internal;
 	
 	if ( tstreami->connection_fd > 0 )
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Asked to accept while already open!"));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Asked to accept while already open!"));
 	
 	int connection_fd = accept(socket_fd, NULL, NULL);
 
 	if(0 > connection_fd)
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Accept failed."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Accept failed."));
 	
 	tstreami->connection_fd = connection_fd;
 	tstreami->socket_fd = socket_fd;
@@ -478,22 +478,22 @@ sSCOPE
 	addr = inet_pton(AF_INET, ip_as_cstr, &addr_struct.sin_addr);
 	
 	if (addr < 0)
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: first argument to inet_pton is not a valid address family."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: first argument to inet_pton is not a valid address family."));
 	else if (0 == addr)
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: second argument to inet_pton does not contain a valid ip address."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: second argument to inet_pton does not contain a valid ip address."));
 
 	/* Now that we've parsed the IP address, we should grab a file descriptor. */
 	int connection_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (-1 == connection_fd)
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: Could not create TCP socket."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: Could not create TCP socket."));
 
 	/* Make sure we free it if we don't use it. */
 	sSCOPE_FAILURE(close(connection_fd)); 
 	
 	/* Now we connect.  For real, this time. */
 	if (-1 == connect(connection_fd, (struct sockaddr *)&addr_struct, sizeof(addr_struct)))
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: connect failed."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Test Client: connect failed."));
 
 	/* Commit our newly obtained connection to the stream. */
 	skit_tcp_stream_internal *tstreami = &stream->as_internal;
@@ -512,7 +512,7 @@ void skit_tcp_stream_close(skit_tcp_stream *stream)
 		return;
 
 	if (-1 == shutdown(tstreami->connection_fd, SHUT_RDWR))
-		sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Could not shutdown connection."));
+		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Could not shutdown connection."));
 
 	close( tstreami->connection_fd );
 	
@@ -599,7 +599,7 @@ static int skit_connect_tcp_test_server(int socket_fd)
 	int connection_fd = accept(socket_fd, NULL, NULL);
 
 	//if(0 > connection_fd)
-	//	sCALL(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Accept failed."));
+	//	sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Accept failed."));
 	if (0 > connection_fd)
 		sTHROW(SKIT_TCP_IO_EXCEPTION, "Test Server: Accept failed.");
 
@@ -615,7 +615,7 @@ static skit_tcp_stream *skit_start_tcp_test_client(int port)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	skit_tcp_stream *result = skit_tcp_stream_new();
-	sCALL(skit_tcp_stream_connect(result, sSLICE("127.0.0.1"), port));
+	sTRACE(skit_tcp_stream_connect(result, sSLICE("127.0.0.1"), port));
 	return result;
 }
 

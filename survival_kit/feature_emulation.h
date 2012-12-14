@@ -46,7 +46,7 @@ that may cause things like unexpected null pointers or access violations.
 	SKIT_USE_SCOPE_EMULATION; \
 	SKIT_USE_TRY_CATCH_EMULATION; \
 	(void)skit_thread_ctx; \
-	skit_thread_context_pos __skit_thread_ctx_pos; /* Declare here so that sCALL doesn't have to. */ \
+	skit_thread_context_pos __skit_thread_ctx_pos; /* Declare here so that sTRACE doesn't have to. */ \
 	(void)__skit_thread_ctx_pos; \
 	void *__skit_sTRACE_return_value; \
 	(void)__skit_sTRACE_return_value; \
