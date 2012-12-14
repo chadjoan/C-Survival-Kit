@@ -7,6 +7,7 @@
 #include "survival_kit/feature_emulation/types.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/throw.h"
+#include "survival_kit/assert.h"
 
 /** 
 Evaluates the given expression while creating a stack entry at this point
@@ -16,15 +17,14 @@ into other functions because the exception handling mechanism will still
 be able to return to the nearest enclosing sTRY-sCATCH.  Wrapping function
 calls in this macro is desirable though, because the calling file, line,
 and function name will be absent from stack traces if this is not used.
-*/
-#define sCALL(expr) /* */ \
-	do { \
-		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
-		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+*/	
+#define SKIT_TRACE_INTERNAL(assignment, returned_expr) /* */ \
+	( \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
 		\
 		/* Save a copies of the current stack positions. */ \
-		skit_thread_context_pos __skit_thread_ctx_pos;\
-		skit_save_thread_context_pos(skit_thread_ctx, &__skit_thread_ctx_pos); \
+		skit_save_thread_context_pos(skit_thread_ctx, &__skit_thread_ctx_pos), \
 		/* This ensures that we can end up where we started in this call, */ \
 		/*   even if the callee messes up the jmp_stack. */ \
 		/* The jmp_stack could be messed up if someone tries to jump */ \
@@ -34,27 +34,48 @@ and function name will be absent from stack traces if this is not used.
 		\
 		skit_debug_info_store( \
 			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
-			__LINE__,__FILE__,__func__); \
+			__LINE__,__FILE__,__func__), \
 		\
-		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"); \
-		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) { \
-			SKIT_FEATURE_TRACE("%s, %d.40: sCALL.setjmp\n", __FILE__, __LINE__); \
-			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
-			(expr); \
-		} else { \
-			SKIT_FEATURE_TRACE("%s, %d.43: sCALL.longjmp\n", __FILE__, __LINE__); \
-			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
-			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
-			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
-			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
-			__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
-		} \
+		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"), \
+		(setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) ? \
+		( \
+			SKIT_FEATURE_TRACE("%s, %d.40: sCALL.setjmp\n", __FILE__, __LINE__), \
+			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length), \
+			assignment, \
+			1 \
+		) : ( \
+			SKIT_FEATURE_TRACE("%s, %d.43: sCALL.longjmp\n", __FILE__, __LINE__), \
+			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack), \
+			SKIT_FEATURE_TRACE("sCALL: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length), \
+			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos), \
+			__SKIT_PROPOGATE_THROWN_EXCEPTIONS \
+		), \
 		\
-		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack); \
-		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
-		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos); \
+		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack), \
+		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos), \
 		\
-		SKIT_FEATURE_TRACE("%s, %d.54: sCALL.success\n", __FILE__, __LINE__); \
-	} while (0)
+		SKIT_FEATURE_TRACE("%s, %d.54: sCALL.success\n", __FILE__, __LINE__), \
+		returned_expr \
+	)
+
+#define sCALL(statement) /* */ \
+	do { SKIT_TRACE_INTERNAL((statement), (void)__skit_sTRACE_return_value); } while (0)
+
+/* Here, we exploit a C feature called "compound literals" to create stack */
+/*   space for the temporary used to hold the expression result.  This has */
+/*   the advantage of NOT requiring a declaration to be placed in the      */
+/*   sETRACE logic, which allows us to use it as an expression.            */
+/*   (Expressions cannot contain declarations.)                            */
+#define sETRACE_ASSIGNMENT(expr) /* */ \
+			(__skit_sTRACE_return_value = (void*)(char[sizeof(expr)]){""}, \
+			*(__typeof__(expr)*)__skit_sTRACE_return_value = (expr))
+
+#define sETRACE_RETURN(expr) /* */ \
+	(*((__typeof__(expr)*)__skit_sTRACE_return_value))
+
+#define sETRACE(expr) /* */ \
+	SKIT_TRACE_INTERNAL(sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
 
 #endif

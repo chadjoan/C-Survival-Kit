@@ -283,25 +283,29 @@ The solution is that bar() should have never invoked __SKIT_SCAN_SCOPE_GUARDS.
 foo() should have instead called __SKIT_SCAN_SCOPE_GUARDS right after bar() 
 returned.
 */
-#define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) \
-		do { \
-			if ( __skit_try_catch_nesting_level == 0 && skit_scope_ctx->scope_guards_used ) \
-			{ \
-				skit_scope_ctx->exit_status = macro_arg_exit_status; \
+
+#define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) /* */ \
+		( \
+			( __skit_try_catch_nesting_level == 0 && skit_scope_ctx->scope_guards_used ) ? \
+			( \
+				skit_scope_ctx->exit_status = macro_arg_exit_status, \
 				\
 				/* This setjmp tells the scan how to return to this point. */ \
-				if ( setjmp(*skit_scope_ctx->scope_fn_exit) == 0 )\
-				{ \
+				( setjmp(*skit_scope_ctx->scope_fn_exit) == 0 ) ? \
+				( \
 					/* Now scan all scope guards, executing their contents. */ \
 					/* Because of the above setjmp, the last scope guard's longjmp */ \
 					/*   will automatically return execution just past this point. */ \
-					longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->scope_jmp_stack),1); \
-				} \
+					longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->scope_jmp_stack),1), \
+					1 \
+				) : (1), \
 				/* Pop the extra jmp frame that was allocated to catch any unplanned exits. */ \
 				/* The code that allocated the frame will handle further longjmp'ing. */ \
-				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
-			} \
-		} while(0)
+				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+				1 \
+			) : (1), \
+			1 \
+		)
 
 #define sEND_SCOPE \
 	/* Check to make sure there is a corresponding sSCOPE statement. */ \
