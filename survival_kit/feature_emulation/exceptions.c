@@ -10,8 +10,8 @@
 #include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/exceptions.h"
 
-skit_err_code SKIT_EXCEPTION;
-skit_err_code SKIT_FATAL_EXCEPTION;
+skit_err_code SKIT_EXCEPTION       = SKIT_EXCEPTION_INITIAL_VAL;
+skit_err_code SKIT_FATAL_EXCEPTION = SKIT_EXCEPTION_INITIAL_VAL;
 skit_err_code SKIT_BREAK_IN_TRY_CATCH;
 skit_err_code SKIT_CONTINUE_IN_TRY_CATCH;
 skit_err_code SKIT_SOCKET_EXCEPTION;
@@ -52,9 +52,23 @@ void skit_init_exceptions()
 static skit_err_code *_skit_exc_inheritance_table = NULL;
 static size_t _skit_exc_table_size = 0;
 
-void _skit__register_exception( skit_err_code *ecode, skit_err_code parent, const char *ecode_name, const char *default_msg )
+void _skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg )
 {
+	/* 
+	Note that parent is passed by reference and not value.
+	This is to ensure that cases like 
+	  SKIT_REGISTER_EXCEPTION(SKIT_EXCEPTION, SKIT_EXCEPTION, "...")
+	will actually do what is expected: make the exception inherit from itself.
+	If parent were passed by value, then the above expression might fill the
+	'parent' argument with whatever random garbage the compiler left in the
+	initial value of SKIT_EXCEPTION.  *ecode = ...; will assign the original
+	variable a sane value, but the parent value in the table will still end
+	up being the undefined garbage value.  By passing parent as a pointer we
+	ensure that *ecode = ...; will also populate the parent value in cases
+	where an exception is defined as its own parent (root-level exceptions). */
+	
 	assert(ecode != NULL);
+	assert(parent != NULL);
 	assert(ecode_name != NULL);
 	assert(default_msg != NULL);
 	
@@ -75,7 +89,7 @@ void _skit__register_exception( skit_err_code *ecode, skit_err_code parent, cons
 			sizeof(skit_err_code) * _skit_exc_table_size);
 	}
 	
-	_skit_exc_inheritance_table[*ecode] = parent;
+	_skit_exc_inheritance_table[*ecode] = *parent;
 	/* printf("Defined %s as %ld\n", ecode_name, *ecode); */
 	/* TODO: do something with the ecode_name and default_msg. */
 }

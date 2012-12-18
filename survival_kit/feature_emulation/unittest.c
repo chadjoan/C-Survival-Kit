@@ -5,6 +5,9 @@
 
 #include "survival_kit/feature_emulation/unittest.h"
 #include "survival_kit/feature_emulation.h"
+#include <assert.h>
+
+static skit_err_code SKIT_EXCEPTION_UTEST = SKIT_EXCEPTION_INITIAL_VAL;
 
 /* Unittesting functions. */
 static int baz()
@@ -20,20 +23,20 @@ static float qux()
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sTHROW(SKIT_EXCEPTION,"qux does throw!\n");
-	printf("qux should not print this.\n");
+	assert(0);
 	return 0.0;
 }
 
 static void bar(int val1, int val2)
 {
-	printf("This shouldn't get executed.\n");
+	assert(0);
 }
 
 static int foo()
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sTRACE(bar(baz(), qux()));
-	printf("This shouldn't get executed either.\n");
+	assert(0);
 	return 42;
 }
 
@@ -42,24 +45,57 @@ static int foo2()
 	SKIT_USE_FEATURE_EMULATION;
 	bar(baz(), sETRACE(qux()));
 	/* TODO: bar(sETRACE(baz()), sETRACE(qux())) without compiler warnings. */
-	printf("This shouldn't get executed either.\n");
+	assert(0);
 	return 42;
 }
 
 static void unittest_exceptions()
 {
 	SKIT_USE_FEATURE_EMULATION;
+	int pass;
 	
 	if( !skit_exception_is_a(SKIT_EXCEPTION,          SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if( !skit_exception_is_a(SKIT_BREAK_IN_TRY_CATCH, SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if(  skit_exception_is_a(SKIT_FATAL_EXCEPTION,    SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
+	
+	SKIT_EXCEPTION_UTEST = SKIT_EXCEPTION_INITIAL_VAL;
+	SKIT_REGISTER_EXCEPTION(SKIT_EXCEPTION_UTEST, SKIT_EXCEPTION, "Exceptions unittest failure.");
 	
 	sTRY
 		sTRACE(baz());
 		printf("No exception thrown.\n");
 	sCATCH(SKIT_EXCEPTION, e)
 		skit_print_exception(e);
+		assert(0);
 	sEND_TRY
+	
+	printf("------\n");
+	printf("Exception pattern matching.\n");
+	pass = 0;
+	
+	sTRY
+		sTHROW(SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST");
+		assert(0);
+	sCATCH(SKIT_EXCEPTION_UTEST, e)
+		pass = 1;
+	sCATCH(SKIT_EXCEPTION, e)
+		assert(0);
+	sEND_TRY
+	
+	assert(pass);
+	
+	pass = 0;
+	sTRY
+		sTHROW(SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST");
+		assert(0);
+	sCATCH(SKIT_EXCEPTION, e)
+		pass = 1;
+	sCATCH(SKIT_EXCEPTION_UTEST, e)
+		assert(0);
+	sEND_TRY
+	
+	assert(pass);
+	printf("Passed.\n\n");
 	
 	printf("------\n");
 	
@@ -68,16 +104,17 @@ static void unittest_exceptions()
 			printf("Nested sTRY-sTRY-sCATCH test.\n");
 		sCATCH(SKIT_EXCEPTION, e)
 			skit_print_exception(e);
+			assert(0);
 		sEND_TRY
 		
 		sTRACE(foo());
-		printf("No exception thrown.\n");
+		assert(0);
+
 	sCATCH(SKIT_EXCEPTION, e)
 		sTRY
 			printf("Nested sCATCH-sTRY-sCATCH test.\n");
 		sCATCH(SKIT_EXCEPTION, e2)
-			printf("This shouldn't happen.\n");
-			SKIT_UNUSED(e2);
+			assert(0);
 			/* skit_print_exception(e2);*/
 		sEND_TRY
 		
@@ -89,7 +126,7 @@ static void unittest_exceptions()
 	
 	sTRY
 		sTRACE(foo2());
-		printf("No exception thrown.\n");
+		assert(0);
 	sCATCH(SKIT_EXCEPTION, e)
 		skit_print_exception(e);
 	sEND_TRY
@@ -104,8 +141,7 @@ static void unittest_exceptions()
 				printf("Now to bail without stopping first!\n");
 				break;
 			sCATCH(SKIT_EXCEPTION,e)
-				SKIT_UNUSED(e);
-				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
+				assert(0);
 			sEND_TRY
 		}
 	sCATCH(SKIT_BREAK_IN_TRY_CATCH, e)
@@ -121,8 +157,7 @@ static void unittest_exceptions()
 				printf("Now to bail without stopping first!\n");
 				continue;
 			sCATCH(SKIT_EXCEPTION,e)
-				printf("%s, %d: This shouldn't happen.", __FILE__, __LINE__);
-				SKIT_UNUSED(e);
+				assert(0);
 			sEND_TRY
 		}
 	sCATCH(SKIT_CONTINUE_IN_TRY_CATCH, e)

@@ -6,6 +6,15 @@
 
 #define skit_err_code ssize_t
 
+/**
+This is the intended intial value for exceptions.
+Use this when definiting exceptions if you need an initializer that is
+guaranteed to not be present in the exception table.
+This is (intentionally) not a valid exception value and cannot be registered
+or thrown.
+*/
+#define SKIT_EXCEPTION_INITIAL_VAL (0xFFFFFFFFUL)
+
 /* TODO: A lot of these definitions belong in other places. */
 extern skit_err_code SKIT_EXCEPTION;
 extern skit_err_code SKIT_FATAL_EXCEPTION;
@@ -56,10 +65,10 @@ skit_init_exceptions()
 ... other implementations ...
 
 */
-#define SKIT_REGISTER_EXCEPTION(ecode, parent, msg) (_skit__register_exception(&(ecode), (parent), #ecode, (msg)))
+#define SKIT_REGISTER_EXCEPTION(ecode, parent, msg) (_skit__register_exception(&(ecode), &(parent), #ecode, (msg)))
 
 /* Don't call this directly. */
-void _skit__register_exception( skit_err_code *ecode, skit_err_code parent, const char *ecode_name, const char *default_msg );
+void _skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg );
 
 void skit_init_exceptions();
 
