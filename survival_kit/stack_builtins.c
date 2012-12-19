@@ -85,8 +85,6 @@ void skit_stack_unittest()
 	ctx.expected_vals[0] = 1337;
 	ctx.expected_vals[1] = 9;
 	
-	printf("%s, %d: \n", __func__, __LINE__);
-	
 	skit_utest_int_stack_walk( &list, &skit_stack_walk_unittest, &ctx, NULL, NULL);
 	sASSERT_EQ(ctx.count, 2, "%d");
 	
@@ -102,7 +100,6 @@ void skit_stack_unittest()
 	sASSERT_EQ(copy_node->val, 1337, "%d");
 	skit_free(copy_node);
 	
-	printf("%s, %d: \n", __func__, __LINE__);
 	copy_node = skit_utest_int_stack_pop(the_copy);
 	sASSERT_EQ(the_copy->length, 0, "%d");
 	sASSERT(the_copy->front == NULL);
@@ -110,7 +107,6 @@ void skit_stack_unittest()
 	sASSERT_EQ(copy_node->val, 9, "%d");
 	skit_free(copy_node);
 	
-	printf("%s, %d: \n", __func__, __LINE__);
 	skit_free(the_copy);
 	
 	the_copy = skit_utest_int_stack_rdup( &list );
@@ -134,7 +130,6 @@ void skit_stack_unittest()
 	sASSERT_EQ(copy_node->val, 1337, "%d");
 	skit_free(copy_node);
 	
-	printf("%s, %d: \n", __func__, __LINE__);
 	copy_node = skit_utest_int_stack_pop(the_copy);
 	sASSERT_EQ(the_copy->length, 0, "%d");
 	sASSERT(the_copy->front == NULL);
