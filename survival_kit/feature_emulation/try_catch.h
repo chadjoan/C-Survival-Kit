@@ -123,7 +123,7 @@ exception allocated in the code that threw the exception.
 				while (skit_thread_ctx->exc_instance_stack.used.length > __skit_prev_exception_stack_size) \
 				{ \
 					skit_exception *exc = skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
-					skit_finalize_exception(exc); \
+					skit_exception_free(skit_thread_ctx, exc); \
 				} \
 				SKIT_FEATURE_TRACE("sTRY: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
 				SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \

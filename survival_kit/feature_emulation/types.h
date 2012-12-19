@@ -47,7 +47,18 @@ struct skit_exception
 	skit_err_code error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
 	char *error_text;    /** READ ONLY: a description for the error. */
 	size_t error_len;    /** READ ONLY: the length of error_text, minus the trailing nul character. */
-	skit_debug_stnode *frame_info_node; /** Points to the point in the frame info stack where the exception happened. */
+	
+	/** 
+	Points to the stack that stores the exception's debug information.  
+	This is usually the thread context's debug_info_stack, but it can be 
+	different for exceptions created with SKIT_PUSH_EXCEPTION, since it
+	is often necessary to copy the stack trace to preserve it whenever 
+	calling code is allowed to continue executing and altering the stack.
+	*/
+	skit_debug_stack  *debug_info_stack; 
+	
+	/** Points to the point in the frame info stack where the exception happened. */
+	skit_debug_stnode *frame_info_node;
 };
 
 #define SKIT_T_ELEM_TYPE skit_exception

@@ -31,7 +31,7 @@ skit_thread_context *skit_thread_context_get();
 void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
-void skit_finalize_exception( skit_exception *exc );
+void skit_exception_free( skit_thread_context *ctx, skit_exception *exc );
 
 /*
 This skit_throw_exception_no_ctx definition is used to break macro recursion.
@@ -64,11 +64,12 @@ void skit_throw_exception_no_ctx(
 
 /*
 This is the more common alternative (still internal-use-only) to
-skit_throw_exception_no_ctx.  It is more desirable to use because
-it can handle scope guard scanning due to the skit_scope_ctx parameter.
-It also avoids making repeated calls to skit_thread_context_get.
+skit_throw_exception_no_ctx.  
+This is used by the ubiquitous sTHROW macro and also the SKIT_PUSH_EXCEPTION
+macro, in conjunction with __SKIT_PROPOGATE_THROWN_EXCEPTIONS when needed.
+It avoids making repeated calls to skit_thread_context_get.
 */
-void skit_throw_exception(
+void skit_push_exception(
 	skit_thread_context *skit_thread_ctx,
 	int line,
 	const char *file,
@@ -76,6 +77,37 @@ void skit_throw_exception(
 	skit_err_code etype,
 	const char *fmtMsg,
 	...);
+	
+/*
+This works like skit_push_exception, except that it allows the caller to store
+the exception object and throw it at a later time, or just use the stored
+exceptions as a way of generating error reports (ex: non-fatal parser errors).
+*/
+skit_exception *skit_new_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
+	
+/*
+Internal function used to do the same thing as skit_push_exceptions, but with
+an exception object provided instead of exception info.  This function is
+important for allowing the caller to create exceptions and save the debugging
+into until a later point in execution.
+*/
+void skit_push_exception_obj(skit_thread_context *skit_thread_ctx, skit_exception *exc);
+
+/* 
+Unwinds the stack while propogating the last thrown exception.
+This is used by both __SKIT_PROPOGATE_THROWN_EXCEPTIONS and 
+skit_throw_exception_no_ctx.
+It should not be called by user code or anything else that doesn't truly need
+access to the internals of exception handling.
+*/
+void skit_propogate_exceptions( skit_thread_context *skit_thread_ctx );
 
 /** Prints the given exception to stdout. */
 void skit_print_exception(skit_exception *e);

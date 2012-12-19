@@ -98,6 +98,22 @@ static void unittest_exceptions()
 	printf("Passed.\n\n");
 	
 	printf("------\n");
+	printf("Exception new'ing and delayed throwing.\n");
+	
+	skit_exception *exc = SKIT_NEW_EXCEPTION(SKIT_EXCEPTION,"new'd exception");
+	
+	pass = 0;
+	sTRY
+		SKIT_THROW_EXCEPTION(exc);
+		assert(0);
+	sCATCH(SKIT_EXCEPTION, e)
+		pass = 1;
+	sEND_TRY
+	
+	assert(pass);
+	printf("Passed.\n\n");
+	
+	printf("------\n");
 	
 	sTRY
 		sTRY
