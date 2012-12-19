@@ -224,7 +224,7 @@ TODO:
 slice_find(slice,elem)
 slice_get(slice,index)
 slice_set(*slice,index,val)
-loaf_push(*loaf, val)
+loaf_push(*loaf, val)  (See also: skit_T_loaf_put, which exists and might be what you really want.)
 loaf_pop(*loaf, val)
 slice_bsearch(slice,elem)
 slice_qsort(*slice) (maybe sorting functions should be their own template?)

@@ -63,7 +63,7 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype); \
+		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
@@ -71,7 +71,7 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg); \
+		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg)); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 
@@ -79,7 +79,15 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__); \
+		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), __VA_ARGS__); \
+		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+	} while(0)
+
+#define sTHROW_VA(etype, emsg, vargs) \
+	do { \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		skit_push_exception_va(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), (vargs)); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
@@ -89,35 +97,46 @@ Example usage:
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype) \
+		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)) \
 	)
 	
 #define SKIT_NEW_EXCEPTION2(etype, emsg) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg) \
+		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg)) \
 	)
 
 #define SKIT_NEW_EXCEPTION3(etype, emsg, ...) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, etype, emsg, __VA_ARGS__) \
+		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), __VA_ARGS__) \
 	)
+
+#define SKIT_NEW_EXCEPTION_VA(etype, emsg, vargs) \
+	( \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
+		skit_new_exception_va(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), (vargs)) \
+	)
+
 
 #define SKIT_THROW_EXCEPTION(exc) \
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		skit_push_exception_obj(skit_thread_ctx, exc); \
-		/* DO NOT use skit_exception_free. */ \
+		skit_push_exception_obj(skit_thread_ctx, (exc)); \
+		/* DO NOT use skit_exception_dtor. */ \
 		/* skit_free is necessary instead. */ \
 		/* skit_push_exception_obj now has a shallow copy. */ \
 		/* The catch statement that will be encountered later will handle the rest of the resource cleanup. */ \
 		skit_free(exc); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
+
+#define SKIT_EXCEPTION_FREE(exc) \
+	(skit_exception_dtor(skit_thread_ctx, (exc)), skit_free((void*)(exc)))
 
 /* __SKIT_PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part

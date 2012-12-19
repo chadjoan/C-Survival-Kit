@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <pthread.h>
+#include <stdarg.h>
 
 /* Debugging twiddly knobs.  Useful if you have the misfortune of needing to
 // debug the code that is supposed to make debugging easier. */
@@ -31,7 +32,7 @@ skit_thread_context *skit_thread_context_get();
 void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
-void skit_exception_free( skit_thread_context *ctx, skit_exception *exc );
+void skit_exception_dtor( skit_thread_context *ctx, skit_exception *exc );
 
 /*
 This skit_throw_exception_no_ctx definition is used to break macro recursion.
@@ -77,6 +78,17 @@ void skit_push_exception(
 	skit_err_code etype,
 	const char *fmtMsg,
 	...);
+
+/* Same as skit_push_exception, but accepts a va_list instead of raw variadic
+arguments. */
+void skit_push_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args);
 	
 /*
 This works like skit_push_exception, except that it allows the caller to store
@@ -92,6 +104,17 @@ skit_exception *skit_new_exception(
 	const char *fmtMsg,
 	...);
 	
+/* Same as skit_new_exception, but accepts a va_list instead of raw variadic
+arguments. */
+skit_exception *skit_new_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args);
+
 /*
 Internal function used to do the same thing as skit_push_exceptions, but with
 an exception object provided instead of exception info.  This function is

@@ -147,7 +147,7 @@ void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, co
 	dst->func_name = func;
 }
 
-void skit_exception_free( skit_thread_context *skit_thread_ctx, skit_exception *exc )
+void skit_exception_dtor( skit_thread_context *skit_thread_ctx, skit_exception *exc )
 {
 	if ( exc->error_text != NULL )
 	{
@@ -281,20 +281,18 @@ void skit_push_exception_obj(skit_thread_context *skit_thread_ctx, skit_exceptio
 	memcpy(newb, exc, sizeof(skit_exception));
 }
 
-void skit_push_exception(
+void skit_push_exception_va(
 	skit_thread_context *skit_thread_ctx,
 	int line,
 	const char *file,
 	const char *func,
 	skit_err_code etype,
 	const char *fmtMsg,
-	...)
+	va_list var_args)
 {
 	skit_exception *exc = skit_exc_fstack_alloc(&skit_thread_ctx->exc_instance_stack, &skit_malloc);
 
 	/* Forward the debug info to the exception filling function. */
-	va_list vl;
-	va_start(vl, fmtMsg);
 	skit_fill_exception(
 		skit_thread_ctx,
 		exc,
@@ -304,8 +302,56 @@ void skit_push_exception(
 		func,
 		etype,
 		fmtMsg,
+		var_args);
+}
+
+void skit_push_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...)
+{
+	/* Expand variadic arguments and forward. */
+	va_list vl;
+	va_start(vl, fmtMsg);
+	skit_push_exception_va(
+		skit_thread_ctx,
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
 		vl);
 	va_end(vl);
+}
+
+skit_exception *skit_new_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args)
+{
+	skit_exception *exc = skit_malloc(sizeof(skit_exception));
+
+	/* Forward the debug info to the exception filling function. */
+	skit_fill_exception(
+		skit_thread_ctx,
+		exc,
+		1, /* Save the stack trace in newly allocated memory. */
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
+		var_args);
+	
+	return exc;
 }
 
 skit_exception *skit_new_exception(
@@ -317,15 +363,11 @@ skit_exception *skit_new_exception(
 	const char *fmtMsg,
 	...)
 {
-	skit_exception *exc = skit_malloc(sizeof(skit_exception));
-
-	/* Forward the debug info to the exception filling function. */
+	/* Expand variadic arguments and forward. */
 	va_list vl;
 	va_start(vl, fmtMsg);
-	skit_fill_exception(
+	skit_exception *exc = skit_new_exception_va(
 		skit_thread_ctx,
-		exc,
-		1, /* Save the stack trace in newly allocated memory. */
 		line,
 		file,
 		func,

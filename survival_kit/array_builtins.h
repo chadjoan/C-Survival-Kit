@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 #include "survival_kit/string.h"
+#include "survival_kit/feature_emulation/types.h"
 
 /* SKIT_T_HEADER allows the template header file to be overridden. */
 /* It is used by the corresponding _builtins.c file to provide linkable */
@@ -88,6 +89,13 @@
 /** Define skit_loaf_slice and skit_loaf_loaf  (SKIT_T_ELEM_TYPE=slice) */
 #define SKIT_T_ELEM_TYPE skit_loaf
 #define SKIT_T_NAME loaf
+#include SKIT_T_HEADER
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_NAME
+
+/** Define skit_exc_slice and skit_exc_loaf  (SKIT_T_ELEM_TYPE=exception*) */
+#define SKIT_T_ELEM_TYPE skit_exception*
+#define SKIT_T_NAME exc
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_NAME
