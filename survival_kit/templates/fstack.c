@@ -174,26 +174,12 @@ void SKIT_T(fstack_walk)(
 	/* Now walk the used buffer. */
 	if ( !end_node_reached )
 	{
-		cur_node = stack->used.front;
-		while ( cur_node != NULL )
-		{
-			if ( cur_node == start_node )
-				start_node_reached = 1;
-			
-			if ( start_node_reached && (predicate(context, cur_node) == 0) )
-			{
-				end_node_reached = 1;
-				break;
-			}
-			
-			if ( cur_node == end_node )
-			{
-				end_node_reached = 1;
-				break;
-			}
-			
-			cur_node = cur_node->next;
-		}
+		SKIT_T(stack_walk)(
+			&stack->used,
+			predicate,
+			context,
+			stack->used.front,
+			end_node);
 	}
 	
 	/* TODO: THROW with OUT_OF_BOUNDS if things start/end nodes are non-NULL and aren't found. */

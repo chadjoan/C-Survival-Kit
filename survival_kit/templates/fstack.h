@@ -195,12 +195,12 @@ The end of the unused substack is considered the "first" node and the end of the
   forwards through the used stack.
 The 'context' variable will be passed directly into the calls on 'predicate'.
 'predicate' will not be called on nodes before 'start_node' or after 'end_node'.
-If 'start_node' is NULL, the walk will begin at the very beggining of the stack.
+If 'start_node' is NULL, the walk will begin at the very beginning of the stack.
 If 'start_node' is otherwise not in the stack, then 'predicate' will never be
-  be called and an OUT_OF_BOUNDS exception will be thrown.
-If 'end_node' is NULL, the walk will begin at the very end of the stack.
+  be called and an OUT_OF_BOUNDS exception will be thrown. (Currently unimplemented)
+If 'end_node' is NULL, the walk will end at the very end of the stack.
 If 'end_node' is otherwise not in the stack, then the walk will continue through
-  the last node and then throw an OUT_OF_BOUNDS exception.
+  the last node and then throw an OUT_OF_BOUNDS exception. (Currently unimplemented)
 If 'end_node' is encountered before 'start_node', then 'predicate' will never
   be called.
 */

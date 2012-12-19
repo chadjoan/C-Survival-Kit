@@ -98,6 +98,7 @@ typedef struct SKIT_T(stack) SKIT_T(stack);
 struct SKIT_T(stack)
 {
 	SKIT_T(stnode) *front;
+	SKIT_T(stnode) *back;
 	ssize_t length;
 };
 
@@ -112,8 +113,59 @@ SKIT_T(stack) *SKIT_T(stack_init)(SKIT_T(stack) *list);
 /** Pushes a stnode onto the front of the list. O(1) operation. */
 void SKIT_T(stack_push)(SKIT_T(stack) *list, SKIT_T(stnode) *node);
 
+/** Places a stnode onto the back of the list. O(1) operation. */
+void SKIT_T(stack_append)(SKIT_T(stack) *list, SKIT_T(stnode) *node);
+
 /** Pops a stnode from the front of the list. O(1) operation. */
 SKIT_T(stnode) *SKIT_T(stack_pop)(SKIT_T(stack) *list);
+
+/**
+Does a shallow copy of the given stack.
+In other words: it will copy the pointed to stack object, and it will copy
+the nodes in the stack, but it will not copy any caller data pointed to by
+node contents.
+It is the caller's responsibility to free the stack that is allocated by this
+operation.
+The new stack and its nodes will be allocated with skit_malloc.
+This is an O(n) operation.
+*/
+SKIT_T(stack) *SKIT_T(stack_dup)(SKIT_T(stack) *stack);
+
+/**
+Same as stack_dup, but yields a reversed stack. 
+This will be faster than calling stack_dup followed by stack_reverse,
+because it will only need to make one pass over the stack.
+This is an O(n) operation.
+*/
+SKIT_T(stack) *SKIT_T(stack_rdup)(SKIT_T(stack) *stack);
+
+/**
+Walks the stack, calling 'predicate' on each node.
+If 'predicate' returns 0, then the walk will abort.
+The 'context' variable will be passed directly into the calls on 'predicate'.
+'predicate' will not be called on nodes before 'start_node' or after 'end_node'.
+If 'start_node' is NULL, the walk will begin at the very beginning of the stack.
+If 'start_node' is otherwise not in the stack, then 'predicate' will never be
+  be called and an OUT_OF_BOUNDS exception will be thrown. (Currently unimplemented)
+If 'end_node' is NULL, the walk will end at the very end of the stack.
+If 'end_node' is otherwise not in the stack, then the walk will continue through
+  the last node and then throw an OUT_OF_BOUNDS exception. (Currently unimplemented)
+If 'end_node' is encountered before 'start_node', then 'predicate' will never
+  be called.
+*/
+void SKIT_T(stack_walk)(
+	const SKIT_T(stack) *stack,
+	int predicate(void *context, const SKIT_T(stnode) *node),
+	void *context,
+	const SKIT_T(stnode) *start_node,
+	const SKIT_T(stnode) *end_node
+);
+
+/**
+Reverses the order of elements in the given stack, in-place.
+This is an O(n) operation.
+*/
+void SKIT_T(stack_reverse)( SKIT_T(stack) *stack );
 
 #ifdef SKIT_T_NAMESPACE_IS_DEFAULT
 #undef SKIT_T_NAMESPACE

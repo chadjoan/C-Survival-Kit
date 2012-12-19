@@ -33,7 +33,7 @@ struct skit_fstack_unittest_context
 
 int skit_fstack_walk_unittest(void *context, const skit_i32_stnode *node )
 {
-	skit_fstack_unittest_context *ctx = (skit_fstack_unittest_context*)context;
+	skit_fstack_unittest_context *ctx = context;
 	
 	sASSERT_EQ( node->val, ctx->expected_vals[ctx->count], "%d" );
 	
