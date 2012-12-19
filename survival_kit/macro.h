@@ -77,6 +77,35 @@ Examples:
 #define SKIT_RSEQ_3() 3,3,3,3,3,3,3,3,3,3,3,3,3,2,1,0
 
 /**
+Limitation: For now, the 0 argument case does not work.
+Returns 0 if there are 0 arguments passed.
+Returns 1 if there is 1 argument passed.
+Returns 2 if there are 2 arguments passed.
+Returns 3 if there are 3 arguments passed.
+Returns 4 if there are any other number of arguments passed.
+See SKIT_NARGS1 for an explanation of purpose.
+*/
+#define SKIT_NARGS4(...)  SKIT_NARGS4_(__VA_ARGS__,SKIT_RSEQ_4())
+#define SKIT_NARGS4_(...) SKIT_ARG_4(__VA_ARGS__)
+#define SKIT_ARG_4(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,N,...) N
+#define SKIT_RSEQ_4() 4,4,4,4,4,4,4,4,4,4,4,4,3,2,1,0
+
+/**
+Limitation: For now, the 0 argument case does not work.
+Returns 0 if there are 0 arguments passed.
+Returns 1 if there is 1 argument passed.
+Returns 2 if there are 2 arguments passed.
+Returns 3 if there are 3 arguments passed.
+Returns 4 if there are 4 arguments passed.
+Returns 5 if there are any other number of arguments passed.
+See SKIT_NARGS1 for an explanation of purpose.
+*/
+#define SKIT_NARGS5(...)  SKIT_NARGS5_(__VA_ARGS__,SKIT_RSEQ_5())
+#define SKIT_NARGS5_(...) SKIT_ARG_5(__VA_ARGS__)
+#define SKIT_ARG_5(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,N,...) N
+#define SKIT_RSEQ_5() 5,5,5,5,5,5,5,5,5,5,5,4,3,2,1,0
+
+/**
 SKIT_MACRO_DISPATCHER allows a variadic macro to select other macros to call based
 on the number of variadic arguments provided.
 
@@ -120,6 +149,29 @@ It will call func3 if any other number of arguments are supplied.
 */
 #define SKIT_MACRO_DISPATCHER3(func, ...) \
 	SKIT_MACRO_DISPATCHER_(func, SKIT_NARGS3(__VA_ARGS__))
+	
+/**
+Specialization of SKIT_MACRO_DISPATCHER.
+It will call func0 if 0 arguments are supplied.
+It will call func1 if 1 argument is supplied.  
+It will call func2 if 2 argument is supplied.  
+It will call func3 if 3 argument is supplied.  
+It will call func4 if any other number of arguments are supplied.
+*/
+#define SKIT_MACRO_DISPATCHER4(func, ...) \
+	SKIT_MACRO_DISPATCHER_(func, SKIT_NARGS4(__VA_ARGS__))
+
+/**
+Specialization of SKIT_MACRO_DISPATCHER.
+It will call func0 if 0 arguments are supplied.
+It will call func1 if 1 argument is supplied.  
+It will call func2 if 2 argument is supplied.  
+It will call func3 if 3 argument is supplied.  
+It will call func4 if 4 argument is supplied.  
+It will call func5 if any other number of arguments are supplied.
+*/
+#define SKIT_MACRO_DISPATCHER5(func, ...) \
+	SKIT_MACRO_DISPATCHER_(func, SKIT_NARGS5(__VA_ARGS__))
 
 /** 
 Use this to silence warnings about unused variables when the variable is
