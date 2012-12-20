@@ -8,7 +8,7 @@
 #include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/feature_emulation/thread_context.h"
 #include "survival_kit/feature_emulation/funcs.h"
-#include "survival_kit/feature_emulation/call.h"
+#include "survival_kit/feature_emulation/trace.h"
 #include "survival_kit/feature_emulation/try_catch.h"
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/feature_emulation/scope.h"
