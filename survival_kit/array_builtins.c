@@ -13,7 +13,7 @@
 #undef SKIT_T_HEADER
 
 #include "survival_kit/assert.h"
-#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation.h"
 
 #include <stdio.h>
 

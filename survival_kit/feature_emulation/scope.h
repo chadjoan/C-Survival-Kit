@@ -89,14 +89,32 @@ were used instead of sSCOPE/sEND_SCOPE!
 
 --------------------------------------------------------------------------------
 */
+#ifndef SKIT_FEMU_SCOPE_INCLUDED
+#define SKIT_FEMU_SCOPE_INCLUDED
 
 #include <setjmp.h>
 #include <unistd.h>
 
 #include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
-#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation/frame_info.h"
+#include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/feature_emulation/funcs.h"
+
+/* Implementation detail used to track scope guard scanning. */
+/*
+As a general rule of thumb this should NEVER be passed as an argument into
+other functions; at least not for the purpose of having a called function
+perform scope guard scanning.  See the __SKIT_SCAN_SCOPE_GUARDS macro
+in "survival_kit/feature_emulation/scope.h" for more details.
+*/
+typedef struct skit_scope_context skit_scope_context;
+struct skit_scope_context
+{
+	jmp_buf *scope_fn_exit;
+	char scope_guards_used;
+	char exit_status;
+};
 
 #define SKIT_SCOPE_NOT_EXITING   0x00
 #define SKIT_SCOPE_SUCCESS_EXIT  0x01
@@ -316,3 +334,5 @@ returned.
 	SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 	(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 }
+
+#endif

@@ -5,7 +5,7 @@
 #include <inttypes.h>
 
 #include "survival_kit/string.h"
-#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation.h"
 
 /* SKIT_T_HEADER allows the template header file to be overridden. */
 /* It is used by the corresponding _builtins.c file to provide linkable */

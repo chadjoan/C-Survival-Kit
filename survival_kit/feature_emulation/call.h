@@ -4,10 +4,14 @@
 
 #include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
-#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation/frame_info.h"
+#include "survival_kit/feature_emulation/exception.h"
+#include "survival_kit/feature_emulation/thread_context.h"
+#include "survival_kit/feature_emulation/scope.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/assert.h"
+
 #define SKIT_TRACE_INTERNAL(assignment, returned_expr) /* */ \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \

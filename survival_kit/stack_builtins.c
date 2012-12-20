@@ -3,6 +3,16 @@
 #pragma module skit_stack_builtins
 #endif
 
+/* Although this module may or may not use feature_emulation, stack.c does. */
+/* As a consequence, stack.c can #include exception.h which #includes */
+/* frame_info.h which #includes ... stack.h.  This then attempts to redefine */
+/* SKIT_T_ELEM_TYPE which and causes all kinds of havoc. */
+/* To avoid this nasty circular macro invokation, we get feature_emulation.h */
+/* out of the way at the very beginning and let it define its stack types */
+/* first.  After that we will no longer need to worry about accidentally */
+/* creating recursive macro inclusions against feature_emulation submodules. */
+#include "survival_kit/feature_emulation.h"
+
 #define SKIT_T_HEADER "survival_kit/templates/stack.h"
 #include "survival_kit/stack_builtins.h"
 #undef SKIT_T_HEADER

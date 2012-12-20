@@ -17,8 +17,7 @@
 #  define HAVE_LINUX_BACKTRACE
 #endif
 
-#include "survival_kit/feature_emulation/types.h"
-#include "survival_kit/feature_emulation/funcs.h"
+#include "survival_kit/feature_emulation.h"
 #include "survival_kit/misc.h"
 
 

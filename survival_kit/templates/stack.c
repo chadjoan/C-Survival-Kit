@@ -7,7 +7,7 @@
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
-	#include "survival_kit/feature_emulation/exceptions.h"
+	#include "survival_kit/feature_emulation/exception.h"
 
 	/*
 	This skit_throw_exception_no_ctx definition is used to break macro recursion.

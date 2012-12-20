@@ -15,7 +15,10 @@
 	#define SKIT_FEATURE_TRACE(...) ((void)1)
 #endif
 
-#include "survival_kit/feature_emulation/types.h"
+#include "survival_kit/feature_emulation/frame_info.h"
+#include "survival_kit/feature_emulation/exception.h"
+#include "survival_kit/feature_emulation/thread_context.h"
+#include "survival_kit/feature_emulation/scope.h"
 
 extern pthread_key_t skit_thread_context_key;
 

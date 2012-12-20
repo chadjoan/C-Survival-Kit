@@ -6,22 +6,7 @@
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/scope.h"
-#include "survival_kit/feature_emulation/exceptions.h"
-
-#if 0
-/**
-Throws the exception 'e'.
-This is usually used with the new_exception function, and allows for
-  exceptions to be created in one place and then thrown in another.
-While this is the strictly more powerful way to throw exceptions, the more
-  convenient way for common cases would be to use the RAISE macro.
-This macro expands to a statement and may not be nested inside expressions.
-Example usage:
-	RAISE(new_exception(SKIT_EXCEPTION,"Something bad happened!")); 
-
-TODO: regain this functionality.
-*/
-#endif
+#include "survival_kit/feature_emulation/exception.h"
 
 #if defined(THROW) && !defined(SKIT_ALLOW_OTHER_TRY_CATCH)
 #undef THROW
@@ -157,29 +142,5 @@ NOTE: Do not expand this macro in any function besides the one with the
 		skit_propogate_exceptions(skit_thread_ctx), \
 		1 \
 	)
-
-#if 0
-#define __SKIT_PROPOGATE_THROWN_EXCEPTIONS /* */ \
-	( \
-		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT), \
-		(__skit_propogate_exception_tmp = &(skit_thread_ctx->exc_instance_stack.used.front->val)), \
-		SKIT_FEATURE_TRACE("%s, %d.95 in %s: __PROPOGATE\n", __FILE__, __LINE__,__func__), \
-		/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */ \
-		( skit_thread_ctx->exc_jmp_stack.used.length > 0 ) ? \
-		( \
-			SKIT_FEATURE_TRACE("%s, %d.99 in %s: __PROPOGATE longjmp.\n", __FILE__, __LINE__,__func__), \
-			longjmp( \
-				skit_thread_ctx->exc_jmp_stack.used.front->val, \
-				__skit_propogate_exception_tmp->error_code), \
-			1 \
-		) : ( \
-			SKIT_FEATURE_TRACE("%s, %d.106 in %s: __PROPOGATE failing.\n", __FILE__, __LINE__,__func__), \
-			skit_print_exception(__skit_propogate_exception_tmp), /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */ \
-			skit_die("Exception thrown with no handlers left in the stack."), \
-			1 \
-		), \
-		1 \
-	)
-#endif
 
 #endif

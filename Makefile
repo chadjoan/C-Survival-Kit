@@ -24,9 +24,10 @@ OBJECT_FILES= \
 	obj/fstack_builtins.o \
 	obj/feature_emulation/setjmp/jmp_stack.o \
 	obj/feature_emulation/setjmp/jmp_fstack.o \
-	obj/feature_emulation/exceptions.o \
+	obj/feature_emulation/exception.o \
+	obj/feature_emulation/thread_context.o \
+	obj/feature_emulation/frame_info.o \
 	obj/feature_emulation/funcs.o \
-	obj/feature_emulation/types.o \
 	obj/feature_emulation/unittest.o \
 	obj/signal_handling.o \
 	obj/math.o \

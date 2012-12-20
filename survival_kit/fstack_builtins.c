@@ -3,6 +3,16 @@
 #pragma module skit_fstack_builtins
 #endif
 
+/* Although this module may or may not use feature_emulation, fstack.c does. */
+/* As a consequence, fstack.c can #include exception.h which #includes */
+/* frame_info.h which #includes ... fstack.h.  This then attempts to redefine */
+/* SKIT_T_ELEM_TYPE which and causes all kinds of havoc. */
+/* To avoid this nasty circular macro invokation, we get feature_emulation.h */
+/* out of the way at the very beginning and let it define its fstack types */
+/* first.  After that we will no longer need to worry about accidentally */
+/* creating recursive macro inclusions against feature_emulation submodules. */
+#include "survival_kit/feature_emulation.h"
+
 #include <setjmp.h>
 #include <assert.h>
 
