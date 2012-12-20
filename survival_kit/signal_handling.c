@@ -10,7 +10,7 @@
 #include <unistd.h> /* getpid() */
 
 #include "survival_kit/feature_emulation.h" /* For sTRACE; it's important for unittesting. */
-#include "survival_kit/feature_emulation/funcs.h" /* For skit_print_stack_trace() */
+#include "survival_kit/feature_emulation/stack_trace.h" /* For skit_print_stack_trace() */
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/assert.h"
 

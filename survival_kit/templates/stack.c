@@ -12,18 +12,17 @@
 	/*
 	This skit_throw_exception_no_ctx definition is used to break macro recursion.
 	This definition is duplicated in "survival_kit/feature_emulation/fstack.c" and
-	  "survival_kit/feature_emulation/funcs.h".  If this ever changes, then those
+	  "survival_kit/feature_emulation/exception.h".  If this ever changes, then those
 	  must be updated.
-	See "survival_kit/feature_emulation/funcs.h" for rationale.
+	See "survival_kit/feature_emulation/exception.h" for rationale.
 	*/
-	void skit_throw_exception_no_ctx(
-		int line,
-		const char *file,
-		const char *func,
-		skit_err_code etype,
-		const char *fmtMsg,
-		...);
-
+void skit_throw_exception_no_ctx(
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
 #endif
 
 #include "survival_kit/misc.h"

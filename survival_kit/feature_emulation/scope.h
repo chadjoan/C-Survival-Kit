@@ -99,7 +99,6 @@ were used instead of sSCOPE/sEND_SCOPE!
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/frame_info.h"
 #include "survival_kit/feature_emulation/exception.h"
-#include "survival_kit/feature_emulation/funcs.h"
 
 /* Implementation detail used to track scope guard scanning. */
 /*

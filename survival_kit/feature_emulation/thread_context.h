@@ -2,7 +2,16 @@
 #ifndef SKIT_FEMU_THREAD_CTX_INCLUDED
 #define SKIT_FEMU_THREAD_CTX_INCLUDED
 
+#include <pthread.h>
+
+#include "survival_kit/feature_emulation/exception.h"
+#include "survival_kit/feature_emulation/frame_info.h"
 #include "survival_kit/feature_emulation/setjmp/jmp_fstack.h"
+
+/* Internal use only.  This may not be extern anymore once initialization gets
+ * shuffled around to prevent main's setjmp from living in another stack frame.
+ */
+extern pthread_key_t skit_thread_context_key;
 
 /* 
 Used internally to save the position of the call stack before CALLs and other
@@ -34,5 +43,12 @@ struct skit_thread_context
 	char *error_text_buffer;
 	int error_text_buffer_size;
 };
+
+/* Internal: used in macros to emulate language features. */
+skit_thread_context *skit_thread_context_get();
+
+/* More internals. */
+void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
+void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 
 #endif

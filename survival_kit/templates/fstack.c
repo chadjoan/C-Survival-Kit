@@ -1,6 +1,5 @@
 /** See survival_kit/templates/fstack.h for documentation. */
 
-
 #ifndef SKIT_T_NAMESPACE
 #define SKIT_T_NAMESPACE skit
 #define SKIT_T_NAMESPACE_IS_DEFAULT 1
@@ -8,15 +7,14 @@
 
 #ifndef SKIT_T_DIE_ON_ERROR
 	/* Throw exceptions instead. */
-
-#include "survival_kit/feature_emulation/exception.h"
+	#include "survival_kit/feature_emulation/exception.h"
 
 	/*
 	This skit_throw_exception_no_ctx definition is used to break macro recursion.
 	This definition is duplicated in "survival_kit/feature_emulation/stack.c" and
-	  "survival_kit/feature_emulation/funcs.h".  If this ever changes, then those
+	  "survival_kit/feature_emulation/exception.h".  If this ever changes, then those
 	  must be updated.
-	See "survival_kit/feature_emulation/funcs.h" for rationale.
+	See "survival_kit/feature_emulation/exception.h" for rationale.
 	*/
 void skit_throw_exception_no_ctx(
 	int line,

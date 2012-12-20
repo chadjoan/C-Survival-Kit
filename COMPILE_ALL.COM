@@ -23,8 +23,9 @@ $ @'THIS_DIR'compile survival_kit/feature_emulation/setjmp/jmp_fstack
 $ @'THIS_DIR'compile survival_kit/feature_emulation/exception
 $ @'THIS_DIR'compile survival_kit/feature_emulation/thread_context
 $ @'THIS_DIR'compile survival_kit/feature_emulation/frame_info
-$ @'THIS_DIR'compile survival_kit/feature_emulation/funcs
+$ @'THIS_DIR'compile survival_kit/feature_emulation/stack_trace
 $ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
+$ @'THIS_DIR'compile survival_kit/feature_emulation/init
 $ @'THIS_DIR'compile survival_kit/signal_handling
 $ @'THIS_DIR'compile survival_kit/math
 $ @'THIS_DIR'compile survival_kit/string

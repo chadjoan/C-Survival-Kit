@@ -1,10 +1,16 @@
 #ifndef SKIT_EXCEPTIONS_INCLUDED
 #define SKIT_EXCEPTIONS_INCLUDED
 
-#include "survival_kit/feature_emulation/frame_info.h"
-
 #include <unistd.h> /* For ssize_t */
 #include <inttypes.h>
+#include <stdarg.h>
+
+#include "survival_kit/feature_emulation/frame_info.h"
+
+#ifndef skit_thread_context
+struct skit_thread_context;
+#define skit_thread_context struct skit_thread_context
+#endif
 
 /**
 Exceptions in C Survival Kit are not polymorphic objects like in many languages
@@ -43,6 +49,9 @@ struct skit_exception
 #include "survival_kit/templates/fstack.h"
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_NAME
+
+/* This must be expanded after skit_exc_fstack is defined. */
+/* #include "survival_kit/feature_emulation/thread_context.h" */
 
 /**
 This is the intended intial value for the global write-once skit_err_code 
@@ -110,5 +119,116 @@ skit_init_exceptions()
 void _skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg );
 
 void skit_init_exceptions();
+
+/* Internal: Frees all resources tied to the exception. */
+/*           (but not the exception itself.) */
+/* Code outside of feature_emulation submodules should use */
+/*   SKIT_EXCEPTION_FREE instead. */
+void skit_exception_dtor( skit_thread_context *ctx, skit_exception *exc );
+
+/*
+This skit_throw_exception_no_ctx definition is used to break macro recursion.
+This definition is duplicated in "survival_kit/feature_emulation/stack.c" and
+  "survival_kit/feature_emulation/fstack.c".  If this ever changes, then those
+  must be updated.
+The recursion happens when (f)stack.c includes this module which includes
+  feature_emulation/types.h which then redefines SKIT_T_ELEM_TYPE and 
+  includes stack again.  
+There is no way to save the template parameters (like SKIT_T_ELEM_TYPE or
+  SKIT_T_NAME) and forcing callers to '#include "survival_kit/feature_emulation/types.h"'
+  before including (f)stack.c is inconsistent and undesirable.
+The strategy then is to call an exception throwing function directly, without
+  the aid of macros.  This requires keeping the definitions of this function
+  in sync.
+Due to the lack of the ability to include "survival_kit/feature_emulation/types.h"
+  this definition is not allowed to use skit_thread_context* or anything that uses
+  fstacks/stacks.  It obtains this information in the .c file by calling
+  skit_thread_context_get.  Beware: it also has no way of expanding the
+  __SKIT_SCAN_SCOPE_GUARDS macro and thus can't finalize scope guards.  
+  Do not use this in a function with scope guards.
+*/
+void skit_throw_exception_no_ctx(
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
+
+/*
+This is the more common alternative (still internal-use-only) to
+skit_throw_exception_no_ctx.  
+This is used by the ubiquitous sTHROW macro and also the SKIT_PUSH_EXCEPTION
+macro, in conjunction with __SKIT_PROPOGATE_THROWN_EXCEPTIONS when needed.
+It avoids making repeated calls to skit_thread_context_get.
+*/
+void skit_push_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
+
+/* Same as skit_push_exception, but accepts a va_list instead of raw variadic
+arguments. */
+void skit_push_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args);
+	
+/*
+This works like skit_push_exception, except that it allows the caller to store
+the exception object and throw it at a later time, or just use the stored
+exceptions as a way of generating error reports (ex: non-fatal parser errors).
+*/
+skit_exception *skit_new_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...);
+	
+/* Same as skit_new_exception, but accepts a va_list instead of raw variadic
+arguments. */
+skit_exception *skit_new_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args);
+
+/*
+Internal function used to do the same thing as skit_push_exceptions, but with
+an exception object provided instead of exception info.  This function is
+important for allowing the caller to create exceptions and save the debugging
+into until a later point in execution.
+*/
+void skit_push_exception_obj(skit_thread_context *skit_thread_ctx, skit_exception *exc);
+
+/* 
+Unwinds the stack while propogating the last thrown exception.
+This is used by both __SKIT_PROPOGATE_THROWN_EXCEPTIONS and 
+skit_throw_exception_no_ctx.
+It should not be called by user code or anything else that doesn't truly need
+access to the internals of exception handling.
+*/
+void skit_propogate_exceptions( skit_thread_context *skit_thread_ctx );
+
+/** Prints the given exception to stdout. */
+void skit_print_exception(skit_exception *e);
+
+#ifdef skit_thread_context
+#undef skit_thread_context
+#endif
 
 #endif

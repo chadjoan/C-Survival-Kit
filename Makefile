@@ -27,8 +27,9 @@ OBJECT_FILES= \
 	obj/feature_emulation/exception.o \
 	obj/feature_emulation/thread_context.o \
 	obj/feature_emulation/frame_info.o \
-	obj/feature_emulation/funcs.o \
+	obj/feature_emulation/stack_trace.o \
 	obj/feature_emulation/unittest.o \
+	obj/feature_emulation/init.o \
 	obj/signal_handling.o \
 	obj/math.o \
 	obj/string.o \

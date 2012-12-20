@@ -4,9 +4,9 @@
 
 #include "survival_kit/macro.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
-#include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/scope.h"
 #include "survival_kit/feature_emulation/exception.h"
+#include "survival_kit/feature_emulation/debug.h"
 
 #if defined(THROW) && !defined(SKIT_ALLOW_OTHER_TRY_CATCH)
 #undef THROW

@@ -8,7 +8,12 @@
 #include <stdio.h> /* printf */
 
 #include "survival_kit/memory.h"
+#include "survival_kit/init.h"
+#include "survival_kit/feature_emulation/thread_context.h"
 #include "survival_kit/feature_emulation/exception.h"
+#include "survival_kit/feature_emulation/frame_info.h"
+#include "survival_kit/feature_emulation/stack_trace.h"
+#include "survival_kit/feature_emulation/debug.h"
 
 #define SKIT_T_DIE_ON_ERROR 1
 #define SKIT_T_ELEM_TYPE skit_exception
@@ -103,6 +108,8 @@ void _skit__register_exception( skit_err_code *ecode, const skit_err_code *paren
 	/* TODO: do something with the ecode_name and default_msg. */
 }
 
+/* ------------------------------------------------------------------------- */
+
 int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {
 	skit_err_code child_code = ecode2;
@@ -126,4 +133,288 @@ int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 		parent_code = _skit_exc_inheritance_table[parent_code];
 	}
 	assert(0);
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_exception_dtor( skit_thread_context *skit_thread_ctx, skit_exception *exc )
+{
+	if ( exc->error_text != NULL )
+	{
+		skit_free(exc->error_text);
+		exc->error_text = NULL;
+	}
+	exc->error_len = 0;
+	exc->error_code = 0;
+	exc->frame_info_node = NULL;
+	
+	/* Free any copies of debug stacks. */
+	if ( exc->debug_info_stack != NULL &&
+	     exc->debug_info_stack != &skit_thread_ctx->debug_info_stack.used )
+	{
+		skit_debug_stack *stack = exc->debug_info_stack;
+		while ( stack->length > 0 )
+			skit_free(skit_debug_stack_pop(stack));
+		skit_free(stack);
+	}
+	exc->debug_info_stack = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void skit_fill_exception(
+	skit_thread_context *skit_thread_ctx,
+	skit_exception *exc,
+	int saveStack,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args)
+{
+	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
+
+	int error_len = vsnprintf(
+		skit_thread_ctx->error_text_buffer,
+		skit_thread_ctx->error_text_buffer_size, fmtMsg, var_args);
+	
+	/* vsnprintf can return lengths greater than the buffer.  In these cases, truncation occured. */
+	if ( error_len >= (skit_thread_ctx->error_text_buffer_size) )
+		error_len = skit_thread_ctx->error_text_buffer_size - 1;
+	
+	/* TODO: it might be nice to have a pre-allocated thread-local buffer 
+	for exception messages.  It would need to support multiple exception
+	messages at once and grow if there is not enough space.  This would
+	make it less likely that we do a dynamic allocation.  Not sure how
+	important this is though, since out-of-memory errors would (ideally)
+	cause the program to call skit_die, which would not allocate an
+	exception.  OTOH, if we want OOM to be catchable, then this should 
+	be considered or at least special-cased for OOM exceptions. */
+	exc->error_code = etype;
+	exc->error_text = (char*)skit_malloc(error_len+1); /* +1 to make room for the \0 at the end. */
+	strcpy(exc->error_text, skit_thread_ctx->error_text_buffer);
+	exc->error_len = error_len;
+	
+	SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
+	skit_debug_info_store(fi, line, file, func);
+	
+	if ( saveStack )
+	{
+		/* Slower version used when the caller needs to accumulate exceptions
+		that may have completely different debug stacks. */
+		exc->debug_info_stack = skit_debug_stack_dup(&skit_thread_ctx->debug_info_stack.used);
+	}
+	else
+	{
+		/* Optimized path with less allocations/copies that can be used when
+		the caller is going to unwind the stack. */
+		exc->debug_info_stack = &skit_thread_ctx->debug_info_stack.used;
+	}
+	
+	exc->frame_info_node = exc->debug_info_stack->front;
+	
+	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
+	
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_propogate_exceptions(skit_thread_context *skit_thread_ctx)
+{
+	skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val);
+	SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception\n", __FILE__, __LINE__,__func__);
+	/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */
+	if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 )
+	{
+		SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception longjmp.\n", __FILE__, __LINE__,__func__);
+		longjmp(
+			skit_thread_ctx->exc_jmp_stack.used.front->val,
+			exc->error_code);
+	}
+	else
+	{
+		SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception failing.\n", __FILE__, __LINE__,__func__);
+		skit_print_exception(exc); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */
+		skit_die("Exception thrown with no handlers left in the stack.");
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_throw_exception_no_ctx(
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...)
+{
+	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
+	skit_exception *exc = skit_exc_fstack_alloc(&skit_thread_ctx->exc_instance_stack, &skit_malloc);
+
+	/* Forward var args to the real exception throwing function. */
+	va_list vl;
+	va_start(vl, fmtMsg);
+	skit_fill_exception(
+		skit_thread_ctx,
+		exc,
+		0, /* Reference existing stack trace info. */
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
+		vl);
+	va_end(vl);
+	
+	skit_propogate_exceptions(skit_thread_ctx);
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_push_exception_obj(skit_thread_context *skit_thread_ctx, skit_exception *exc)
+{
+	skit_exception *newb = skit_exc_fstack_alloc(&skit_thread_ctx->exc_instance_stack, &skit_malloc);
+	memcpy(newb, exc, sizeof(skit_exception));
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_push_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args)
+{
+	skit_exception *exc = skit_exc_fstack_alloc(&skit_thread_ctx->exc_instance_stack, &skit_malloc);
+
+	/* Forward the debug info to the exception filling function. */
+	skit_fill_exception(
+		skit_thread_ctx,
+		exc,
+		0, /* Reference existing stack trace info. */
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
+		var_args);
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_push_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...)
+{
+	/* Expand variadic arguments and forward. */
+	va_list vl;
+	va_start(vl, fmtMsg);
+	skit_push_exception_va(
+		skit_thread_ctx,
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
+		vl);
+	va_end(vl);
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_exception *skit_new_exception_va(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	va_list var_args)
+{
+	skit_exception *exc = skit_malloc(sizeof(skit_exception));
+
+	/* Forward the debug info to the exception filling function. */
+	skit_fill_exception(
+		skit_thread_ctx,
+		exc,
+		1, /* Save the stack trace in newly allocated memory. */
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
+		var_args);
+	
+	return exc;
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_exception *skit_new_exception(
+	skit_thread_context *skit_thread_ctx,
+	int line,
+	const char *file,
+	const char *func,
+	skit_err_code etype,
+	const char *fmtMsg,
+	...)
+{
+	/* Expand variadic arguments and forward. */
+	va_list vl;
+	va_start(vl, fmtMsg);
+	skit_exception *exc = skit_new_exception_va(
+		skit_thread_ctx,
+		line,
+		file,
+		func,
+		etype,
+		fmtMsg,
+		vl);
+	va_end(vl);
+	
+	return exc;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_print_exception(skit_exception *e)
+{
+	sASSERT(skit_thread_init_was_called());
+	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
+	if ( e->error_text != NULL )
+		printf("%s\n",e->error_text);
+	else
+		printf("skit internal error: Exception error text is NULL!\n");
+	
+	if ( e->debug_info_stack == NULL || 
+	     e->debug_info_stack == &skit_thread_ctx->debug_info_stack.used )
+	{
+		/*
+		The exception's debug info is on the current stack.
+		Trace that one, including things in stack frames that have already unwound.
+		(This is why we use an fstack walk instead of a stack walk.)
+		*/
+		printf("%s\n",skit_fstack_to_str_internal(
+			skit_thread_ctx,
+			&skit_thread_ctx->debug_info_stack,
+			e->frame_info_node));
+	}
+	else
+	{
+		/* Print a stack saved in dynamic memory by the exception. */
+		printf("%s\n",skit_stack_to_str_internal(
+			skit_thread_ctx,
+			e->debug_info_stack,
+			e->frame_info_node));
+	}
 }

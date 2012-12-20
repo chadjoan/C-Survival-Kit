@@ -5,7 +5,8 @@
 
 #include "survival_kit/init.h"
 #include "survival_kit/cstr.h"
-#include "survival_kit/feature_emulation.h"
+#include "survival_kit/feature_emulation/init.h"
+#include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/streams/init.h"
 

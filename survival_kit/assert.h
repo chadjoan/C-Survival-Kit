@@ -7,7 +7,7 @@
 #include "survival_kit/misc.h" /* for skit_die */
 
 /* 
-skit_print_stack_trace() is defined by "survival_kit/feature_emulation/funcs.h"
+skit_print_stack_trace() is defined by "survival_kit/feature_emulation/stack_trace.h"
 These are duplicate definitions made to prevent macro recursion.
 Please keep them in sync.
 */

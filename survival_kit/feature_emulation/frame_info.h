@@ -20,4 +20,7 @@ struct skit_frame_info
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_NAME
 
+/* Internal: used in macros the need to convert debug info info frame_info objects. */
+void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func );
+
 #endif

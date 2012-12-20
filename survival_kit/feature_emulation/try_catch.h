@@ -63,7 +63,6 @@ TODO: sFINALLY
 #include "survival_kit/feature_emulation/frame_info.h"
 #include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/feature_emulation/thread_context.h"
-#include "survival_kit/feature_emulation/funcs.h"
 #include "survival_kit/feature_emulation/throw.h"
 	
 /* __SKIT_TRY_SAFE_EXIT is an implementation detail.
