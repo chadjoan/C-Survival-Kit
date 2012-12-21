@@ -2,6 +2,7 @@
 #ifndef SKIT_THROW_INCLUDED
 #define SKIT_THROW_INCLUDED
 
+#include "survival_kit/init.h"
 #include "survival_kit/macro.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/scope.h"
@@ -48,6 +49,7 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
@@ -56,6 +58,7 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg)); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
@@ -64,6 +67,7 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), __VA_ARGS__); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
@@ -72,17 +76,19 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception_va(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), (vargs)); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
 #define SKIT_NEW_EXCEPTION(...) SKIT_MACRO_DISPATCHER3(SKIT_NEW_EXCEPTION, __VA_ARGS__)(__VA_ARGS__)
 
+/* TODO: what if thread isn't entered yet? */
 #define SKIT_NEW_EXCEPTION1(etype) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)) \
+		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)), \
 	)
 	
 #define SKIT_NEW_EXCEPTION2(etype, emsg) \
@@ -111,6 +117,7 @@ Example usage:
 	do { \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception_obj(skit_thread_ctx, (exc)); \
 		/* DO NOT use skit_exception_dtor. */ \
 		/* skit_free is necessary instead. */ \

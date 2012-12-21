@@ -68,3 +68,42 @@ void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_contex
 	SKIT_FSTACK_RECONCILE(ctx->scope_jmp_stack,  pos->scope_jmp_pos,  skit_jmp_fstack,   "scope_jmp_stack");
 	SKIT_FSTACK_RECONCILE(ctx->debug_info_stack, pos->debug_info_pos, skit_debug_fstack, "debug_info_stack");
 }
+
+ssize_t skit_stack_depth( skit_thread_context *ctx )
+{
+	return ctx->debug_info_stack.used.length;
+}
+
+void _skit_thread_context_ctor( skit_thread_context *ctx )
+{
+	skit_jmp_fstack_init(&ctx->try_jmp_stack);
+	skit_jmp_fstack_init(&ctx->exc_jmp_stack);
+	skit_jmp_fstack_init(&ctx->scope_jmp_stack);
+	skit_debug_fstack_init(&ctx->debug_info_stack);
+	skit_exc_fstack_init(&ctx->exc_instance_stack);
+	
+	/* 16kB has GOT to be enough.  Riiight? */
+	ctx->error_text_buffer_size = 16384;
+	ctx->error_text_buffer = (char*)skit_malloc(ctx->error_text_buffer_size);
+	if ( ctx->error_text_buffer == NULL )
+		ctx->error_text_buffer_size = 0;
+}
+
+void _skit_thread_context_dtor(void *ctx_ptr)
+{
+	skit_thread_context *ctx = (skit_thread_context*)ctx_ptr;
+	/* Do nothing for now. TODO: This will be important for multithreading. BUG: memory leak! */
+	(void)ctx;
+	/* NULL the current thread context key. */
+	/* Incase we re-enter skit features from the same thread, */
+	/*   check for thread context inbetween. */
+	pthread_setspecific(skit_thread_context_key, NULL); 
+}
+
+skit_thread_context *_skit_create_thread_context()
+{
+	skit_thread_context *ctx = skit_malloc(sizeof(skit_thread_context));
+	_skit_thread_context_ctor(ctx);
+	pthread_setspecific(skit_thread_context_key, (void*)ctx);
+	return ctx;
+}

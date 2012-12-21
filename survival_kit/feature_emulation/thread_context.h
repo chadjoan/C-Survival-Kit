@@ -3,6 +3,7 @@
 #define SKIT_FEMU_THREAD_CTX_INCLUDED
 
 #include <pthread.h>
+#include <stdio.h> 
 
 #include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/feature_emulation/frame_info.h"
@@ -50,5 +51,9 @@ skit_thread_context *skit_thread_context_get();
 /* More internals. */
 void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
+ssize_t skit_stack_depth( skit_thread_context *ctx );
+skit_thread_context *_skit_create_thread_context();
+void _skit_thread_context_ctor( skit_thread_context *ctx );
+void _skit_thread_context_dtor( skit_thread_context *ctx );
 
 #endif

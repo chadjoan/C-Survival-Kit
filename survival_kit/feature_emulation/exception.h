@@ -227,6 +227,9 @@ void skit_propogate_exceptions( skit_thread_context *skit_thread_ctx );
 /** Prints the given exception to stdout. */
 void skit_print_exception(skit_exception *e);
 
+/** */
+void skit_print_uncaught_exceptions(skit_thread_context *skit_thread_ctx);
+
 #ifdef skit_thread_context
 #undef skit_thread_context
 #endif

@@ -58,6 +58,7 @@ TODO: sFINALLY
 #include <setjmp.h>
 #include <limits.h> /* For INT_MIN and the like. */
 
+#include "survival_kit/init.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/frame_info.h"
@@ -98,6 +99,7 @@ exception allocated in the code that threw the exception.
 	SKIT_FEATURE_TRACE("type_jmp_stack_alloc\n"); \
 	SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 	(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+	SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != __SKIT_TRY_SAFE_EXIT ) { \
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR,0); \
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_TRY_PTR,0); \
@@ -228,6 +230,8 @@ exception allocated in the code that threw the exception.
 "Do not do this, ever!\n"); \
 	} \
 	__skit_try_catch_nesting_level--; \
+	SKIT_THREAD_CHECK_EXIT(skit_thread_ctx); \
+	\
 	SKIT_FEATURE_TRACE("%s, %d.216: sTRY: done.\n", __FILE__, __LINE__); \
 	}
 

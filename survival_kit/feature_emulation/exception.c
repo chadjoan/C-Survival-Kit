@@ -173,48 +173,79 @@ static void skit_fill_exception(
 	const char *fmtMsg,
 	va_list var_args)
 {
-	skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
-
-	int error_len = vsnprintf(
-		skit_thread_ctx->error_text_buffer,
-		skit_thread_ctx->error_text_buffer_size, fmtMsg, var_args);
-	
-	/* vsnprintf can return lengths greater than the buffer.  In these cases, truncation occured. */
-	if ( error_len >= (skit_thread_ctx->error_text_buffer_size) )
-		error_len = skit_thread_ctx->error_text_buffer_size - 1;
-	
-	/* TODO: it might be nice to have a pre-allocated thread-local buffer 
-	for exception messages.  It would need to support multiple exception
-	messages at once and grow if there is not enough space.  This would
-	make it less likely that we do a dynamic allocation.  Not sure how
-	important this is though, since out-of-memory errors would (ideally)
-	cause the program to call skit_die, which would not allocate an
-	exception.  OTOH, if we want OOM to be catchable, then this should 
-	be considered or at least special-cased for OOM exceptions. */
 	exc->error_code = etype;
-	exc->error_text = (char*)skit_malloc(error_len+1); /* +1 to make room for the \0 at the end. */
-	strcpy(exc->error_text, skit_thread_ctx->error_text_buffer);
-	exc->error_len = error_len;
 	
-	SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
-	skit_debug_info_store(fi, line, file, func);
-	
-	if ( saveStack )
+	if ( skit_thread_ctx == NULL )
 	{
-		/* Slower version used when the caller needs to accumulate exceptions
-		that may have completely different debug stacks. */
-		exc->debug_info_stack = skit_debug_stack_dup(&skit_thread_ctx->debug_info_stack.used);
+		/* Slightly hackier path requiring dynamic allocations and magic values. */
+		/* This exists so that SKIT_NEW_EXCEPTION() can be called without having */
+		/*   a thread context available. */
+		const int error_buffer_size = 1024; /* We have to guess this size because we don't have a buffer from context to experiment on. */
+		char *error_text_buffer = skit_malloc(error_buffer_size);
+		int error_len = vsnprintf(
+			error_text_buffer,
+			error_text_buffer, fmtMsg, var_args);
+		
+		/* vsnprintf can return lengths greater than the buffer.  In these cases, truncation occured. */
+		if ( error_len >= error_buffer_size )
+			error_len = error_buffer_size - 1;
+		
+		exc->error_text = error_text_buffer;
+		exc->error_len  = error_len;
+		
+		exc->debug_info_stack = skit_malloc(sizeof(skit_debug_stack));
+		skit_debug_stack_init(exc->debug_info_stack);
+		
+		skit_frame_info fi;
+		skit_debug_info_store(&fi, line, file, func);
+		skit_debug_stack_push(exc->debug_info_stack, fi);
+		
+		exc->frame_info_node = exc->debug_info_stack->front;
 	}
-	else
+	else /* More desirable path that uses buffers in the thread context. */
 	{
-		/* Optimized path with less allocations/copies that can be used when
-		the caller is going to unwind the stack. */
-		exc->debug_info_stack = &skit_thread_ctx->debug_info_stack.used;
+		skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
+
+		int error_len = vsnprintf(
+			skit_thread_ctx->error_text_buffer,
+			skit_thread_ctx->error_text_buffer_size, fmtMsg, var_args);
+		
+		/* vsnprintf can return lengths greater than the buffer.  In these cases, truncation occured. */
+		if ( error_len >= (skit_thread_ctx->error_text_buffer_size) )
+			error_len = skit_thread_ctx->error_text_buffer_size - 1;
+		
+		/* TODO: it might be nice to have a pre-allocated thread-local buffer 
+		for exception messages.  It would need to support multiple exception
+		messages at once and grow if there is not enough space.  This would
+		make it less likely that we do a dynamic allocation.  Not sure how
+		important this is though, since out-of-memory errors would (ideally)
+		cause the program to call skit_die, which would not allocate an
+		exception.  OTOH, if we want OOM to be catchable, then this should 
+		be considered or at least special-cased for OOM exceptions. */
+		exc->error_text = (char*)skit_malloc(error_len+1); /* +1 to make room for the \0 at the end. */
+		strcpy(exc->error_text, skit_thread_ctx->error_text_buffer);
+		exc->error_len = error_len;
+		
+		SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
+		skit_debug_info_store(fi, line, file, func);
+		
+		if ( saveStack )
+		{
+			/* Slower version used when the caller needs to accumulate exceptions
+			that may have completely different debug stacks. */
+			exc->debug_info_stack = skit_debug_stack_dup(&skit_thread_ctx->debug_info_stack.used);
+		}
+		else
+		{
+			/* Optimized path with less allocations/copies that can be used when
+			the caller is going to unwind the stack. */
+			exc->debug_info_stack = &skit_thread_ctx->debug_info_stack.used;
+		}
+		
+		exc->frame_info_node = exc->debug_info_stack->front;
+		
+		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
 	}
-	
-	exc->frame_info_node = exc->debug_info_stack->front;
-	
-	skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
 	
 }
 
@@ -416,5 +447,17 @@ void skit_print_exception(skit_exception *e)
 			skit_thread_ctx,
 			e->debug_info_stack,
 			e->frame_info_node));
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_print_uncaught_exceptions(skit_thread_context *skit_thread_ctx)
+{
+	while ( ctx->exc_instance_stack.used.length > 0 )
+	{
+		fprintf(stderr,"Attempting to print exception:\n");
+		skit_print_exception( skit_exc_fstack_pop(&ctx->exc_instance_stack) );
+		fprintf(stderr,"\n");
 	}
 }

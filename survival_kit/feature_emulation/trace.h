@@ -2,6 +2,7 @@
 #ifndef SKIT_FEATURE_EMULATION_CALL_INCLUDED
 #define SKIT_FEATURE_EMULATION_CALL_INCLUDED
 
+#include "survival_kit/init.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/frame_info.h"
@@ -15,6 +16,8 @@
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
+		\
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
 		\
 		/* Save a copies of the current stack positions. */ \
 		skit_save_thread_context_pos(skit_thread_ctx, &__skit_thread_ctx_pos), \
@@ -48,6 +51,8 @@
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack), \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
 		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos), \
+		\
+		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx), \
 		\
 		SKIT_FEATURE_TRACE("%s, %d.54: sTRACE.success\n", __FILE__, __LINE__), \
 		returned_expr \

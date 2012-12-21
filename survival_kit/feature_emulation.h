@@ -14,31 +14,15 @@
 #include "survival_kit/feature_emulation/scope.h"
 #include "survival_kit/feature_emulation/unittest.h"
 
-
-/** Exception definitions.  TODO: these should have a definition syntax that allows a separate tool to sweep all source files and automatically allocate non-colliding error codes for all exceptions and place them in a file that can be included from ERR_UTIL.H. */
-/* GENERIC exceptions are the root of all catchable exceptions. */
-/* @define_exception(GENERIC_EXCEPTION, "An exception was thrown.") */
-/* @define_exception(BREAK_IN_TRY_CATCH : GENERIC_EXCEPTION,
-"Code has attempted to use a 'break' statement from within a sTRY-sCATCH block.\n"
-"This could easily corrupt program execution and corrupt debugging data.\n"
-"Do not do this, ever!") */
-/* @define_exception(CONTINUE_IN_TRY_CATCH : GENERIC_EXCEPTION,
-"Code has attempted to use a 'continue' statement from within a sTRY-sCATCH block.\n"
-"This could easily corrupt program execution and corrupt debugging data.\n"
-"Do not do this, ever!" ) */
-
-/*
-FATAL exceptions should never be caught.
-They signal potentially irreversable corruption, such as memory corruption
-that may cause things like unexpected null pointers or access violations.
-*/
-/* @define_exception(FATAL_EXCEPTION, "A fatal exception was thrown.") */
+#define SKIT_NO_HEADER_IN_CONDITIONAL_TXT \
+	The_SKIT_USE_FEATURE_EMULATION_header_must_not_appear_in_conditional_statements_like_if_or_while
 
 /** Place this at the top of function bodies that use language feature emulation. */
-#define SKIT_USE_FEATURE_EMULATION \
-	do { \
-		sASSERT(skit_init_was_called()); \
-	}while(0); \
+#define SKIT_USE_FEATURE_EMULATION /* */ \
+	char SKIT_NO_HEADER_IN_CONDITIONAL_TXT; /* error if some does "if (x) SKIT_USE_FEATURE_EMULATION; */ \
+	(void)SKIT_NO_HEADER_IN_CONDITIONAL_TXT; \
+	if ( skit_init_was_called() ) \
+		skit_init(); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_USE_FEATURES_IN_FUNC_BODY, 0); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_RETURN_HAS_USE_TXT, 1); \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
