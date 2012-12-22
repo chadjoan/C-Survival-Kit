@@ -5,14 +5,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include "survival_kit/misc.h" /* for skit_die */
-
-/* 
-skit_print_stack_trace() is defined by "survival_kit/feature_emulation/stack_trace.h"
-These are duplicate definitions made to prevent macro recursion.
-Please keep them in sync.
-*/
-#define skit_print_stack_trace() skit_print_stack_trace_func(__LINE__,__FILE__,__func__)
-void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func );
+#include "survival_kit/feature_emulation/stack_trace.h"
 
 #define sASSERT( val ) \
 	do { \

@@ -28,7 +28,6 @@ void skit_init()
 	skit_sig_init();
 	skit_stream_static_init_all();
 	pthread_key_create(&__skit_thread_init_called, &skit_thread_dummy_dtor);
-	skit_thread_init();
 	__skit_init_called = 1;
 }
 
@@ -39,6 +38,9 @@ int skit_init_was_called()
 
 void _skit_thread_module_init()
 {
+	if ( skit_thread_init_was_called() )
+		return;
+
 	skit_cstr_thread_init();
 	pthread_setspecific(__skit_thread_init_called, (void*)1);
 }

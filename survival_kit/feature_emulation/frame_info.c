@@ -18,11 +18,12 @@
 #undef SKIT_T_NAME
 #undef SKIT_T_DIE_ON_ERROR
 
-void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func )
+void skit_debug_info_store( skit_frame_info *dst, int line, const char *file, const char *func, const char *specifics )
 {
-	SKIT_FEATURE_TRACE("%s, %d: skit_debug_info_store(...,%d, %s, %s)\n", file, line, line, file, func);
+	SKIT_FEATURE_TRACE("%s, %d: skit_debug_info_store(...,%d, %s, %s, %s)\n", file, line, line, file, func, specifics);
 	
 	dst->line_number = line;
 	dst->file_name = file;
 	dst->func_name = func;
+	dst->specifics = specifics;
 }

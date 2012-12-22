@@ -3,7 +3,8 @@
 #define SKIT_FEMU_THREAD_CTX_INCLUDED
 
 #include <pthread.h>
-#include <stdio.h> 
+#include <stdio.h>
+#include <unistd.h> /* ssize_t */
 
 #include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/feature_emulation/frame_info.h"
@@ -43,6 +44,13 @@ struct skit_thread_context
 	skit_exc_fstack   exc_instance_stack;
 	char *error_text_buffer;
 	int error_text_buffer_size;
+	
+	/* This one may seem to be needlessly redundant with skit_stack_depth,
+	however, it is not.  Certain constructs, like sTRY-sEND_TRY, will call
+	SKIT_THREAD_CHECK_ENTRY and SKIT_THREAD_CHECK_EXIT, but they will not
+	establish a new frame in the debug stack.  
+	*/
+	ssize_t entry_check_count;
 };
 
 /* Internal: used in macros to emulate language features. */
@@ -53,6 +61,7 @@ void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 ssize_t skit_stack_depth( skit_thread_context *ctx );
 skit_thread_context *_skit_create_thread_context();
+skit_thread_context *_skit_free_thread_context(skit_thread_context *ctx);
 void _skit_thread_context_ctor( skit_thread_context *ctx );
 void _skit_thread_context_dtor( skit_thread_context *ctx );
 

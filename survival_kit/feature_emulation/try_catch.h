@@ -200,7 +200,7 @@ exception allocated in the code that threw the exception.
 				} \
 				sASSERT(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
 			} /* default: { } */ \
-			} /* switch(setjmp(*__push...)) */ \
+			} /* switch(setjmp(*skit_jmp_fstack_alloc(...))) */ \
 			/* If execution makes it here, then the caller */ \
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \
@@ -210,6 +210,12 @@ exception allocated in the code that threw the exception.
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
+			/* This acts as if we first leave the TRY-CATCH and then thrown. */ \
+			/* In that situation, we want to nest our entry-exit checks correctly */ \
+			/* during the short time where we "leave". */ \
+			/* It's OK this check trashes the context.  The sTHROW statement will */ \
+			/* make another. */ \
+			SKIT_THREAD_CHECK_EXIT(skit_thread_ctx); \
 			sTHROW(SKIT_BREAK_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'break' statement from within a sTRY-sCATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \
@@ -224,6 +230,12 @@ exception allocated in the code that threw the exception.
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
+		/* This acts as if we first leave the TRY-CATCH and then thrown. */ \
+		/* In that situation, we want to nest our entry-exit checks correctly */ \
+		/* during the short time where we "leave". */ \
+		/* It's OK this check trashes the context.  The sTHROW statement will */ \
+		/* make another. */ \
+		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx); \
 		sTHROW(SKIT_CONTINUE_IN_TRY_CATCH, "\n"\
 "Code has attempted to use a 'continue' statement from within a sTRY-sCATCH block.\n" \
 "This could easily corrupt program execution and corrupt debugging data.\n" \

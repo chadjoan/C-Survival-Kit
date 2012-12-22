@@ -5,6 +5,7 @@
 #include <pthread.h>
 
 #include "survival_kit/feature_emulation/init.h"
+#include "survival_kit/feature_emulation/debug.h"
 #include "survival_kit/feature_emulation/thread_context.h"
 
 /**
@@ -44,6 +45,9 @@ int skit_init_was_called();
 			SKIT_THREAD_ENTRY_POINT(skit_thread_ctx), \
 			1 \
 		) : ( 1 ), \
+		(skit_thread_ctx->entry_check_count)++, \
+		SKIT_CTX_BALANCE_TRACE("SKIT_THREAD_CHECK_ENTRY at %d in %s\n", __LINE__, __func__), \
+		SKIT_CTX_BALANCE_TRACE("entry_check_count++ ==  %ld\n", skit_thread_ctx->entry_check_count), \
 		1 \
 	)
 
@@ -59,13 +63,34 @@ void _skit_thread_module_init();
 
 #define SKIT_THREAD_CHECK_EXIT(skit_thread_ctx) \
 	( \
-		( skit_stack_depth(skit_thread_ctx) == 0 ) ? \
+		(skit_thread_ctx->entry_check_count)--, \
+		SKIT_CTX_BALANCE_TRACE("SKIT_THREAD_CHECK_EXIT at %d in %s\n", __LINE__, __func__), \
+		SKIT_CTX_BALANCE_TRACE("entry_check_count-- ==  %ld\n", skit_thread_ctx->entry_check_count), \
+		( skit_thread_ctx->entry_check_count == 0 ) ? \
 		( \
 			SKIT_THREAD_EXIT_POINT(skit_thread_ctx), \
 			1 \
 		) : ( 1 ), \
 		1 \
 	)
+
+/* Similar to SKIT_THREAD_CHECK_EXIT, this is called when a longjmp is about */
+/*   to be taken that will leave a feature due to thrown exceptions rather */
+/*   than normal program execution.  In that case we need to do some basic */
+/*   bookkeeping like decrementing the entry_check_count, but we do NOT want */
+/*   to destroy the thread context because it will be needed as the stack */
+/*   unwinds (usually it is used in the very next longjmp). */
+#define SKIT_THREAD_UNWIND_EVENT(skit_thread_ctx) \
+	SKIT_THREAD_UNWIND_EVENT_LFF(skit_thread_ctx, __LINE__, __FILE__, __func__)
+
+#define SKIT_THREAD_UNWIND_EVENT_LFF(skit_thread_ctx, line, file, func) \
+	( \
+		(skit_thread_ctx->entry_check_count)--, \
+		SKIT_CTX_BALANCE_TRACE("SKIT_THREAD_UNWIND_EVENT at %d in %s\n", line, func), \
+		SKIT_CTX_BALANCE_TRACE("entry_check_count-- ==  %ld\n", skit_thread_ctx->entry_check_count), \
+		1 \
+	)
+	
 
 void _skit_thread_module_cleanup();
 

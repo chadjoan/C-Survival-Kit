@@ -186,6 +186,7 @@ from sTRY-sCATCH blocks.
 		(void)SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR; \
 		\
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
+		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx); /* Corresponds to the SKIT_THREAD_CHECK_ENTRY in sSCOPE_GUARD_BEGIN */ \
 		return_expr; \
 	}
 

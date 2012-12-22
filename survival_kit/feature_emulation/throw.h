@@ -124,6 +124,7 @@ Example usage:
 		/* skit_push_exception_obj now has a shallow copy. */ \
 		/* The catch statement that will be encountered later will handle the rest of the resource cleanup. */ \
 		skit_free(exc); \
+		skit_print_stack_trace_func(__LINE__, __FILE__, __func__, " <- thrown from here."); \
 		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
 
@@ -146,7 +147,7 @@ NOTE: Do not expand this macro in any function besides the one with the
 #define __SKIT_PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	( \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT), \
-		skit_propogate_exceptions(skit_thread_ctx), \
+		skit_propogate_exceptions(skit_thread_ctx, __LINE__, __FILE__, __func__), \
 		1 \
 	)
 

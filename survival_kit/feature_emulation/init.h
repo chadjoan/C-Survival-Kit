@@ -4,6 +4,7 @@
 
 #include "survival_kit/feature_emulation/init.h"
 #include "survival_kit/feature_emulation/thread_context.h"
+#include "survival_kit/feature_emulation/frame_info.h"
 
 /* Internal: users should call skit_init() instead. */
 void skit_features_init();
@@ -12,6 +13,10 @@ void skit_features_init();
 #define SKIT_THREAD_CONTEXT_INIT(ctx) \
 	( \
 		ctx = _skit_create_thread_context(), \
+		\
+		skit_debug_info_store( \
+			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
+			__LINE__,__FILE__,__func__, " <- stack context established here."), \
 		\
 		/* This establishes the bottom of the stack for exception handling. */ \
 		/* It MUST be impossible for other code to jump here when the function */ \
@@ -36,7 +41,7 @@ void skit_features_init();
 
 #define SKIT_THREAD_CONTEXT_CLEANUP(ctx) \
 	( \
-		_skit_thread_context_dtor(ctx), \
+		ctx = _skit_free_thread_context(ctx), \
 		1 \
 	)
 	

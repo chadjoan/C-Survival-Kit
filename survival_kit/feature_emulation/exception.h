@@ -222,7 +222,7 @@ skit_throw_exception_no_ctx.
 It should not be called by user code or anything else that doesn't truly need
 access to the internals of exception handling.
 */
-void skit_propogate_exceptions( skit_thread_context *skit_thread_ctx );
+void skit_propogate_exceptions(skit_thread_context *skit_thread_ctx, int line, const char *file, const char *func);
 
 /** Prints the given exception to stdout. */
 void skit_print_exception(skit_exception *e);

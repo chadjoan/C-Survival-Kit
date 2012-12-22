@@ -162,6 +162,32 @@ void skit_exception_dtor( skit_thread_context *skit_thread_ctx, skit_exception *
 
 /* ------------------------------------------------------------------------- */
 
+void skit_propogate_exceptions(skit_thread_context *skit_thread_ctx, int line, const char *file, const char *func)
+{
+	skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val);
+	SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception\n", __FILE__, __LINE__,__func__);
+	/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */
+	if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 )
+	{
+		SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception longjmp.\n", __FILE__, __LINE__,__func__);
+		SKIT_THREAD_UNWIND_EVENT_LFF(skit_thread_ctx, line, file, func);
+		longjmp(
+			skit_thread_ctx->exc_jmp_stack.used.front->val,
+			exc->error_code);
+	}
+	else
+	{
+		/* This code path shouldn't really happen. */
+		/* The code establishing the thread context will add an extra setjmp */
+		/*   that is used for handling exceptions. */
+		SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception failing.\n", __FILE__, __LINE__,__func__);
+		skit_print_exception(exc); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */
+		skit_die("Exception thrown with no handlers left in the stack.");
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+
 static void skit_fill_exception(
 	skit_thread_context *skit_thread_ctx,
 	skit_exception *exc,
@@ -184,7 +210,7 @@ static void skit_fill_exception(
 		char *error_text_buffer = skit_malloc(error_buffer_size);
 		int error_len = vsnprintf(
 			error_text_buffer,
-			error_text_buffer, fmtMsg, var_args);
+			error_buffer_size, fmtMsg, var_args);
 		
 		/* vsnprintf can return lengths greater than the buffer.  In these cases, truncation occured. */
 		if ( error_len >= error_buffer_size )
@@ -196,8 +222,8 @@ static void skit_fill_exception(
 		exc->debug_info_stack = skit_malloc(sizeof(skit_debug_stack));
 		skit_debug_stack_init(exc->debug_info_stack);
 		
-		skit_frame_info fi;
-		skit_debug_info_store(&fi, line, file, func);
+		skit_debug_stnode *fi = skit_malloc(sizeof(skit_debug_stnode));
+		skit_debug_info_store(&fi->val, line, file, func, " <- exception happened here.");
 		skit_debug_stack_push(exc->debug_info_stack, fi);
 		
 		exc->frame_info_node = exc->debug_info_stack->front;
@@ -227,7 +253,7 @@ static void skit_fill_exception(
 		exc->error_len = error_len;
 		
 		SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
-		skit_debug_info_store(fi, line, file, func);
+		skit_debug_info_store(fi, line, file, func, " <- exception happened here.");
 		
 		if ( saveStack )
 		{
@@ -247,28 +273,6 @@ static void skit_fill_exception(
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack);
 	}
 	
-}
-
-/* ------------------------------------------------------------------------- */
-
-void skit_propogate_exceptions(skit_thread_context *skit_thread_ctx)
-{
-	skit_exception *exc = &(skit_thread_ctx->exc_instance_stack.used.front->val);
-	SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception\n", __FILE__, __LINE__,__func__);
-	/* SKIT_FEATURE_TRACE("frame_info_index: %li\n",__frame_info_end-1); */
-	if ( skit_thread_ctx->exc_jmp_stack.used.length > 0 )
-	{
-		SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception longjmp.\n", __FILE__, __LINE__,__func__);
-		longjmp(
-			skit_thread_ctx->exc_jmp_stack.used.front->val,
-			exc->error_code);
-	}
-	else
-	{
-		SKIT_FEATURE_TRACE("%s, %d in %s: skit_propogate_exception failing.\n", __FILE__, __LINE__,__func__);
-		skit_print_exception(exc); /* TODO: this is probably a dynamic allocation and should be replaced by fprint_exception or something. */
-		skit_die("Exception thrown with no handlers left in the stack.");
-	}
 }
 
 /* ------------------------------------------------------------------------- */
@@ -299,7 +303,7 @@ void skit_throw_exception_no_ctx(
 		vl);
 	va_end(vl);
 	
-	skit_propogate_exceptions(skit_thread_ctx);
+	skit_propogate_exceptions(skit_thread_ctx, line, file, func);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -454,10 +458,10 @@ void skit_print_exception(skit_exception *e)
 
 void skit_print_uncaught_exceptions(skit_thread_context *skit_thread_ctx)
 {
-	while ( ctx->exc_instance_stack.used.length > 0 )
+	while ( skit_thread_ctx->exc_instance_stack.used.length > 0 )
 	{
 		fprintf(stderr,"Attempting to print exception:\n");
-		skit_print_exception( skit_exc_fstack_pop(&ctx->exc_instance_stack) );
+		skit_print_exception( skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack) );
 		fprintf(stderr,"\n");
 	}
 }

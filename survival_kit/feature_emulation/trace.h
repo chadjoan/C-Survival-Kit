@@ -12,7 +12,7 @@
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/assert.h"
 
-#define SKIT_TRACE_INTERNAL(assignment, returned_expr) /* */ \
+#define SKIT_TRACE_INTERNAL(original_code, assignment, returned_expr) /* */ \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
@@ -30,7 +30,7 @@
 		\
 		skit_debug_info_store( \
 			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
-			__LINE__,__FILE__,__func__), \
+			__LINE__,__FILE__,__func__, #original_code), \
 		\
 		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"), \
 		(setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) ? \
@@ -82,7 +82,7 @@ calls in this macro is desirable though, because the calling file, line,
 and function name will be absent from stack traces if this is not used.
 */	
 #define sTRACE(statement) /* */ \
-	do { SKIT_TRACE_INTERNAL((statement), (void)__skit_sTRACE_return_value); } while (0)
+	do { SKIT_TRACE_INTERNAL((statement), (statement), (void)__skit_sTRACE_return_value); } while (0)
 
 /**
 This serves the same function as sTRACE, but with the advantage that it can
@@ -98,6 +98,6 @@ The disadvantage of sETRACE is that it cannot be used on void expressions:
   sETRACE(bar()); // Error!  Attempt to assign a void to a non-void.
 */
 #define sETRACE(expr) /* */ \
-	SKIT_TRACE_INTERNAL(sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
+	SKIT_TRACE_INTERNAL((expr), sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
 
 #endif

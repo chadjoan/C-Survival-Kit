@@ -26,8 +26,9 @@
 	SKIT_COMPILE_TIME_CHECK(SKIT_USE_FEATURES_IN_FUNC_BODY, 0); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_RETURN_HAS_USE_TXT, 1); \
 	skit_thread_context *skit_thread_ctx = skit_thread_context_get(); \
-	sASSERT(skit_thread_init_was_called()); \
-	sASSERT(skit_thread_ctx != NULL); \
+	/* skit_thread_ctx is allowed to be NULL. */ \
+	/* It will be initialized as-needed in that case. */ \
+	/* Search for calls to SKIT_THREAD_CHECK_ENTRY to find out where this happesn. */ \
 	SKIT_USE_SCOPE_EMULATION; \
 	SKIT_USE_TRY_CATCH_EMULATION; \
 	(void)skit_thread_ctx; \

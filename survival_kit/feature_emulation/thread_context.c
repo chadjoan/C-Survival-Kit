@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "survival_kit/misc.h" /* skit_die */
+#include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/thread_context.h"
 #include "survival_kit/feature_emulation/stack_trace.h"
 #include "survival_kit/feature_emulation/debug.h"
@@ -87,11 +88,12 @@ void _skit_thread_context_ctor( skit_thread_context *ctx )
 	ctx->error_text_buffer = (char*)skit_malloc(ctx->error_text_buffer_size);
 	if ( ctx->error_text_buffer == NULL )
 		ctx->error_text_buffer_size = 0;
+
+	ctx->entry_check_count = 0;
 }
 
-void _skit_thread_context_dtor(void *ctx_ptr)
+void _skit_thread_context_dtor(skit_thread_context *ctx)
 {
-	skit_thread_context *ctx = (skit_thread_context*)ctx_ptr;
 	/* Do nothing for now. TODO: This will be important for multithreading. BUG: memory leak! */
 	(void)ctx;
 	/* NULL the current thread context key. */
@@ -100,10 +102,21 @@ void _skit_thread_context_dtor(void *ctx_ptr)
 	pthread_setspecific(skit_thread_context_key, NULL); 
 }
 
+
 skit_thread_context *_skit_create_thread_context()
 {
 	skit_thread_context *ctx = skit_malloc(sizeof(skit_thread_context));
 	_skit_thread_context_ctor(ctx);
 	pthread_setspecific(skit_thread_context_key, (void*)ctx);
+	SKIT_CTX_BALANCE_TRACE("(((((((((((((((((((((((((((((((((((((( _skit_create_thread_context\n");
 	return ctx;
+}
+
+skit_thread_context *_skit_free_thread_context(skit_thread_context *ctx)
+{
+	SKIT_CTX_BALANCE_TRACE(")))))))))))))))))))))))))))))))))))))) _skit_free_thread_context\n");
+	pthread_setspecific(skit_thread_context_key, NULL);
+	_skit_thread_context_dtor(ctx);
+	skit_free(ctx);
+	return NULL;
 }
