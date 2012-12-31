@@ -177,8 +177,8 @@ struct skit_scope_context
 			if ( skit_jmp_code != 0 ) \
 			{ \
 				__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
+				SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
 				skit_propogate_exceptions(skit_thread_ctx, __LINE__, __FILE__, __func__); \
-				/*longjmp(skit_thread_ctx->exc_jmp_stack.used.front->val, skit_jmp_code);*/ \
 			} \
 		} \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->scope_jmp_stack, &skit_malloc)) != 0 ) \
@@ -328,6 +328,7 @@ returned.
 				/* Pop the extra jmp frame that was allocated to catch any unplanned exits. */ \
 				/* The code that allocated the frame will handle further longjmp'ing. */ \
 				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+				SKIT_THREAD_CHECK_EXIT(skit_thread_ctx), /* Corresponds to the SKIT_THREAD_CHECK_ENTRY in sSCOPE_GUARD_BEGIN */ \
 				1 \
 			) : (1), \
 			1 \
@@ -338,7 +339,6 @@ returned.
 	if ( !SKIT_END_SCOPE_WITHOUT_SCOPE_TXT ) \
 	{ \
 		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
-		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx); /* Corresponds to the SKIT_THREAD_CHECK_ENTRY in sSCOPE_GUARD_BEGIN */ \
 	} \
 	SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 	(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \

@@ -11,7 +11,7 @@
 	#define SKIT_FEATURE_TRACE(...) ((void)1)
 #endif
 
-#define SKIT_FEMU_LOUD_CONTEXT_BALANCE 1
+#define SKIT_FEMU_LOUD_CONTEXT_BALANCE 0
 #if SKIT_FEMU_LOUD_CONTEXT_BALANCE == 1
 	#define SKIT_CTX_BALANCE_TRACE(...) (printf(__VA_ARGS__))
 #else
