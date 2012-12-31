@@ -90,6 +90,7 @@ exception allocated in the code that threw the exception.
 
 #define SKIT_USE_TRY_CATCH_EMULATION \
 	int __skit_try_catch_nesting_level = 0; \
+	(void)__skit_try_catch_nesting_level; \
 	do {} while(0)
 
 /** */
