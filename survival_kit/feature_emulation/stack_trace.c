@@ -137,10 +137,11 @@ static int skit_stack_to_str_each(void *context, const skit_debug_stnode *node)
 	
 	ssize_t nchars = snprintf(
 		ctx->msg_pos, ctx->msg_rest_length,
-		"%s: at line %d in function %s\r\n",
+		"%s: at line %d in %s: %s\r\n",
 		name,
 		fi->line_number,
-		fi->func_name);
+		fi->func_name,
+		fi->specifics);
 	
 #ifdef __VMS
 	free(device);
@@ -210,14 +211,14 @@ char *skit_stack_to_str_internal(
 
 static char skit_no_init_no_trace_msg[] = "No stack trace available because neither skit_init nor skit_thread_init were called.\n";
 
-const char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func )
+const char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const char *func, const char *specifics )
 {
 	char *result = NULL;
 	if ( skit_thread_init_was_called() )
 	{
 		skit_thread_context *skit_thread_ctx = skit_thread_context_get();
 		skit_frame_info *fi = skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc);
-		skit_debug_info_store(fi, line, file, func);
+		skit_debug_info_store(fi, line, file, func, specifics);
 		result = skit_fstack_to_str_internal(
 			skit_thread_ctx, 
 			&skit_thread_ctx->debug_info_stack,
@@ -234,9 +235,9 @@ const char *skit_stack_trace_to_str_expr( uint32_t line, const char *file, const
 /* ------------------------------------------------------------------------- */
 
 /* TODO: stack trace printing should block signals. */
-void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func )
+void skit_print_stack_trace_func( uint32_t line, const char *file, const char *func, const char *specifics )
 {
 	printf("Attempting to print stack trace.\n");
-	const char *result = skit_stack_trace_to_str_expr(line,file,func);
+	const char *result = skit_stack_trace_to_str_expr(line,file,func,specifics);
 	printf("Stack trace:\n%s\n", result);
 }

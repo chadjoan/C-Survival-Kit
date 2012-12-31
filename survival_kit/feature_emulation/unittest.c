@@ -54,20 +54,26 @@ static void unittest_exceptions()
 	SKIT_USE_FEATURE_EMULATION;
 	int pass;
 	
+	printf("Testing exception inheritence.\n");
 	if( !skit_exception_is_a(SKIT_EXCEPTION,          SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if( !skit_exception_is_a(SKIT_BREAK_IN_TRY_CATCH, SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	if(  skit_exception_is_a(SKIT_FATAL_EXCEPTION,    SKIT_EXCEPTION) ) skit_die("%s, %d: Assertion failed.",__FILE__,__LINE__);
 	
+	printf("Registering a new exception.\n");
 	SKIT_EXCEPTION_UTEST = SKIT_EXCEPTION_INITIAL_VAL;
 	SKIT_REGISTER_EXCEPTION(SKIT_EXCEPTION_UTEST, SKIT_EXCEPTION, "Exceptions unittest failure.");
 	
+	pass = 0;
 	sTRY
 		sTRACE(baz());
-		printf("No exception thrown.\n");
+		printf("No exception thrown. (Good!)\n");
+		pass = 1;
 	sCATCH(SKIT_EXCEPTION, e)
+		printf("Exception thrown. (Bad!)\n");
 		skit_print_exception(e);
 		assert(0);
 	sEND_TRY
+	assert(pass);
 	
 	printf("------\n");
 	printf("Exception pattern matching.\n");
@@ -216,7 +222,7 @@ sSCOPE
 	unittest_scope_fn_that_throws();
 sEND_SCOPE
 
-static void unittest_scope_exit_exceptional_call(int *result)
+static void unittest_scope_exit_exceptional_trace(int *result)
 sSCOPE
 	SKIT_USE_FEATURE_EMULATION;
 	
@@ -341,6 +347,7 @@ static void unittest_scope()
 {
 	SKIT_USE_FEATURE_EMULATION;
 	int val = 1;
+	printf("scope unittest.\n");
 	
 	unittest_scope_exit_normal(&val);
 	sASSERT_EQ(val,0,"%d");
@@ -362,7 +369,7 @@ static void unittest_scope()
 	sEND_TRY
 	
 	sTRY
-		unittest_scope_exit_exceptional_call(&val);
+		unittest_scope_exit_exceptional_trace(&val);
 	sCATCH(SKIT_EXCEPTION,e)
 		sASSERT_EQ(val,0,"%d");
 	sEND_TRY
@@ -400,17 +407,44 @@ static void unittest_scope()
 	sRETURN_;
 }
 
-void skit_unittest_features()
+static void skit_goto_unittest()
 {
 	/* goto gets redefined in compile_time_errors.h.  
 	It's used uncommonly enough that we should make sure it
 	still compiles in places where it should compile. */
 	goto foolabel;
 	foolabel:
-	
+	return;
+}
+
+void skit_unittest_features()
+{
+	SKIT_USE_FEATURE_EMULATION;
 	printf("skit_unittest_features()\n");
+	
+	int do_context_balance_test = 0;
+	if ( skit_thread_ctx == NULL )
+		do_context_balance_test = 1;
+	
+	skit_goto_unittest();
+	
 	unittest_exceptions();
 	unittest_scope();
+	
+	if ( do_context_balance_test && skit_thread_context_get() != NULL )
+	{
+		printf("!!!!!!!!!!!!!!!!!!!\n");
+		printf("Number of calls to _skit_create_thread_context and _skit_free_thread_context\n");
+		printf("did not balance.  This will cause memory leaks or segfaults in programs that\n");
+		printf("establish and destroy thread contexts more than once (ex: multithreading).\n");
+#if SKIT_FEMU_LOUD_CONTEXT_BALANCE != 1
+		printf("Change the SKIT_FEMU_LOUD_CONTEXT_BALANCE flag to 1\n");
+		printf("  in survival_kit/feature_emulation/debug.h\n");
+		printf("then rerun the unittests to diagnose where things became out of balance.\n");
+#endif
+		assert(0);
+	}
+	
 	printf("  features unittest passed!\n");
 	printf("\n");
 }

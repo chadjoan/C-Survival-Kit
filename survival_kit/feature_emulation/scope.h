@@ -147,6 +147,14 @@ struct skit_scope_context
 	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && SKIT_SCOPE_EXIT_HAS_USE_TXT ){ \
 		if ( !skit_scope_ctx->scope_guards_used ) \
 		{ \
+			/* We place this context entry check here because it is the one */ \
+			/*   place in the scope feature that is guaranteed to have have */ \
+			/*   only one corresponding end point: an sEND_SCOPE or sRETURN. */ \
+			/* We'll put the corresponding exit check in either of those */ \
+			/*   places. */ \
+			\
+			SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
+			\
 			/* Placing this fstack_alloc has been tricky. */ \
 			/* It can't go in the sSCOPE statement because skit_thread_ctx isn't defined at that point. */ \
 			/* It can't go in the SKIT_USE_FEATURE_EMULATION statement because it will unbalance */ \
@@ -169,7 +177,8 @@ struct skit_scope_context
 			if ( skit_jmp_code != 0 ) \
 			{ \
 				__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
-				longjmp(skit_thread_ctx->exc_jmp_stack.used.front->val, skit_jmp_code); \
+				SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
+				skit_propogate_exceptions(skit_thread_ctx, __LINE__, __FILE__, __func__); \
 			} \
 		} \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->scope_jmp_stack, &skit_malloc)) != 0 ) \
@@ -319,6 +328,7 @@ returned.
 				/* Pop the extra jmp frame that was allocated to catch any unplanned exits. */ \
 				/* The code that allocated the frame will handle further longjmp'ing. */ \
 				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
+				SKIT_THREAD_CHECK_EXIT(skit_thread_ctx), /* Corresponds to the SKIT_THREAD_CHECK_ENTRY in sSCOPE_GUARD_BEGIN */ \
 				1 \
 			) : (1), \
 			1 \

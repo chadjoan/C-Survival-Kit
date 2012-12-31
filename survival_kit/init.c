@@ -19,13 +19,15 @@ static void skit_thread_dummy_dtor(void *context) {}
 
 void skit_init()
 {
+	if ( skit_init_was_called() )
+		return;
+
 	skit_init_exceptions();
 	skit_features_init();
 	skit_cstr_init();
 	skit_sig_init();
 	skit_stream_static_init_all();
 	pthread_key_create(&__skit_thread_init_called, &skit_thread_dummy_dtor);
-	skit_thread_init();
 	__skit_init_called = 1;
 }
 
@@ -34,11 +36,19 @@ int skit_init_was_called()
 	return __skit_init_called;
 }
 
-void skit_thread_init()
+void _skit_thread_module_init()
 {
-	skit_features_thread_init();
+	if ( skit_thread_init_was_called() )
+		return;
+
 	skit_cstr_thread_init();
 	pthread_setspecific(__skit_thread_init_called, (void*)1);
+}
+
+void _skit_thread_module_cleanup()
+{
+	/* BUG: possible memory leak due to assymetrical init with skit_cstr_thread_init() */
+	pthread_setspecific(__skit_thread_init_called, (void*)0);
 }
 
 int skit_thread_init_was_called()

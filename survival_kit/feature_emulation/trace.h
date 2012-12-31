@@ -2,6 +2,7 @@
 #ifndef SKIT_FEATURE_EMULATION_CALL_INCLUDED
 #define SKIT_FEATURE_EMULATION_CALL_INCLUDED
 
+#include "survival_kit/init.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/feature_emulation/compile_time_errors.h"
 #include "survival_kit/feature_emulation/frame_info.h"
@@ -11,10 +12,12 @@
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/assert.h"
 
-#define SKIT_TRACE_INTERNAL(assignment, returned_expr) /* */ \
+#define SKIT_TRACE_INTERNAL(original_code, assignment, returned_expr) /* */ \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
+		\
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
 		\
 		/* Save a copies of the current stack positions. */ \
 		skit_save_thread_context_pos(skit_thread_ctx, &__skit_thread_ctx_pos), \
@@ -27,7 +30,7 @@
 		\
 		skit_debug_info_store( \
 			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
-			__LINE__,__FILE__,__func__), \
+			__LINE__,__FILE__,__func__, "code: " #original_code), \
 		\
 		SKIT_FEATURE_TRACE("Skit_jmp_stack_alloc\n"), \
 		(setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)) == 0 ) ? \
@@ -48,6 +51,8 @@
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack), \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
 		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos), \
+		\
+		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx), \
 		\
 		SKIT_FEATURE_TRACE("%s, %d.54: sTRACE.success\n", __FILE__, __LINE__), \
 		returned_expr \
@@ -77,7 +82,7 @@ calls in this macro is desirable though, because the calling file, line,
 and function name will be absent from stack traces if this is not used.
 */	
 #define sTRACE(statement) /* */ \
-	do { SKIT_TRACE_INTERNAL((statement), (void)__skit_sTRACE_return_value); } while (0)
+	do { SKIT_TRACE_INTERNAL(statement, (statement), (void)__skit_sTRACE_return_value); } while (0)
 
 /**
 This serves the same function as sTRACE, but with the advantage that it can
@@ -93,6 +98,6 @@ The disadvantage of sETRACE is that it cannot be used on void expressions:
   sETRACE(bar()); // Error!  Attempt to assign a void to a non-void.
 */
 #define sETRACE(expr) /* */ \
-	SKIT_TRACE_INTERNAL(sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
+	SKIT_TRACE_INTERNAL(expr, sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
 
 #endif
