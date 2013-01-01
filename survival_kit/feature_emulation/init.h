@@ -12,7 +12,7 @@ void skit_features_init();
 /* Internal: establishes the stack start. */
 #define SKIT_THREAD_CONTEXT_INIT(ctx) \
 	( \
-		ctx = _skit_create_thread_context(), \
+		ctx = skit__create_thread_context(), \
 		\
 		skit_debug_info_store( \
 			skit_debug_fstack_alloc(&skit_thread_ctx->debug_info_stack, &skit_malloc), \
@@ -21,7 +21,7 @@ void skit_features_init();
 		/* This establishes the bottom of the stack for exception handling. */ \
 		/* It MUST be impossible for other code to jump here when the function */ \
 		/*   enclosing this macro returns.  */ \
-		/* This means that _skit_thread_context_dtor must be called before the */ \
+		/* This means that skit__thread_context_dtor must be called before the */ \
 		/*   enclosing function returns. */ \
 		( setjmp( *skit_jmp_fstack_alloc(&ctx->exc_jmp_stack, &skit_malloc) ) != 0 ) ? \
 		( \
@@ -41,7 +41,7 @@ void skit_features_init();
 
 #define SKIT_THREAD_CONTEXT_CLEANUP(ctx) \
 	( \
-		ctx = _skit_free_thread_context(ctx), \
+		ctx = skit__free_thread_context(ctx), \
 		1 \
 	)
 	

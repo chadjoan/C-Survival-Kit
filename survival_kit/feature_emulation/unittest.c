@@ -434,7 +434,7 @@ void skit_unittest_features()
 	if ( do_context_balance_test && skit_thread_context_get() != NULL )
 	{
 		printf("!!!!!!!!!!!!!!!!!!!\n");
-		printf("Number of calls to _skit_create_thread_context and _skit_free_thread_context\n");
+		printf("Number of calls to skit__create_thread_context and skit__free_thread_context\n");
 		printf("did not balance.  This will cause memory leaks or segfaults in programs that\n");
 		printf("establish and destroy thread contexts more than once (ex: multithreading).\n");
 #if SKIT_FEMU_LOUD_CONTEXT_BALANCE != 1

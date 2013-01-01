@@ -63,10 +63,10 @@ void skit_init_exceptions()
 	skit_exceptions_initialized = 1;
 }
 
-static skit_err_code *_skit_exc_inheritance_table = NULL;
-static size_t _skit_exc_table_size = 0;
+static skit_err_code *skit__exc_inheritance_table = NULL;
+static size_t skit__exc_table_size = 0;
 
-void _skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg )
+void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg )
 {
 	/* 
 	Note that parent is passed by reference and not value.
@@ -86,24 +86,24 @@ void _skit__register_exception( skit_err_code *ecode, const skit_err_code *paren
 	assert(ecode_name != NULL);
 	assert(default_msg != NULL);
 	
-	*ecode = _skit_exc_table_size;
+	*ecode = skit__exc_table_size;
 	
-	if ( _skit_exc_inheritance_table == NULL )
+	if ( skit__exc_inheritance_table == NULL )
 	{
 		/* If this doesn't already exist, create the table and give it 1 element. */
-		_skit_exc_inheritance_table = skit_malloc(sizeof(skit_err_code));
-		_skit_exc_table_size = 1;
+		skit__exc_inheritance_table = skit_malloc(sizeof(skit_err_code));
+		skit__exc_table_size = 1;
 	}
 	else
 	{
 		/* If this does exist, it will need to grow by one element. */
-		_skit_exc_table_size += 1;
-		_skit_exc_inheritance_table = skit_realloc(
-			_skit_exc_inheritance_table,
-			sizeof(skit_err_code) * _skit_exc_table_size);
+		skit__exc_table_size += 1;
+		skit__exc_inheritance_table = skit_realloc(
+			skit__exc_inheritance_table,
+			sizeof(skit_err_code) * skit__exc_table_size);
 	}
 	
-	_skit_exc_inheritance_table[*ecode] = *parent;
+	skit__exc_inheritance_table[*ecode] = *parent;
 	/* printf("Defined %s as %ld\n", ecode_name, *ecode); */
 	/* TODO: do something with the ecode_name and default_msg. */
 }
@@ -118,7 +118,7 @@ int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 	while (1)
 	{
 		/* Invalid parent_codes. */
-		if ( parent_code >= _skit_exc_table_size )
+		if ( parent_code >= skit__exc_table_size )
 			assert(0);
 		
 		/* Match found! */
@@ -130,7 +130,7 @@ int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 			return 0;
 		
 		last_parent = parent_code;
-		parent_code = _skit_exc_inheritance_table[parent_code];
+		parent_code = skit__exc_inheritance_table[parent_code];
 	}
 	assert(0);
 }

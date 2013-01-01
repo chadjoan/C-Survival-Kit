@@ -104,7 +104,7 @@ were used instead of sSCOPE/sEND_SCOPE!
 /*
 As a general rule of thumb this should NEVER be passed as an argument into
 other functions; at least not for the purpose of having a called function
-perform scope guard scanning.  See the __SKIT_SCAN_SCOPE_GUARDS macro
+perform scope guard scanning.  See the SKIT__SCAN_SCOPE_GUARDS macro
 in "survival_kit/feature_emulation/scope.h" for more details.
 */
 typedef struct skit_scope_context skit_scope_context;
@@ -145,7 +145,7 @@ struct skit_scope_context
 
 #define sSCOPE_GUARD_BEGIN(macro_arg_exit_status) \
 	if(SKIT_SCOPE_GUARD_IS_IN_A_SCOPE_TXT && SKIT_SCOPE_EXIT_HAS_USE_TXT ){ \
-		if ( !skit_scope_ctx->scope_guards_used ) \
+		if ( !skit__scope_ctx->scope_guards_used ) \
 		{ \
 			/* We place this context entry check here because it is the one */ \
 			/*   place in the scope feature that is guaranteed to have have */ \
@@ -166,8 +166,8 @@ struct skit_scope_context
 			/* The existence of a scope guard will force sSCOPE/sEND_SCOPE to be used and thus */ \
 			/*   also force usage of sRETURN or sTHROW statements that will properly unwind */ \
 			/*   the scope_jmp_stack. */ \
-			skit_scope_ctx->scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
-			skit_scope_ctx->scope_guards_used = 1; \
+			skit__scope_ctx->scope_fn_exit = skit_jmp_fstack_alloc( &skit_thread_ctx->scope_jmp_stack, &skit_malloc ); \
+			skit__scope_ctx->scope_guards_used = 1; \
 			\
 			/* We set a  jump point to catch any exceptions that might be */ \
 			/* thrown from a function that wasn't called with the sTRACE macro. */ \
@@ -176,14 +176,14 @@ struct skit_scope_context
 			int skit_jmp_code = setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack, &skit_malloc)); \
 			if ( skit_jmp_code != 0 ) \
 			{ \
-				__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
+				SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT); \
 				SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
 				skit_propogate_exceptions(skit_thread_ctx, __LINE__, __FILE__, __func__); \
 			} \
 		} \
 		if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->scope_jmp_stack, &skit_malloc)) != 0 ) \
 		{ \
-			if ( (skit_scope_ctx->exit_status) & (macro_arg_exit_status) ) \
+			if ( (skit__scope_ctx->exit_status) & (macro_arg_exit_status) ) \
 			{ \
 				SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_SCOPE_GUARDS_PTR,0); \
 				SKIT_COMPILE_TIME_CHECK(SKIT_NO_CONTINUE_FROM_SCOPE_GUARDS_PTR,0); \
@@ -258,16 +258,16 @@ caller might pass into the macro.
 Ex: 
 #define FOO 3
 NSCOPE(FOO)
-should create __skit_scope_exit_3
-instead of __skit_scope_exit_FOO
+should create skit__scope_exit_3
+instead of skit__scope_exit_FOO
 */
-#define NSCOPE_EXPAND(__skit_unique_nscope_id) \
-	END_SCOPE_##__skit_unique_nscope_id##_found_without_preceding_SCOPE
+#define NSCOPE_EXPAND(skit__unique_nscope_id) \
+	END_SCOPE_##skit__unique_nscope_id##_found_without_preceding_SCOPE
 
-#define NSCOPE(__skit_unique_nscope_id) \
-	NSCOPE_EXPAND(__skit_unique_nscope_id)
+#define NSCOPE(skit__unique_nscope_id) \
+	NSCOPE_EXPAND(skit__unique_nscope_id)
 
-TODO: How do I make sRETURN macros that acknowledge nested scopes?  They would have to know to use __skit_scope_exit_3 instead of __skit_scope_fn_exit somehow.
+TODO: How do I make sRETURN macros that acknowledge nested scopes?  They would have to know to use skit__scope_exit_3 instead of skit__scope_fn_exit somehow.
 #endif
 
 #define SKIT_USE_SCOPE_EMULATION \
@@ -275,14 +275,14 @@ TODO: How do I make sRETURN macros that acknowledge nested scopes?  They would h
 	/*   scans all of the scope guards. */ \
 	/* Create a scope context and pointerize it so that macros as well as */ \
 	/*   other functions can use -> notation uniformly. */ \
-	skit_scope_context __skit_scope_ctx; \
-	skit_scope_context *skit_scope_ctx = &__skit_scope_ctx; \
+	skit_scope_context skit__scope_ctx_as_val; \
+	skit_scope_context *skit__scope_ctx = &skit__scope_ctx_as_val; \
 	/* Use (void) to silence misleading "warning: unused variable" messages from the compiler. */ \
-	(void) __skit_scope_ctx; \
-	(void) skit_scope_ctx; \
-	__skit_scope_ctx.scope_fn_exit = NULL; \
-	__skit_scope_ctx.scope_guards_used = 0; \
-	__skit_scope_ctx.exit_status = SKIT_SCOPE_NOT_EXITING; \
+	(void) skit__scope_ctx_as_val; \
+	(void) skit__scope_ctx; \
+	skit__scope_ctx_as_val.scope_fn_exit = NULL; \
+	skit__scope_ctx_as_val.scope_guards_used = 0; \
+	skit__scope_ctx_as_val.exit_status = SKIT_SCOPE_NOT_EXITING; \
 	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_EXIT_HAS_USE_TXT, 1); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_SUCCESS_HAS_USE_TXT, 1); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_SCOPE_FAILURE_HAS_USE_TXT, 1);
@@ -290,34 +290,34 @@ TODO: How do I make sRETURN macros that acknowledge nested scopes?  They would h
 /*
 WARNING: Do not expand this macro in any place besides the function with
   the scope guards that will be scanned by this.
-Rationale: The __SKIT_SCAN_SCOPE_GUARDS macro expands to a statement that 
+Rationale: The SKIT__SCAN_SCOPE_GUARDS macro expands to a statement that 
 includes a setjmp command that remembers the place where the 
-__SKIT_SCAN_SCOPE_GUARDS was.  It will then instruct the last scope guard 
+SKIT__SCAN_SCOPE_GUARDS was.  It will then instruct the last scope guard 
 to longjmp to that macro later.  The implication is that if the 
-__SKIT_SCAN_SCOPE_GUARDS macro appears in a different function stack
+SKIT__SCAN_SCOPE_GUARDS macro appears in a different function stack
 frame than the one that contains the scope guards, then it will longjmp
 back to a potentially obliterated stack frame.  
 Example call sequence:
 foo()      : Define some scopes.
-foo->bar() : __SKIT_SCAN_SCOPE_GUARDS (setjmp in bar(), then jump back to foo())
+foo->bar() : SKIT__SCAN_SCOPE_GUARDS (setjmp in bar(), then jump back to foo())
 foo()      : sSCOPE_EXIT : call baz()
 foo->baz() : Do something.  Anything.  bar()'s stack frame is now trashed.
 foo()      : baz() returned normally.
-foo()      : sSCOPE_EXIT finishes, longjmp back to __SKIT_SCAN_SCOPE_GUARDS in bar()
+foo()      : sSCOPE_EXIT finishes, longjmp back to SKIT__SCAN_SCOPE_GUARDS in bar()
 foo->bar() : Access baz()'s data... CRASH!
-The solution is that bar() should have never invoked __SKIT_SCAN_SCOPE_GUARDS.
-foo() should have instead called __SKIT_SCAN_SCOPE_GUARDS right after bar() 
+The solution is that bar() should have never invoked SKIT__SCAN_SCOPE_GUARDS.
+foo() should have instead called SKIT__SCAN_SCOPE_GUARDS right after bar() 
 returned.
 */
 
-#define __SKIT_SCAN_SCOPE_GUARDS(macro_arg_exit_status) /* */ \
+#define SKIT__SCAN_SCOPE_GUARDS(macro_arg_exit_status) /* */ \
 		( \
-			( __skit_try_catch_nesting_level == 0 && skit_scope_ctx->scope_guards_used ) ? \
+			( skit__try_catch_nesting_level == 0 && skit__scope_ctx->scope_guards_used ) ? \
 			( \
-				skit_scope_ctx->exit_status = macro_arg_exit_status, \
+				skit__scope_ctx->exit_status = macro_arg_exit_status, \
 				\
 				/* This setjmp tells the scan how to return to this point. */ \
-				( setjmp(*skit_scope_ctx->scope_fn_exit) == 0 ) ? \
+				( setjmp(*skit__scope_ctx->scope_fn_exit) == 0 ) ? \
 				( \
 					/* Now scan all scope guards, executing their contents. */ \
 					/* Because of the above setjmp, the last scope guard's longjmp */ \
@@ -338,7 +338,7 @@ returned.
 	/* Check to make sure there is a corresponding sSCOPE statement. */ \
 	if ( !SKIT_END_SCOPE_WITHOUT_SCOPE_TXT ) \
 	{ \
-		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
+		SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
 	} \
 	SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 	(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \

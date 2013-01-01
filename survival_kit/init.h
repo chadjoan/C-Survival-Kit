@@ -34,7 +34,7 @@ int skit_init_was_called();
 #define SKIT_THREAD_ENTRY_POINT(skit_thread_ctx) \
 	( \
 		SKIT_THREAD_CONTEXT_INIT(skit_thread_ctx), \
-		_skit_thread_module_init(), \
+		skit__thread_module_init(), \
 		1 \
 	)
 	
@@ -51,13 +51,13 @@ int skit_init_was_called();
 		1 \
 	)
 
-void _skit_thread_module_init();
+void skit__thread_module_init();
 
 /* Used internally to clean up when the stack is being exited. */
 #define SKIT_THREAD_EXIT_POINT(skit_thread_ctx) \
 	( \
 		SKIT_THREAD_CONTEXT_CLEANUP(skit_thread_ctx), \
-		_skit_thread_module_cleanup(), \
+		skit__thread_module_cleanup(), \
 		1 \
 	)
 
@@ -92,7 +92,7 @@ void _skit_thread_module_init();
 	)
 	
 
-void _skit_thread_module_cleanup();
+void skit__thread_module_cleanup();
 
 /**
 Using SKIT_THREAD_WAS_ENTERED() is probably a faster check that also considers

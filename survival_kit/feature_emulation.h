@@ -32,12 +32,12 @@
 	SKIT_USE_SCOPE_EMULATION; \
 	SKIT_USE_TRY_CATCH_EMULATION; \
 	(void)skit_thread_ctx; \
-	skit_thread_context_pos __skit_thread_ctx_pos; /* Declare here so that sTRACE doesn't have to. */ \
-	(void)__skit_thread_ctx_pos; \
-	void *__skit_sTRACE_return_value; \
-	(void)__skit_sTRACE_return_value; \
-	skit_exception *__skit_propogate_exception_tmp; \
-	(void)__skit_propogate_exception_tmp; \
+	skit_thread_context_pos skit__thread_ctx_pos; /* Declare here so that sTRACE doesn't have to. */ \
+	(void)skit__thread_ctx_pos; \
+	void *skit__sTRACE_return_value; \
+	(void)skit__sTRACE_return_value; \
+	skit_exception *skit__propogate_exception_tmp; \
+	(void)skit__propogate_exception_tmp; \
 	do {} while(0)
 	
 #endif

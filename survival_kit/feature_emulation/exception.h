@@ -113,10 +113,10 @@ skit_init_exceptions()
 ... other implementations ...
 
 */
-#define SKIT_REGISTER_EXCEPTION(ecode, parent, msg) (_skit__register_exception(&(ecode), &(parent), #ecode, (msg)))
+#define SKIT_REGISTER_EXCEPTION(ecode, parent, msg) (skit__register_exception(&(ecode), &(parent), #ecode, (msg)))
 
 /* Don't call this directly. */
-void _skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg );
+void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg );
 
 void skit_init_exceptions();
 
@@ -144,7 +144,7 @@ Due to the lack of the ability to include "survival_kit/feature_emulation/types.
   this definition is not allowed to use skit_thread_context* or anything that uses
   fstacks/stacks.  It obtains this information in the .c file by calling
   skit_thread_context_get.  Beware: it also has no way of expanding the
-  __SKIT_SCAN_SCOPE_GUARDS macro and thus can't finalize scope guards.  
+  SKIT__SCAN_SCOPE_GUARDS macro and thus can't finalize scope guards.  
   Do not use this in a function with scope guards.
 */
 void skit_throw_exception_no_ctx(
@@ -159,7 +159,7 @@ void skit_throw_exception_no_ctx(
 This is the more common alternative (still internal-use-only) to
 skit_throw_exception_no_ctx.  
 This is used by the ubiquitous sTHROW macro and also the SKIT_PUSH_EXCEPTION
-macro, in conjunction with __SKIT_PROPOGATE_THROWN_EXCEPTIONS when needed.
+macro, in conjunction with SKIT__PROPOGATE_THROWN_EXCEPTIONS when needed.
 It avoids making repeated calls to skit_thread_context_get.
 */
 void skit_push_exception(
@@ -217,7 +217,7 @@ void skit_push_exception_obj(skit_thread_context *skit_thread_ctx, skit_exceptio
 
 /* 
 Unwinds the stack while propogating the last thrown exception.
-This is used by both __SKIT_PROPOGATE_THROWN_EXCEPTIONS and 
+This is used by both SKIT__PROPOGATE_THROWN_EXCEPTIONS and 
 skit_throw_exception_no_ctx.
 It should not be called by user code or anything else that doesn't truly need
 access to the internals of exception handling.

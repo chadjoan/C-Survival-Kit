@@ -51,7 +51,7 @@ Example usage:
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)); \
-		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
 #define sTHROW2(etype, emsg) \
@@ -60,7 +60,7 @@ Example usage:
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg)); \
-		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 
 #define sTHROW3(etype, emsg, ...) \
@@ -69,7 +69,7 @@ Example usage:
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), __VA_ARGS__); \
-		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 
 #define sTHROW_VA(etype, emsg, vargs) \
@@ -78,7 +78,7 @@ Example usage:
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
 		skit_push_exception_va(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), (vargs)); \
-		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
 #define SKIT_NEW_EXCEPTION(...) SKIT_MACRO_DISPATCHER3(SKIT_NEW_EXCEPTION, __VA_ARGS__)(__VA_ARGS__)
@@ -125,13 +125,13 @@ Example usage:
 		/* The catch statement that will be encountered later will handle the rest of the resource cleanup. */ \
 		skit_free(exc); \
 		skit_print_stack_trace_func(__LINE__, __FILE__, __func__, " <- thrown from here."); \
-		__SKIT_PROPOGATE_THROWN_EXCEPTIONS; \
+		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
 
 #define SKIT_EXCEPTION_FREE(exc) \
 	(skit_exception_dtor(skit_thread_ctx, (exc)), skit_free((void*)(exc)))
 
-/* __SKIT_PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
+/* SKIT__PROPOGATE_THROWN_EXCEPTIONS is an implementation detail.
 // It does as the name suggests.  Do not call it from code that is not a part
 // of this feature emulation module.  It may change in the future if needed
 // to fix bugs or add new features.
@@ -141,12 +141,12 @@ NOTE: Do not expand this macro in any function besides the one with the
   exception propogation macro).  The method of return is a longjmp, and
   placing it in any function called by the function with the scope guards
   will cause a longjmp to an expired stack frame: bad news.
-  See the __SKIT_SCAN_SCOPE_GUARDS macro documentation in 
+  See the SKIT__SCAN_SCOPE_GUARDS macro documentation in 
   "survival_kit/feature_emulation/scope.h" for more details.
 */
-#define __SKIT_PROPOGATE_THROWN_EXCEPTIONS /* */ \
+#define SKIT__PROPOGATE_THROWN_EXCEPTIONS /* */ \
 	( \
-		__SKIT_SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT), \
+		SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_FAILURE_EXIT), \
 		skit_propogate_exceptions(skit_thread_ctx, __LINE__, __FILE__, __func__), \
 		1 \
 	)

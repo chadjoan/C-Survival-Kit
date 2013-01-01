@@ -75,7 +75,7 @@ ssize_t skit_stack_depth( skit_thread_context *ctx )
 	return ctx->debug_info_stack.used.length;
 }
 
-void _skit_thread_context_ctor( skit_thread_context *ctx )
+void skit__thread_context_ctor( skit_thread_context *ctx )
 {
 	skit_jmp_fstack_init(&ctx->try_jmp_stack);
 	skit_jmp_fstack_init(&ctx->exc_jmp_stack);
@@ -92,7 +92,7 @@ void _skit_thread_context_ctor( skit_thread_context *ctx )
 	ctx->entry_check_count = 0;
 }
 
-void _skit_thread_context_dtor(skit_thread_context *ctx)
+void skit__thread_context_dtor(skit_thread_context *ctx)
 {
 	/* Do nothing for now. TODO: This will be important for multithreading. BUG: memory leak! */
 	(void)ctx;
@@ -103,20 +103,20 @@ void _skit_thread_context_dtor(skit_thread_context *ctx)
 }
 
 
-skit_thread_context *_skit_create_thread_context()
+skit_thread_context *skit__create_thread_context()
 {
 	skit_thread_context *ctx = skit_malloc(sizeof(skit_thread_context));
-	_skit_thread_context_ctor(ctx);
+	skit__thread_context_ctor(ctx);
 	pthread_setspecific(skit_thread_context_key, (void*)ctx);
-	SKIT_CTX_BALANCE_TRACE("(((((((((((((((((((((((((((((((((((((( _skit_create_thread_context\n");
+	SKIT_CTX_BALANCE_TRACE("(((((((((((((((((((((((((((((((((((((( skit__create_thread_context\n");
 	return ctx;
 }
 
-skit_thread_context *_skit_free_thread_context(skit_thread_context *ctx)
+skit_thread_context *skit__free_thread_context(skit_thread_context *ctx)
 {
-	SKIT_CTX_BALANCE_TRACE(")))))))))))))))))))))))))))))))))))))) _skit_free_thread_context\n");
+	SKIT_CTX_BALANCE_TRACE(")))))))))))))))))))))))))))))))))))))) skit__free_thread_context\n");
 	pthread_setspecific(skit_thread_context_key, NULL);
-	_skit_thread_context_dtor(ctx);
+	skit__thread_context_dtor(ctx);
 	skit_free(ctx);
 	return NULL;
 }

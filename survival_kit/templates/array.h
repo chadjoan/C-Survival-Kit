@@ -126,10 +126,10 @@ This is analogous to SKIT_LOAF_ON_STACK from "survival_kit/string.h".
 See that macro for specifics on usage and behavior.
 */
 #define SKIT_ARRAY_ON_STACK(prefix, array_name, size) \
-	const char *__SKIT_LOAF_##array_name [ \
+	const char *SKIT__LOAF_##array_name [ \
 		(size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD]; \
 	skit_##prefix##_loaf array_name = skit_loaf_emplace( \
-		__SKIT_LOAF_##array_name, (size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD);
+		SKIT__LOAF_##array_name, (size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD);
 
 
 #endif

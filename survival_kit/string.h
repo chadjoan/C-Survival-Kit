@@ -195,8 +195,8 @@ Example:
 	skit_loaf_free(&loaf);
 */
 #define SKIT_LOAF_ON_STACK( loaf_name, size ) \
-	const char *__SKIT_LOAF_##loaf_name [size + SKIT_LOAF_EMPLACEMENT_OVERHEAD]; \
-	skit_loaf loaf_name = skit_loaf_emplace( __SKIT_LOAF_##loaf_name, size + SKIT_LOAF_EMPLACEMENT_OVERHEAD);
+	const char *SKIT__LOAF_##loaf_name [size + SKIT_LOAF_EMPLACEMENT_OVERHEAD]; \
+	skit_loaf loaf_name = skit_loaf_emplace( SKIT__LOAF_##loaf_name, size + SKIT_LOAF_EMPLACEMENT_OVERHEAD);
 
 /**
 These functions calculate the length of the given loaf/slice.

@@ -60,9 +60,9 @@ skit_thread_context *skit_thread_context_get();
 void skit_save_thread_context_pos( skit_thread_context *ctx, skit_thread_context_pos *pos );
 void skit_reconcile_thread_context( skit_thread_context *ctx, skit_thread_context_pos *pos );
 ssize_t skit_stack_depth( skit_thread_context *ctx );
-skit_thread_context *_skit_create_thread_context();
-skit_thread_context *_skit_free_thread_context(skit_thread_context *ctx);
-void _skit_thread_context_ctor( skit_thread_context *ctx );
-void _skit_thread_context_dtor( skit_thread_context *ctx );
+skit_thread_context *skit__create_thread_context();
+skit_thread_context *skit__free_thread_context(skit_thread_context *ctx);
+void skit__thread_context_ctor( skit_thread_context *ctx );
+void skit__thread_context_dtor( skit_thread_context *ctx );
 
 #endif

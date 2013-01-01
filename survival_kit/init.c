@@ -12,9 +12,9 @@
 
 #include <pthread.h>
 
-static int __skit_init_called = 0;
+static int skit__init_called = 0;
 
-pthread_key_t __skit_thread_init_called;
+pthread_key_t skit__thread_init_called;
 static void skit_thread_dummy_dtor(void *context) {}
 
 void skit_init()
@@ -27,28 +27,28 @@ void skit_init()
 	skit_cstr_init();
 	skit_sig_init();
 	skit_stream_static_init_all();
-	pthread_key_create(&__skit_thread_init_called, &skit_thread_dummy_dtor);
-	__skit_init_called = 1;
+	pthread_key_create(&skit__thread_init_called, &skit_thread_dummy_dtor);
+	skit__init_called = 1;
 }
 
 int skit_init_was_called()
 {
-	return __skit_init_called;
+	return skit__init_called;
 }
 
-void _skit_thread_module_init()
+void skit__thread_module_init()
 {
 	if ( skit_thread_init_was_called() )
 		return;
 
 	skit_cstr_thread_init();
-	pthread_setspecific(__skit_thread_init_called, (void*)1);
+	pthread_setspecific(skit__thread_init_called, (void*)1);
 }
 
-void _skit_thread_module_cleanup()
+void skit__thread_module_cleanup()
 {
 	/* BUG: possible memory leak due to assymetrical init with skit_cstr_thread_init() */
-	pthread_setspecific(__skit_thread_init_called, (void*)0);
+	pthread_setspecific(skit__thread_init_called, (void*)0);
 }
 
 int skit_thread_init_was_called()
@@ -63,7 +63,7 @@ int skit_thread_init_was_called()
 	/* returned if there was never any data associated with that key */
 	/* in this thread. */
 	/* See http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_setspecific.html */
-	return (size_t)pthread_getspecific(__skit_thread_init_called);
+	return (size_t)pthread_getspecific(skit__thread_init_called);
 }
 
 

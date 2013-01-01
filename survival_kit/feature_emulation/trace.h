@@ -20,7 +20,7 @@
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
 		\
 		/* Save a copies of the current stack positions. */ \
-		skit_save_thread_context_pos(skit_thread_ctx, &__skit_thread_ctx_pos), \
+		skit_save_thread_context_pos(skit_thread_ctx, &skit__thread_ctx_pos), \
 		/* This ensures that we can end up where we started in this call, */ \
 		/*   even if the callee messes up the jmp_stack. */ \
 		/* The jmp_stack could be messed up if someone tries to jump */ \
@@ -44,13 +44,13 @@
 			skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack), \
 			SKIT_FEATURE_TRACE("sTRACE: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length), \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
-			skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos), \
-			__SKIT_PROPOGATE_THROWN_EXCEPTIONS \
+			skit_reconcile_thread_context(skit_thread_ctx, &skit__thread_ctx_pos), \
+			SKIT__PROPOGATE_THROWN_EXCEPTIONS \
 		), \
 		\
 		skit_debug_fstack_pop(&skit_thread_ctx->debug_info_stack), \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack), \
-		skit_reconcile_thread_context(skit_thread_ctx, &__skit_thread_ctx_pos), \
+		skit_reconcile_thread_context(skit_thread_ctx, &skit__thread_ctx_pos), \
 		\
 		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx), \
 		\
@@ -65,11 +65,11 @@
 /*   sETRACE logic, which allows us to use it as an expression.            */
 /*   (Expressions cannot contain declarations.)                            */
 #define sETRACE_ASSIGNMENT(expr) /* */ \
-			(__skit_sTRACE_return_value = (void*)(char[sizeof(expr)]){""}, \
-			*(__typeof__(expr)*)__skit_sTRACE_return_value = (expr))
+			(skit__sTRACE_return_value = (void*)(char[sizeof(expr)]){""}, \
+			*(__typeof__(expr)*)skit__sTRACE_return_value = (expr))
 
 #define sETRACE_RETURN(expr) /* */ \
-	(*((__typeof__(expr)*)__skit_sTRACE_return_value))
+	(*((__typeof__(expr)*)skit__sTRACE_return_value))
 
 
 /** 
@@ -82,7 +82,7 @@ calls in this macro is desirable though, because the calling file, line,
 and function name will be absent from stack traces if this is not used.
 */	
 #define sTRACE(statement) /* */ \
-	do { SKIT_TRACE_INTERNAL(statement, (statement), (void)__skit_sTRACE_return_value); } while (0)
+	do { SKIT_TRACE_INTERNAL(statement, (statement), (void)skit__sTRACE_return_value); } while (0)
 
 /**
 This serves the same function as sTRACE, but with the advantage that it can
