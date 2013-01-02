@@ -903,7 +903,57 @@ static void skit_slice_get_printf_formatter_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2)
+skit_utf8c skit_char_ascii_to_lower(skit_utf8c c)
+{
+	if ( 'A' <= c && c <= 'Z' )
+		return (c - 'A') + 'a';
+	else
+		return c;
+}
+
+static void skit_char_ascii_to_lower_test()
+{
+	sASSERT_EQ( skit_char_ascii_to_lower('a'), 'a', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('A'), 'a', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('b'), 'b', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('B'), 'b', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('z'), 'z', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('Z'), 'z', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('0'), '0', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower('-'), '-', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_lower(' '), ' ', "%c" );
+	
+	printf("  skit_char_ascii_to_lower_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+int skit_char_ascii_ccmp(skit_utf8c c1, skit_utf8c c2, int case_sensitive)
+{
+	if ( case_sensitive )
+		return c1 - c2;
+	else
+	{
+		/* Case insensitive. */
+		c1 = skit_char_ascii_to_lower(c1);
+		c2 = skit_char_ascii_to_lower(c2);
+		return c1 - c2;
+	}
+}
+
+int skit_char_ascii_cmp(skit_utf8c c1, skit_utf8c c2)
+{
+	return skit_char_ascii_ccmp(c1,c2,1);
+}
+
+int skit_char_ascii_icmp(skit_utf8c c1, skit_utf8c c2)
+{
+	return skit_char_ascii_ccmp(c1,c2,0);
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_slice_common_cprefix(const skit_slice str1, const skit_slice str2, int case_sensitive)
 {
 	skit_utf8c *chars1 = sSPTR(str1);
 	skit_utf8c *chars2 = sSPTR(str2);
@@ -916,7 +966,7 @@ skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2
 	ssize_t pos = 0;
 	while ( pos < len )
 	{
-		if ( chars1[pos] != chars2[pos] )
+		if ( skit_char_ascii_ccmp(chars1[pos], chars2[pos], case_sensitive) != 0 )
 			break;
 		pos++;
 	}
@@ -924,18 +974,42 @@ skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2
 	return skit_slice_of(str1, 0, pos);
 }
 
+skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2)
+{
+	return skit_slice_common_cprefix(str1, str2, 1);
+}
+
+skit_slice skit_slice_common_iprefix(const skit_slice str1, const skit_slice str2)
+{
+	return skit_slice_common_cprefix(str1, str2, 0);
+}
+
 static void skit_slice_common_prefix_test()
 {
+	skit_slice prefix;
+	
+	// Case-sensitive.
 	skit_slice slice1 = sSLICE("foobar");
 	skit_slice slice2 = sSLICE("foobaz");
-	skit_slice prefix = skit_slice_common_prefix(slice1, slice2);
+	prefix = skit_slice_common_prefix(slice1, slice2);
 	sASSERT_EQS(prefix, sSLICE("fooba"));
+	
+	// Case-INsensitive.
+	skit_slice islice1 = sSLICE("fOobar");
+	skit_slice islice2 = sSLICE("FoObaz");
+	prefix = skit_slice_common_iprefix(islice1, islice2);
+	sASSERT_EQS(prefix, sSLICE("fOoba"));
+	
+	// Make sure the case-sensitive version isn't case-insensitive.
+	prefix = skit_slice_common_prefix(islice1, islice2);
+	sASSERT_EQS(prefix, sSLICE(""));
+	
 	printf("  skit_slice_common_prefix_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
 
-int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
+int skit_slice_ascii_ccmp(const skit_slice str1, const skit_slice str2, int case_sensitive)
 {
 	skit_utf8c *chars1 = sSPTR(str1);
 	skit_utf8c *chars2 = sSPTR(str2);
@@ -959,7 +1033,7 @@ int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
 	{
 		skit_utf8c c1;
 		skit_utf8c c2;
-		skit_slice slice = skit_slice_common_prefix(str1,str2);
+		skit_slice slice = skit_slice_common_cprefix(str1,str2,case_sensitive);
 		ssize_t pos = skit_slice_len(slice);
 		
 		/* Don't try to dereference chars[pos]... it might not be nul on slices! */
@@ -969,14 +1043,25 @@ int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
 		c1 = chars1[pos];
 		c2 = chars2[pos];
 		
-		return c1 - c2;
+		return skit_char_ascii_ccmp(c1,c2,case_sensitive);
 	}
 	sASSERT(0);
 	return -55;
 }
 
+int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
+{
+	return skit_slice_ascii_ccmp(str1,str2,1);
+}
+
+int skit_slice_ascii_icmp(const skit_slice str1, const skit_slice str2)
+{
+	return skit_slice_ascii_ccmp(str1,str2,0);
+}
+
 static void skit_slice_ascii_cmp_test()
 {
+	// Basic equivalence and ordering.
 	skit_slice bigstr = sSLICE("Big string!");
 	skit_slice lilstr = sSLICE("lil str.");
 	skit_slice aaa = sSLICE("aaa");
@@ -991,15 +1076,28 @@ static void skit_slice_ascii_cmp_test()
 	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
 	skit_loaf_free(&aaab);
 	
+	// nullity.
 	skit_slice nullstr = skit_slice_null();
 	sASSERT(skit_slice_ascii_cmp(nullstr, nullstr) == 0);
 	sASSERT(skit_slice_ascii_cmp(nullstr, aaa) < 0);
 	sASSERT(skit_slice_ascii_cmp(aaa, nullstr) > 0);
+	
+	// Case-sensitivity.
+	skit_slice AAA = sSLICE("AAA");
+	skit_slice aAa = sSLICE("aAa");
+	sASSERT(skit_slice_ascii_icmp(aaa,AAA) == 0);
+	sASSERT(skit_slice_ascii_icmp(aaa,aAa) == 0);
+	sASSERT(skit_slice_ascii_icmp(AAA,aAa) == 0);
+	sASSERT(skit_slice_ascii_cmp (aaa,AAA) != 0);
+	sASSERT(skit_slice_ascii_cmp (aaa,aAa) != 0);
+	sASSERT(skit_slice_ascii_cmp (AAA,aAa) != 0);
+	
 	printf("  skit_slice_ascii_cmp_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
 
+/* --- Case-sensitive --- */
 int skit_slice_ges(const skit_slice str1, const skit_slice str2)
 {
 	if ( skit_slice_ascii_cmp(str1,str2) >= 0 )
@@ -1042,6 +1140,51 @@ int skit_slice_nes(const skit_slice str1, const skit_slice str2)
 	return 0;
 }
 
+/* ------------------------ */
+/* --- Case-INsensitive --- */
+int skit_slice_iges(const skit_slice str1, const skit_slice str2)
+{
+	if ( skit_slice_ascii_icmp(str1,str2) >= 0 )
+		return 1;
+	return 0;
+}
+
+int skit_slice_igts(const skit_slice str1, const skit_slice str2)
+{
+	if ( skit_slice_ascii_icmp(str1,str2) > 0 )
+		return 1;
+	return 0;
+}
+
+int skit_slice_iles(const skit_slice str1, const skit_slice str2)
+{
+	if ( skit_slice_ascii_icmp(str1,str2) <= 0 )
+		return 1;
+	return 0;
+}
+
+int skit_slice_ilts(const skit_slice str1, const skit_slice str2)
+{
+	if ( skit_slice_ascii_icmp(str1,str2) < 0 )
+		return 1;
+	return 0;
+}
+
+int skit_slice_ieqs(const skit_slice str1, const skit_slice str2)
+{
+	if ( skit_slice_ascii_icmp(str1,str2) == 0 )
+		return 1;
+	return 0;
+}
+
+int skit_slice_ines(const skit_slice str1, const skit_slice str2)
+{
+	if ( skit_slice_ascii_icmp(str1,str2) != 0 )
+		return 1;
+	return 0;
+}
+
+/* ------------------------ */
 static void skit_slice_comparison_ops_test()
 {
 	skit_slice alphaLo = sSLICE("aaa");
@@ -1074,6 +1217,30 @@ static void skit_slice_comparison_ops_test()
 	sASSERT(!skit_slice_eqs(alphaLo,nullstr));
 	sASSERT( skit_slice_nes(alphaLo,nullstr));
 	sASSERT( skit_slice_lts(nullstr,alphaLo));
+	
+	skit_slice ialphaLo = sSLICE("aaa");
+	skit_slice ialphaHi = sSLICE("BBB");
+	
+	sASSERT(!skit_slice_iges(ialphaLo,ialphaHi)); // alphaLo >= alphaHi
+	sASSERT( skit_slice_iges(ialphaHi,ialphaLo)); // alphaHi >= alphaLo
+	sASSERT( skit_slice_iges(ialphaHi,ialphaHi)); // alphaHi >= alphaHi
+	sASSERT(!skit_slice_igts(ialphaLo,ialphaHi)); // alphaLo >  alphaHi
+	sASSERT( skit_slice_igts(ialphaHi,ialphaLo)); // alphaHi >  alphaLo
+	sASSERT(!skit_slice_igts(ialphaHi,ialphaHi)); // alphaHi >  alphaHi
+
+	sASSERT( skit_slice_iles(ialphaLo,ialphaHi)); // alphaLo <= alphaHi
+	sASSERT(!skit_slice_iles(ialphaHi,ialphaLo)); // alphaHi <= alphaLo
+	sASSERT( skit_slice_iles(ialphaHi,ialphaHi)); // alphaHi <= alphaHi
+	sASSERT( skit_slice_ilts(ialphaLo,ialphaHi)); // alphaLo <  alphaHi
+	sASSERT(!skit_slice_ilts(ialphaHi,ialphaLo)); // alphaHi <  alphaLo
+	sASSERT(!skit_slice_ilts(ialphaHi,ialphaHi)); // alphaHi <  alphaHi
+
+	sASSERT(!skit_slice_ieqs(ialphaLo,ialphaHi)); // alphaLo == alphaHi
+	sASSERT(!skit_slice_ieqs(ialphaHi,ialphaLo)); // alphaHi == alphaLo
+	sASSERT( skit_slice_ieqs(ialphaHi,ialphaHi)); // alphaHi == alphaHi
+	sASSERT( skit_slice_ines(ialphaLo,ialphaHi)); // alphaLo != alphaHi
+	sASSERT( skit_slice_ines(ialphaHi,ialphaLo)); // alphaHi != alphaLo
+	sASSERT(!skit_slice_ines(ialphaHi,ialphaHi)); // alphaHi != alphaHi
 	
 	printf("  skit_slice_comparison_ops_test passed.\n");
 }
@@ -1294,6 +1461,7 @@ void skit_string_unittest()
 	skit_slice_of_test();
 	skit_loaf_free_test();
 	skit_slice_get_printf_formatter_test();
+	skit_char_ascii_to_lower_test();
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();
 	skit_slice_comparison_ops_test();

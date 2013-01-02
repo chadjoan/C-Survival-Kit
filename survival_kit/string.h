@@ -650,20 +650,52 @@ comparison if anything goes wrong, thus aiding in fast debugging.
 /* ------------------------- string misc functions ------------------------- */
 
 /**
+Lowercases the given character.
+This assumes that the character is in the ASCII range.
+*/
+skit_utf8c skit_char_ascii_to_lower(skit_utf8c c);
+
+/**
+Compares two characters.
+*/
+int skit_char_ascii_cmp(skit_utf8c c1, skit_utf8c c2);
+int skit_char_ascii_icmp(skit_utf8c c1, skit_utf8c c2);
+int skit_char_ascii_ccmp(skit_utf8c c1, skit_utf8c c2, int case_sensitive);
+
+/**
 Gets the common prefix of the two strings.
 This will return a slice of 'str1' whose contents are the common prefix.
 If there is no common prefix between the two strings, then a zero-length slice
 pointing at the beginning of str1 will be returned.
+
+Bug: These currently use ascii comparisons.  UTF-8 is currently unimplemented.
+
 Example:
+	skit_slice prefix;
+	
+	// Case-sensitive.
 	skit_slice slice1 = sSLICE("foobar");
 	skit_slice slice2 = sSLICE("foobaz");
-	skit_slice prefix = skit_slice_common_prefix(slice1, slice2);
+	prefix = skit_slice_common_prefix(slice1, slice2);
 	sASSERT_EQS(prefix, sSLICE("fooba"));
+	
+	// Case-INsensitive.
+	skit_slice islice1 = sSLICE("fOobar");
+	skit_slice islice2 = sSLICE("FoObaz");
+	prefix = skit_slice_common_iprefix(islice1, islice2);
+	sASSERT_EQS(prefix, sSLICE("fOoba"));
+	
+	// Make sure the case-sensitive version isn't case-insensitive.
+	prefix = skit_slice_common_prefix(islice1, islice2);
+	sASSERT_EQS(prefix, sSLICE(""));
 */
 skit_slice skit_slice_common_prefix(const skit_slice str1, const skit_slice str2);
+skit_slice skit_slice_common_iprefix(const skit_slice str1, const skit_slice str2);
+skit_slice skit_slice_common_cprefix(const skit_slice str1, const skit_slice str2, int case_sensitive);
 
 /**
-Performs an asciibetical comparison of the two strings.
+Performs an either alphabetical or asciibetical comparison of the two ascii
+strings.
 
 +-------+--------------------------------------+
 | Value |  Relationship between str1 and str2  |
@@ -678,6 +710,7 @@ be equal to each other and not equal to non-null strings.
 null strings will always be less than non-null strings.
 
 Example:
+	// Basic equivalence and ordering.
 	skit_slice bigstr = sSLICE("Big string!");
 	skit_slice lilstr = sSLICE("lil str.");
 	skit_slice aaa = sSLICE("aaa");
@@ -692,15 +725,31 @@ Example:
 	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
 	skit_loaf_free(&aaab);
 	
+	// nullity.
 	skit_slice nullstr = skit_slice_null();
 	sASSERT(skit_slice_ascii_cmp(nullstr, nullstr) == 0);
 	sASSERT(skit_slice_ascii_cmp(nullstr, aaa) < 0);
 	sASSERT(skit_slice_ascii_cmp(aaa, nullstr) > 0);
+	
+	// Case-sensitivity.
+	skit_slice AAA = sSLICE("AAA");
+	skit_slice aAa = sSLICE("aAa");
+	sASSERT(skit_slice_ascii_icmp(aaa,AAA) == 0);
+	sASSERT(skit_slice_ascii_icmp(aaa,aAa) == 0);
+	sASSERT(skit_slice_ascii_icmp(AAA,aAa) == 0);
+	sASSERT(skit_slice_ascii_cmp (aaa,AAA) != 0);
+	sASSERT(skit_slice_ascii_cmp (aaa,aAa) != 0);
+	sASSERT(skit_slice_ascii_cmp (AAA,aAa) != 0);
 */
 int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2);
+int skit_slice_ascii_icmp(const skit_slice str1, const skit_slice str2);
+int skit_slice_ascii_ccmp(const skit_slice str1, const skit_slice str2, int case_sensitive);
 
 /**
-Convenient asciibetical comparison functions.
+Convenient string comparison functions.
+
+Bug: These currently use ascii comparisons.  UTF-8 is currently unimplemented.
+
 Example:
 	skit_slice alphaLo = sSLICE("aaa");
 	skit_slice alphaHi = sSLICE("bbb");
@@ -739,6 +788,16 @@ int skit_slice_les(const skit_slice str1, const skit_slice str2);
 int skit_slice_lts(const skit_slice str1, const skit_slice str2);
 int skit_slice_eqs(const skit_slice str1, const skit_slice str2);
 int skit_slice_nes(const skit_slice str1, const skit_slice str2);
+
+/**
+Case-insensitive versions of the other asciibetical comparison functions.
+*/
+int skit_slice_iges(const skit_slice str1, const skit_slice str2);
+int skit_slice_igts(const skit_slice str1, const skit_slice str2);
+int skit_slice_iles(const skit_slice str1, const skit_slice str2);
+int skit_slice_ilts(const skit_slice str1, const skit_slice str2);
+int skit_slice_ieqs(const skit_slice str1, const skit_slice str2);
+int skit_slice_ines(const skit_slice str1, const skit_slice str2);
 
 /** 
 Trim whitespace from 'slice'.
