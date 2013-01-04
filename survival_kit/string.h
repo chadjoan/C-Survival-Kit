@@ -682,6 +682,18 @@ This assumes that the character is in the ASCII range.
 skit_utf8c skit_char_ascii_to_lower(skit_utf8c c);
 
 /**
+Lowercases the given slice in-place.
+This assumes that the slice consists of ASCII characters.
+*/
+void skit_slice_ascii_to_lower(skit_slice *slice);
+
+/**
+Lowercases the given slice in-place.
+BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemented.
+*/
+void skit_slice_to_lower(skit_slice *slice);
+
+/**
 Compares two characters.
 */
 int skit_char_ascii_cmp(skit_utf8c c1, skit_utf8c c2);
