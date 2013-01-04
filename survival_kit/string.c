@@ -899,7 +899,34 @@ static void skit_slice_get_printf_formatter_test()
 /* ========================================================================= */
 /* ------------------------- string misc functions ------------------------- */
 
-#define IS_WHITESPACE(x) (x == ' '  || x == '\t' || x == '\r' || x == '\n' )
+static void skit_is_alpha_test()
+{
+	sASSERT_EQ( skit_is_alpha_lower('A') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha_lower('C') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha_lower('Z') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha_lower('a') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha_lower('c') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha_lower('z') ? 1 : 0, 1, "%d" );
+	
+	sASSERT_EQ( skit_is_alpha_upper('A') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha_upper('C') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha_upper('Z') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha_upper('a') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha_upper('c') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha_upper('z') ? 1 : 0, 0, "%d" );
+	
+	sASSERT_EQ( skit_is_alpha('A') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha('C') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha('Z') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha('a') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha('c') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha('z') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha(' ') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha('{') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha('\0') ? 1 : 0, 0, "%d" );
+	
+	printf("  skit_is_alpha_test passed.\n");
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -1256,7 +1283,7 @@ skit_slice skit_slice_ltrim(const skit_slice slice)
 	while ( lbound < length )
 	{
 		skit_utf8c c = chars[lbound];
-		if (!IS_WHITESPACE(c))
+		if (!skit_is_whitespace(c))
 			break;
 		
 		lbound++;
@@ -1274,7 +1301,7 @@ skit_slice skit_slice_rtrim(const skit_slice slice)
 	while ( rbound > 0 )
 	{
 		char c = chars[rbound-1];
-		if (!IS_WHITESPACE(c))
+		if (!skit_is_whitespace(c))
 			break;
 		
 		rbound--;
@@ -1461,6 +1488,7 @@ void skit_string_unittest()
 	skit_slice_of_test();
 	skit_loaf_free_test();
 	skit_slice_get_printf_formatter_test();
+	skit_is_alpha_test();
 	skit_char_ascii_to_lower_test();
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();
