@@ -37,7 +37,6 @@ $ @'THIS_DIR'compile survival_kit/streams/file_stream
 $ @'THIS_DIR'compile survival_kit/streams/pfile_stream
 $ @'THIS_DIR'compile survival_kit/streams/tcp_stream
 $ @'THIS_DIR'compile survival_kit/streams/init
-$ @'THIS_DIR'compile survival_kit/sockn
 $ @'THIS_DIR'compile survival_kit/init
 $ @'THIS_DIR'compile tools_src/unittests
 $
