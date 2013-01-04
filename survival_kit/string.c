@@ -928,6 +928,22 @@ static void skit_is_alpha_test()
 	printf("  skit_is_alpha_test passed.\n");
 }
 
+static void skit_is_digit_test()
+{
+	sASSERT_EQ( skit_is_digit('0') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_digit('1') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_digit('9') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_digit('a') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_digit(' ') ? 1 : 0, 0, "%d" );
+}
+
+static void skit_is_whitespace_test()
+{
+	sASSERT_EQ( skit_is_whitespace(' ')  ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_whitespace('\v') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_whitespace('a')  ? 1 : 0, 0, "%d" );
+}
+
 /* ------------------------------------------------------------------------- */
 
 skit_utf8c skit_char_ascii_to_lower(skit_utf8c c)
@@ -1489,6 +1505,8 @@ void skit_string_unittest()
 	skit_loaf_free_test();
 	skit_slice_get_printf_formatter_test();
 	skit_is_alpha_test();
+	skit_is_digit_test();
+	skit_is_whitespace_test();
 	skit_char_ascii_to_lower_test();
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();

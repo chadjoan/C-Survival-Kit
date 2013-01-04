@@ -650,7 +650,7 @@ comparison if anything goes wrong, thus aiding in fast debugging.
 /* ------------------------- string misc functions ------------------------- */
 
 /**
-Returns true (nonzero) if a given character is alphabetic.
+Returns true (nonzero) if the given character is alphabetic.
 BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemented.
 */
 #define skit_is_alpha_lower(c) ('a' <= (c) && (c) <= 'z')
@@ -658,10 +658,22 @@ BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemen
 #define skit_is_alpha(c) (skit_is_alpha_upper(c) || skit_is_alpha_lower(c))
 
 /**
+Returns true (nonzero) if the given character is a digit (0-9).
+BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemented.
+*/
+#define skit_is_digit(c) ('0' <= (c) && (c) <= '9')
+
+/**
+Returns true (nonzero) if the given character is a alphabetic or a digit (0-9).
+BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemented.
+*/
+#define skit_is_alphanumeric(c) (skit_is_alpha(c) || skit_is_digit(c))
+
+/**
 Returns true (nonzero) if the given character is whitespace (space, tab, '\r', or '\n').
 BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemented.
 */
-#define skit_is_whitespace(c) ((c) == ' ' || (c) == '\t' || (c) == '\r' || (c) == '\n' )
+#define skit_is_whitespace(c) ((c) == ' ' || (c) == '\t' || (c) == '\r' || (c) == '\n' || (c) == '\v' )
 
 /**
 Lowercases the given character.
