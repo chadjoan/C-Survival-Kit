@@ -325,7 +325,7 @@ skit_utf8c *skit_slice_ptr( skit_slice slice )
 
 	if ( SKIT_SLICE_IS_CSTR(slice) )
 	{
-		return slice.chars_handle;
+		return slice.chars_handle + skit_slice_get_offset(slice);
 	}
 	else
 	{
@@ -778,17 +778,28 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	return result;
 }
 
-static void skit_slice_of_test()
+static void skit_slice_of_subtest(skit_slice slice0)
 {
-	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
-	skit_slice slice0 = loaf.as_slice;
 	skit_slice slice1 = skit_slice_of(slice0, 3, 5);
 	skit_slice slice2 = skit_slice_of(slice0, 3, SKIT_EOT);
 	skit_slice slice3 = skit_slice_of(slice1, 0, -1);
 	sASSERT_EQS(slice1, sSLICE("ba"));
 	sASSERT_EQS(slice2, sSLICE("bar"));
 	sASSERT_EQS(slice3, sSLICE("b"));
+	skit_slice slice4 = skit_slice_of(slice2, 1, 2);
+	sASSERT_EQS(slice4, sSLICE("a"));
+}
+
+static void skit_slice_of_test()
+{
+	printf("  skit_slice_of_subtest: slice of a loaf.\n");
+	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
+	skit_slice_of_subtest(loaf.as_slice);
 	skit_loaf_free(&loaf);
+	
+	printf("  skit_slice_of_subtest: slice of a C-string.\n");
+	skit_slice_of_subtest(sSLICE("foobar"));
+	
 	printf("  skit_slice_of_test passed.\n");
 }
 

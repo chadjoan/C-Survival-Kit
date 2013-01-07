@@ -513,15 +513,15 @@ assertion to trigger and crash the caller.
 As a convenience, passing negative indices will count from the right
 side of the array, and passing SKIT_EOT as the second index will slice to
 the very end of the array:
-	skit_loaf loaf = skit_loaf_copy_cstr("foobar");
-	skit_slice slice0 = loaf.as_slice;
+	skit_slice slice0 = sSLICE("foobar");
 	skit_slice slice1 = skit_slice_of(slice0, 3, 5);
 	skit_slice slice2 = skit_slice_of(slice0, 3, SKIT_EOT);
 	skit_slice slice3 = skit_slice_of(slice1, 0, -1);
 	sASSERT_EQS(slice1, sSLICE("ba"));
 	sASSERT_EQS(slice2, sSLICE("bar"));
 	sASSERT_EQS(slice3, sSLICE("b"));
-	skit_loaf_free(&loaf);
+	skit_slice slice4 = skit_slice_of(slice2, 1, 2);
+	sASSERT_EQS(slice4, sSLICE("a"));
 */
 skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index);
 
