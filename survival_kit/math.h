@@ -2,6 +2,8 @@
 #ifndef SKIT_MATH_INCLUDED
 #define SKIT_MATH_INCLUDED
 
+#include <stdint.h>
+
 #include "survival_kit/macro.h"
 
 /**
@@ -45,6 +47,12 @@ Example:
 #define SKIT_MIN6(a, b, c, d, e, f) SKIT_MIN2(SKIT_MIN4(a,b,c,d),SKIT_MIN2(e,f))
 #define SKIT_MIN7(a, b, c, d, e, f, g) SKIT_MIN2(SKIT_MIN4(a,b,c,d),SKIT_MIN3(e,f,g))
 #define SKIT_MIN8(a, b, c, d, e, f, g, h) SKIT_MIN2(SKIT_MIN4(a,b,c,d),SKIT_MIN4(e,f,g,h))
+
+/**
+Complements the lack of a fast integer-based power function in standard C
+libraries.
+*/
+int64_t skit_ipow(int64_t base, int exp);
 
 void skit_math_unittest();
 
