@@ -27,7 +27,7 @@ void skit_text_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->read          = &skit_text_stream_read;
 	table->read_fn       = &skit_text_stream_read_fn;
 	table->appendln      = &skit_text_stream_appendln;
-	table->appendfln_va  = &skit_text_stream_appendfln_va;
+	table->appendf_va    = &skit_text_stream_appendf_va;
 	table->append        = &skit_text_stream_append;
 	table->flush         = &skit_text_stream_flush;
 	table->rewind        = &skit_text_stream_rewind;
@@ -240,17 +240,17 @@ void skit_text_stream_appendln(skit_text_stream *stream, skit_slice line)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_appendfln(skit_text_stream *stream, const char *fmtstr, ...)
+void skit_text_stream_appendf(skit_text_stream *stream, const char *fmtstr, ...)
 {
 	va_list vl;
 	va_start(vl, fmtstr);
-	skit_text_stream_appendfln_va(stream, fmtstr, vl);
+	skit_text_stream_appendf_va(stream, fmtstr, vl);
 	va_end(vl);
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_appendfln_va(skit_text_stream *stream, const char *fmtstr, va_list vl)
+void skit_text_stream_appendf_va(skit_text_stream *stream, const char *fmtstr, va_list vl)
 {
 	const size_t buf_size = 1024;
 	char buffer[buf_size];
@@ -262,7 +262,6 @@ void skit_text_stream_appendfln_va(skit_text_stream *stream, const char *fmtstr,
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, skit_slice_of_cstrn(buffer, nchars_printed));
-	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
 	
 	tstreami->cursor = sSLENGTH(tstreami->text) + 1;
 }
@@ -341,9 +340,9 @@ void skit_text_stream_dump(skit_text_stream *stream, skit_stream *output)
 		return;
 	}
 	
-	skit_stream_appendfln(output, "skit_text_stream with the following properties:");
-	skit_stream_appendfln(output, "Capacity: %d\n", skit_loaf_len(tstreami->buffer));
-	skit_stream_appendfln(output, "Length:   %d\n", skit_slice_len(tstreami->text));
+	skit_stream_appendf(output, "skit_text_stream with the following properties:\n");
+	skit_stream_appendf(output, "Capacity: %d\n", skit_loaf_len(tstreami->buffer));
+	skit_stream_appendf(output, "Length:   %d\n", skit_slice_len(tstreami->text));
 	skit_stream_append(output, sSLICE("First 60 chars: '"));
 	skit_stream_append(output, skit_slice_of(tstreami->text, 0, SKIT_MIN(60, sSLENGTH(tstreami->text))));
 	skit_stream_appendln(output, sSLICE("'"));
@@ -396,7 +395,7 @@ void skit_text_stream_unittests()
 	skit_text_stream_run_utest(&skit_stream_read_xNN_unittest,   sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_read_fn_unittest,    sSLICE(SKIT_READ_FN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_appendln_unittest,   sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS));
-	skit_text_stream_run_utest(&skit_stream_appendfln_unittest,  sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS));
+	skit_text_stream_run_utest(&skit_stream_appendf_unittest,    sSLICE(SKIT_APPENDF_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_append_unittest,     sSLICE(SKIT_APPEND_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_append_xNN_unittest, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_rewind_unittest,     sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));

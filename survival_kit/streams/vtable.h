@@ -21,7 +21,7 @@ struct SKIT_VTABLE_T
 	skit_slice (*read)         (SKIT_STREAM_T*,skit_loaf*,size_t);
 	skit_slice (*read_fn)      (SKIT_STREAM_T*,skit_loaf*, void* context, int (*accept_char)(skit_custom_read_context *ctx));
 	void       (*appendln)     (SKIT_STREAM_T*,skit_slice);
-	void       (*appendfln_va) (SKIT_STREAM_T*,const char*,va_list);
+	void       (*appendf_va)   (SKIT_STREAM_T*,const char*,va_list);
 	void       (*append)       (SKIT_STREAM_T*,skit_slice);
 	void       (*flush)        (SKIT_STREAM_T*);
 	void       (*rewind)       (SKIT_STREAM_T*);

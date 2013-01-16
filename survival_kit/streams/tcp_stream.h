@@ -48,8 +48,8 @@ void skit_tcp_stream_appendln(skit_tcp_stream *stream, skit_slice line);
 /** TODO: the number of characters that can be written this way is currently
 limited to 1024.  This restriction should be lifted in the future, assuming
 sufficient programming time/resources to do so. */
-void skit_tcp_stream_appendfln(skit_tcp_stream *stream, const char *fmtstr, ... );
-void skit_tcp_stream_appendfln_va(skit_tcp_stream *stream, const char *fmtstr, va_list vl );
+void skit_tcp_stream_appendf(skit_tcp_stream *stream, const char *fmtstr, ... );
+void skit_tcp_stream_appendf_va(skit_tcp_stream *stream, const char *fmtstr, va_list vl );
 void skit_tcp_stream_append(skit_tcp_stream *stream, skit_slice slice);
 void skit_tcp_stream_flush(skit_tcp_stream *stream);
 void skit_tcp_stream_rewind(skit_tcp_stream *stream);

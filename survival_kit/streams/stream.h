@@ -237,8 +237,8 @@ void skit_stream_appendfln_unittest(skit_stream *stream)
 	skit_loaf_free(&buf);
 }
 */
-void skit_stream_appendfln(skit_stream *stream, const char *fmtstr, ...);
-void skit_stream_appendfln_va(skit_stream *stream, const char *fmtstr, va_list vl);
+void skit_stream_appendf(skit_stream *stream, const char *fmtstr, ...);
+void skit_stream_appendf_va(skit_stream *stream, const char *fmtstr, va_list vl);
 
 /**
 (virtual)
@@ -503,11 +503,11 @@ void skit_stream_appendln_unittest(
 #define SKIT_APPENDLN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
-void skit_stream_appendfln_unittest(
+void skit_stream_appendf_unittest(
 	skit_stream *stream,
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) );
-#define SKIT_APPENDFLN_UNITTEST_CONTENTS ""
+#define SKIT_APPENDF_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
 void skit_stream_append_unittest(

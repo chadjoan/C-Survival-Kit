@@ -49,8 +49,8 @@ void skit_text_stream_appendln(skit_text_stream *stream, skit_slice line);
 /** TODO: the number of characters that can be written this way is currently
 limited to 1024.  This restriction should be lifted in the future, assuming
 sufficient programming time/resources to do so. */
-void skit_text_stream_appendfln(skit_text_stream *stream, const char *fmtstr, ... );
-void skit_text_stream_appendfln_va(skit_text_stream *stream, const char *fmtstr, va_list vl );
+void skit_text_stream_appendf(skit_text_stream *stream, const char *fmtstr, ... );
+void skit_text_stream_appendf_va(skit_text_stream *stream, const char *fmtstr, va_list vl );
 void skit_text_stream_append(skit_text_stream *stream, skit_slice slice);
 void skit_text_stream_flush(skit_text_stream *stream);
 void skit_text_stream_rewind(skit_text_stream *stream);

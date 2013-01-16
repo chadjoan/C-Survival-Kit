@@ -51,8 +51,8 @@ skit_slice skit_pfile_stream_readln(skit_pfile_stream *stream, skit_loaf *buffer
 skit_slice skit_pfile_stream_read(skit_pfile_stream *stream, skit_loaf *buffer, size_t nbytes);
 skit_slice skit_pfile_stream_read_fn(skit_pfile_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));
 void skit_pfile_stream_appendln(skit_pfile_stream *stream, skit_slice line);
-void skit_pfile_stream_appendfln(skit_pfile_stream *stream, const char *fmtstr, ... );
-void skit_pfile_stream_appendfln_va(skit_pfile_stream *stream, const char *fmtstr, va_list vl );
+void skit_pfile_stream_appendf(skit_pfile_stream *stream, const char *fmtstr, ... );
+void skit_pfile_stream_appendf_va(skit_pfile_stream *stream, const char *fmtstr, va_list vl );
 void skit_pfile_stream_append(skit_pfile_stream *stream, skit_slice slice);
 void skit_pfile_stream_flush(skit_pfile_stream *stream);
 void skit_pfile_stream_rewind(skit_pfile_stream *stream);

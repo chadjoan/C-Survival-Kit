@@ -76,7 +76,7 @@ void skit_tcp_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->read          = &skit_tcp_stream_read;
 	table->read_fn       = &skit_tcp_stream_read_fn;
 	table->appendln      = &skit_tcp_stream_appendln;
-	table->appendfln_va  = &skit_tcp_stream_appendfln_va;
+	table->appendf_va    = &skit_tcp_stream_appendf_va;
 	table->append        = &skit_tcp_stream_append;
 	table->flush         = &skit_tcp_stream_flush;
 	table->rewind        = &skit_tcp_stream_rewind;
@@ -244,17 +244,17 @@ void skit_tcp_stream_appendln(skit_tcp_stream *stream, skit_slice line)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_tcp_stream_appendfln(skit_tcp_stream *stream, const char *fmtstr, ... )
+void skit_tcp_stream_appendf(skit_tcp_stream *stream, const char *fmtstr, ... )
 {
 	va_list vl;
 	va_start(vl, fmtstr);
-	skit_tcp_stream_appendfln_va(stream, fmtstr, vl);
+	skit_tcp_stream_appendf_va(stream, fmtstr, vl);
 	va_end(vl);
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_tcp_stream_appendfln_va(skit_tcp_stream *stream, const char *fmtstr, va_list vl )
+void skit_tcp_stream_appendf_va(skit_tcp_stream *stream, const char *fmtstr, va_list vl )
 {
 	SKIT_USE_FEATURE_EMULATION;
 	const size_t buf_size = 1024;
@@ -270,7 +270,6 @@ void skit_tcp_stream_appendfln_va(skit_tcp_stream *stream, const char *fmtstr, v
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
 	skit_tcp_stream_append(stream, skit_slice_of_cstrn(buffer, nchars_printed));
-	skit_tcp_stream_append(stream, sSLICE("\n"));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -356,11 +355,11 @@ static void skit_tcp_dump_addr( const char *name, struct sockaddr_in *addr_struc
 	char ipbuf[SKIT_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN)];
 	const char *ipaddr = inet_ntop(AF_INET, &addr_struct->sin_addr, ipbuf, sizeof(ipbuf));
 	if ( ipaddr )
-		skit_stream_appendfln(output, "%6s IP:     '%s'", name, ipaddr);
+		skit_stream_appendf(output, "%6s IP:     '%s'\n", name, ipaddr);
 	else
-		skit_stream_appendfln(output, "%6s IP:     '%s'", name, skit_errno_to_cstr(errbuf, sizeof(errbuf)));
+		skit_stream_appendf(output, "%6s IP:     '%s'\n", name, skit_errno_to_cstr(errbuf, sizeof(errbuf)));
 
-	skit_stream_appendfln(output, "%6s port:   %d", name, ntohs(addr_struct->sin_port));
+	skit_stream_appendf(output, "%6s port:   %d\n", name, ntohs(addr_struct->sin_port));
 }
 
 void skit_tcp_stream_dump(skit_tcp_stream *stream, skit_stream *output)
@@ -386,19 +385,19 @@ void skit_tcp_stream_dump(skit_tcp_stream *stream, skit_stream *output)
 	if ( tstreami->connection_fd <= 0 )
 	{
 		skit_stream_appendln(output, sSLICE("Unconnected skit_tcp_stream"));
-		skit_stream_appendfln(output, "connection_fd: %d", tstreami->connection_fd );
+		skit_stream_appendf(output, "connection_fd: %d\n", tstreami->connection_fd );
 		return;
 	}
 	
-	skit_stream_appendfln(output, "Opened skit_tcp_stream with the following properties:");
+	skit_stream_appendf(output, "Opened skit_tcp_stream with the following properties:\n");
 	
 	if ( tstreami->socket_fd > 0 )
 		skit_stream_appendln(output, sSLICE("Stream is operating in server mode. (socket_fd > 0)") );
 	else
 		skit_stream_appendln(output, sSLICE("Stream is operating in client mode. (socket_fd == -1)") );
 	
-	skit_stream_appendfln(output, "socket_fd:     %d", tstreami->socket_fd );
-	skit_stream_appendfln(output, "connection_fd: %d", tstreami->connection_fd );
+	skit_stream_appendf(output, "socket_fd:     %d\n", tstreami->socket_fd );
+	skit_stream_appendf(output, "connection_fd: %d\n", tstreami->connection_fd );
 	
 	struct sockaddr_in addr_struct;
 	socklen_t addr_len = sizeof(addr_struct);
@@ -407,7 +406,7 @@ void skit_tcp_stream_dump(skit_tcp_stream *stream, skit_stream *output)
 	else
 	{
 		skit_stream_appendln(output, sSLICE("Call to getpeername failed.  Cannot lookup peer IP info.") );
-		skit_stream_appendfln(output, "getpeername error: %s", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
+		skit_stream_appendf(output, "getpeername error: %s\n", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
 	}
 	
 	if ( tstreami->socket_fd > 0 )
@@ -418,7 +417,7 @@ void skit_tcp_stream_dump(skit_tcp_stream *stream, skit_stream *output)
 		else
 		{
 			skit_stream_appendln(output, sSLICE("Call to getsockname failed.  Cannot lookup host IP info.") );
-			skit_stream_appendfln(output, "getsockname error: %s", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
+			skit_stream_appendf(output, "getsockname error: %s\n", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
 		}
 	}
 
@@ -744,7 +743,7 @@ void skit_tcp_stream_unittests()
 	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS),   &skit_stream_read_xNN_unittest);
 	skit_tcp_run_read_utest (&test_port, sSLICE(SKIT_READ_FN_UNITTEST_CONTENTS),    &skit_stream_read_fn_unittest);
 	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),   &skit_stream_appendln_unittest);
-	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS),  &skit_stream_appendfln_unittest);
+	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPENDF_UNITTEST_CONTENTS),    &skit_stream_appendf_unittest);
 	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),     &skit_stream_append_unittest);
 	skit_tcp_run_write_utest(&test_port, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS), &skit_stream_append_xNN_unittest);
 	

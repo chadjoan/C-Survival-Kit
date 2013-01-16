@@ -54,7 +54,7 @@ void skit_pfile_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->read          = &skit_pfile_stream_read;
 	table->read_fn       = &skit_pfile_stream_read_fn;
 	table->appendln      = &skit_pfile_stream_appendln;
-	table->appendfln_va  = &skit_pfile_stream_appendfln_va;
+	table->appendf_va    = &skit_pfile_stream_appendf_va;
 	table->append        = &skit_pfile_stream_append;
 	table->flush         = &skit_pfile_stream_flush;
 	table->rewind        = &skit_pfile_stream_rewind;
@@ -376,17 +376,17 @@ void skit_pfile_stream_appendln(skit_pfile_stream *stream, skit_slice line)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_appendfln(skit_pfile_stream *stream, const char *fmtstr, ... )
+void skit_pfile_stream_appendf(skit_pfile_stream *stream, const char *fmtstr, ... )
 {
 	va_list vl;
 	va_start(vl, fmtstr);
-	skit_pfile_stream_appendfln_va(stream, fmtstr, vl);
+	skit_pfile_stream_appendf_va(stream, fmtstr, vl);
 	va_end(vl);
 }
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_appendfln_va(skit_pfile_stream *stream, const char *fmtstr, va_list vl )
+void skit_pfile_stream_appendf_va(skit_pfile_stream *stream, const char *fmtstr, va_list vl )
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
@@ -396,7 +396,6 @@ void skit_pfile_stream_appendfln_va(skit_pfile_stream *stream, const char *fmtst
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	vfprintf( pstreami->file_handle, fmtstr, vl ); /* TODO: error handling? */
-	sTRACE(skit_pfile_stream_newline(pstreami));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -526,10 +525,10 @@ void skit_pfile_stream_dump(skit_pfile_stream *stream, skit_stream *output)
 		return;
 	}
 	
-	skit_stream_appendfln(output, "Opened skit_pfile_stream with the following properties:");
-	skit_stream_appendfln(output, "File name:   '%s'", skit_loaf_as_cstr(pstreami->name));
-	skit_stream_appendfln(output, "File handle: %p", pstreami->file_handle);
-	skit_stream_appendfln(output, "Access:      %s", skit_loaf_as_cstr(pstreami->access_mode));
+	skit_stream_appendf(output, "Opened skit_pfile_stream with the following properties:\n");
+	skit_stream_appendf(output, "File name:   '%s'\n", skit_loaf_as_cstr(pstreami->name));
+	skit_stream_appendf(output, "File handle: %p\n", pstreami->file_handle);
+	skit_stream_appendf(output, "Access:      %s\n", skit_loaf_as_cstr(pstreami->access_mode));
 
 	return;
 }
@@ -702,7 +701,7 @@ void skit_pfile_stream_unittests()
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_XNN_UNITTEST_CONTENTS),   &skit_stream_read_xNN_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_FN_UNITTEST_CONTENTS),    &skit_stream_read_fn_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDLN_UNITTEST_CONTENTS),   &skit_stream_appendln_unittest);
-	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDFLN_UNITTEST_CONTENTS),  &skit_stream_appendfln_unittest);
+	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPENDF_UNITTEST_CONTENTS),    &skit_stream_appendf_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_UNITTEST_CONTENTS),     &skit_stream_append_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS), &skit_stream_append_xNN_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),     &skit_stream_rewind_unittest);

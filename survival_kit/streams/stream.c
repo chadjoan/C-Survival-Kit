@@ -81,7 +81,7 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->read          = &skit_stream_readn_not_impl;
 	table->read_fn       = &skit_stream_read_fn_not_impl;
 	table->appendln      = &skit_stream_append_not_impl;
-	table->appendfln_va  = &skit_stream_appendva_not_impl;
+	table->appendf_va    = &skit_stream_appendva_not_impl;
 	table->append        = &skit_stream_append_not_impl;
 	table->flush         = &skit_stream_func_not_impl;
 	table->rewind        = &skit_stream_func_not_impl;
@@ -133,17 +133,17 @@ void skit_stream_appendln(skit_stream *stream, skit_slice line)
 	SKIT_STREAM_DISPATCH(stream, appendln, line);
 }
 
-void skit_stream_appendfln(skit_stream *stream, const char* fmtstr, ...)
+void skit_stream_appendf(skit_stream *stream, const char* fmtstr, ...)
 {
 	va_list vl;
 	va_start(vl, fmtstr);
-	SKIT_STREAM_DISPATCH(stream, appendfln_va, fmtstr, vl);
+	SKIT_STREAM_DISPATCH(stream, appendf_va, fmtstr, vl);
 	va_end(vl);
 }
 
-void skit_stream_appendfln_va(skit_stream *stream, const char* fmtstr, va_list vl)
+void skit_stream_appendf_va(skit_stream *stream, const char* fmtstr, va_list vl)
 {
-	SKIT_STREAM_DISPATCH(stream, appendfln_va, fmtstr, vl);
+	SKIT_STREAM_DISPATCH(stream, appendf_va, fmtstr, vl);
 }
 
 void skit_stream_append(skit_stream *stream, skit_slice slice)
@@ -287,17 +287,18 @@ sSCOPE
 	
 	/* Mention what we are. */
 	skit_slice class_name = stream->meta.class_name;
-	skit_text_stream_appendfln( &err_stream, "" );
-	skit_text_stream_appendfln( &err_stream, "%.*s error:", sSLENGTH(class_name), sSPTR(class_name) );
+	skit_text_stream_appendln( &err_stream, sSLICE("") );
+	skit_text_stream_appendf( &err_stream, "%.*s error:\n", sSLENGTH(class_name), sSPTR(class_name) );
 	
 	/* Dump the message. It's probably something from errno. */
 	va_start(vl, msg);
-	skit_text_stream_appendfln_va( &err_stream, msg, vl );
+	skit_text_stream_appendf_va( &err_stream, msg, vl );
+	skit_text_stream_appendln( &err_stream, sSLICE("") );
 	va_end(vl);
 	
 	/* Dump our file stream's info.  This makes it easier to track what went wrong and where/why. */
-	skit_text_stream_appendfln( &err_stream, "" );
-	skit_text_stream_appendfln( &err_stream, "Stream metadata at time of error:" );
+	skit_text_stream_appendf( &err_stream, "\n" );
+	skit_text_stream_appendf( &err_stream, "Stream metadata at time of error:\n" );
 	skit_stream_dump( stream, &(err_stream.as_stream) );
 	
 	/* Convert the text stream into a string that we can feed into the exception. */
@@ -508,21 +509,21 @@ void skit_stream_appendln_unittest(
 }
 
 // The given stream has the contents ""
-void skit_stream_appendfln_unittest(
+void skit_stream_appendf_unittest(
 	skit_stream *stream,
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) )
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
-	skit_stream_appendfln(stream, "foo");
+	skit_stream_appendf(stream, "foo\n");
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
-	skit_stream_appendfln(stream, "%s", "bar");
+	skit_stream_appendf(stream, "%s\n", "bar");
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\nbar\n"));
-	skit_stream_appendfln(stream, "%d", 3);
+	skit_stream_appendf(stream, "%d\n", 3);
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\nbar\n3\n"));
 	skit_loaf_free(&buf);
-	printf("  skit_stream_appendfln_unittest passed.\n");
+	printf("  skit_stream_appendf_unittest passed.\n");
 }
 
 // The given stream has the contents ""
