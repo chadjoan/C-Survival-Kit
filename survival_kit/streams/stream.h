@@ -344,7 +344,7 @@ stream's dump will include things like the file's name/path, it's access
 mode, and possibly information about the internal buffer(s) used to store
 data being read from or written to the disk.
 */
-void skit_stream_dump(skit_stream *stream, skit_stream *out);
+void skit_stream_dump(const skit_stream *stream, skit_stream *out);
 
 /**
 (virtual)
@@ -378,11 +378,33 @@ void skit_stream_delete(skit_stream *stream);
 
 /* -------------------------- final methods -------------------------------- */
 
+/** Not implemented yet. */
 void skit_stream_incr_indent(skit_stream *stream);
 void skit_stream_decr_indent(skit_stream *stream);
 short skit_stream_get_indent_lvl(skit_stream *stream);
 const char *skit_stream_get_indent_char(skit_stream *stream);
 void skit_stream_set_indent_char(skit_stream *stream, const char *c);
+
+/** 
+This does a number of routine things that objects tend to do when implementing
+a function/method of the form namespace_object_dump( instance, output ).
+These are the following:
+(1) Asserts that output is non-null.
+(2) If ptr is NULL, it will dump the contents of text_if_null to output.
+    If ptr is non-null, it will write nothing to output.
+
+Returns 1 if ptr is NULL, returns 0 if ptr is non-NULL.
+
+Example:
+void mylib_mytype_dump( const mytype *instance, skit_stream *output )
+{
+	if ( skit_stream_dump_null(output, instance, sSLICE("NULL mytype\n")) )
+		return;
+	
+	// Print detailed stuff in the non-null case.
+}
+*/
+int skit_stream_dump_null( skit_stream *output, const void *ptr, const skit_slice text_if_null );
 
 /**
 These read an integer of the desired size and signed-ness from the stream.

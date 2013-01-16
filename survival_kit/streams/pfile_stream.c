@@ -88,7 +88,7 @@ skit_pfile_stream *skit_pfile_stream_new()
 
 /* ------------------------------------------------------------------------- */
 
-skit_pfile_stream *skit_pfile_stream_downcast(skit_stream *stream)
+skit_pfile_stream *skit_pfile_stream_downcast(const skit_stream *stream)
 {
 	sASSERT(stream != NULL);
 	if ( stream->meta.vtable_ptr == &skit_pfile_stream_vtable )
@@ -500,15 +500,10 @@ skit_slice skit_pfile_stream_to_slice(skit_pfile_stream *stream, skit_loaf *buff
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_dump(skit_pfile_stream *stream, skit_stream *output)
+void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output)
 {
-	sASSERT(output != NULL);
-	
-	if ( stream == NULL )
-	{
-		skit_stream_appendln(output, sSLICE("NULL skit_pfile_stream"));
+	if ( skit_stream_dump_null(output, stream, sSLICE("NULL skit_pfile_stream\n")) )
 		return;
-	}
 	
 	/* Check for improperly cast streams.  Downcast will make sure we have the right vtable. */
 	skit_pfile_stream *pstream = skit_pfile_stream_downcast(&(stream->as_stream));

@@ -109,7 +109,7 @@ skit_tcp_stream *skit_tcp_stream_new()
 
 /* ------------------------------------------------------------------------- */
 
-skit_tcp_stream *skit_tcp_stream_downcast(skit_stream *stream)
+skit_tcp_stream *skit_tcp_stream_downcast(const skit_stream *stream)
 {
 	sASSERT(stream != NULL);
 	if ( stream->meta.vtable_ptr == &skit_tcp_stream_vtable )
@@ -362,16 +362,11 @@ static void skit_tcp_dump_addr( const char *name, struct sockaddr_in *addr_struc
 	skit_stream_appendf(output, "%6s port:   %d\n", name, ntohs(addr_struct->sin_port));
 }
 
-void skit_tcp_stream_dump(skit_tcp_stream *stream, skit_stream *output)
+void skit_tcp_stream_dump(const skit_tcp_stream *stream, skit_stream *output)
 {
 	char errbuf[1024];
-	sASSERT(output != NULL);
-	
-	if ( stream == NULL )
-	{
-		skit_stream_appendln(output, sSLICE("NULL skit_tcp_stream"));
+	if ( skit_stream_dump_null(output, stream, sSLICE("NULL skit_text_stream\n")) )
 		return;
-	}
 	
 	/* Check for improperly cast streams.  Downcast will make sure we have the right vtable. */
 	skit_tcp_stream *tstream = skit_tcp_stream_downcast(&(stream->as_stream));

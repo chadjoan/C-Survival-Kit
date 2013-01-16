@@ -27,7 +27,7 @@ struct SKIT_VTABLE_T
 	void       (*rewind)       (SKIT_STREAM_T*);
 	skit_slice (*slurp)        (SKIT_STREAM_T*,skit_loaf*);
 	skit_slice (*to_slice)     (SKIT_STREAM_T*,skit_loaf*);
-	void       (*dump)         (SKIT_STREAM_T*,skit_stream*);
+	void       (*dump)         (const SKIT_STREAM_T*,skit_stream*);
 	void       (*dtor)         (SKIT_STREAM_T*);
 	
 	/* File stream operations. */

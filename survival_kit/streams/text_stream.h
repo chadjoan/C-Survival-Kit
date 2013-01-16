@@ -37,7 +37,7 @@ skit_text_stream *skit_text_stream_new();
 Casts the given stream into a text stream.
 This will return NULL if the given stream isn't actually a skit_text_stream.
 */
-skit_text_stream *skit_text_stream_downcast(skit_stream *stream);
+skit_text_stream *skit_text_stream_downcast(const skit_stream *stream);
 
 void skit_text_stream_init(skit_text_stream *tstream);
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
@@ -56,7 +56,7 @@ void skit_text_stream_flush(skit_text_stream *stream);
 void skit_text_stream_rewind(skit_text_stream *stream);
 skit_slice skit_text_stream_slurp(skit_text_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_to_slice(skit_text_stream *stream, skit_loaf *buffer);
-void skit_text_stream_dump(skit_text_stream *stream, skit_stream *output);
+void skit_text_stream_dump(const skit_text_stream *stream, skit_stream *output);
 void skit_text_stream_dtor(skit_text_stream *stream);
 
 void skit_text_stream_unittests();

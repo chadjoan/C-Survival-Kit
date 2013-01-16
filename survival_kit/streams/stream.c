@@ -22,12 +22,17 @@
 static int skit_stream_initialized = 0;
 static skit_stream_vtable_t skit_stream_vtable;
 
-static void skit_stream_func_not_impl(skit_stream* stream)
+static void skit_stream_func_not_implc(const skit_stream* stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sTHROW(SKIT_NOT_IMPLEMENTED,
 		"Attempt to call a virtual function on an "
 		"instance of the abstract class skit_stream (or skit_file_stream).");
+}
+
+static void skit_stream_func_not_impl(skit_stream* stream)
+{
+	skit_stream_func_not_implc(stream);
 }
 
 static skit_slice skit_stream_read_not_impl(skit_stream* stream, skit_loaf *buffer)
@@ -58,9 +63,9 @@ static void skit_stream_appendva_not_impl(skit_stream *stream, const char *fmtst
 	skit_stream_func_not_impl(stream);
 }
 
-static void skit_stream_dump_not_impl(skit_stream *stream, skit_stream* output)
+static void skit_stream_dump_not_impl(const skit_stream *stream, skit_stream* output)
 {
-	skit_stream_func_not_impl(stream);
+	skit_stream_func_not_implc(stream);
 }
 
 union skit_file_stream;
@@ -171,7 +176,7 @@ skit_slice skit_stream_to_slice(skit_stream *stream, skit_loaf *buffer)
 	return SKIT_STREAM_DISPATCH(stream, to_slice, buffer);
 }
 
-void skit_stream_dump(skit_stream *stream, skit_stream *out)
+void skit_stream_dump(const skit_stream *stream, skit_stream *out)
 {
 	SKIT_STREAM_DISPATCH(stream, dump, out);
 }
@@ -211,6 +216,19 @@ const char *skit_stream_get_indent_str(skit_stream *stream)
 
 void skit_stream_set_indent_str(skit_stream *stream, const char *c)
 {
+}
+
+int skit_stream_dump_null( skit_stream *output, const void *ptr, const skit_slice text_if_null )
+{
+	sASSERT(output != NULL);
+	
+	if ( ptr == NULL )
+	{
+		skit_stream_append(output, text_if_null);
+		return 1;
+	}
+	
+	return 0;
 }
 
 /* ------------------------------------------------------------------------- */

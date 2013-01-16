@@ -37,7 +37,7 @@ skit_tcp_stream *skit_tcp_stream_new();
 Casts the given stream into a tcp stream.
 This will return NULL if the given stream isn't actually a skit_tcp_stream.
 */
-skit_tcp_stream *skit_tcp_stream_downcast(skit_stream *stream);
+skit_tcp_stream *skit_tcp_stream_downcast(const skit_stream *stream);
 
 void skit_tcp_stream_init(skit_tcp_stream *tstream);
 skit_slice skit_tcp_stream_readln(skit_tcp_stream *stream, skit_loaf *buffer);
@@ -55,7 +55,7 @@ void skit_tcp_stream_flush(skit_tcp_stream *stream);
 void skit_tcp_stream_rewind(skit_tcp_stream *stream);
 skit_slice skit_tcp_stream_slurp(skit_tcp_stream *stream, skit_loaf *buffer);
 skit_slice skit_tcp_stream_to_slice(skit_tcp_stream *stream, skit_loaf *buffer);
-void skit_tcp_stream_dump(skit_tcp_stream *stream, skit_stream *output);
+void skit_tcp_stream_dump(const skit_tcp_stream *stream, skit_stream *output);
 void skit_tcp_stream_dtor(skit_tcp_stream *stream);
 
 /**
