@@ -17,18 +17,25 @@ typedef struct SKIT_VTABLE_T SKIT_VTABLE_T;
 struct SKIT_VTABLE_T
 {
 	/* Basic stream operations. */
-	skit_slice (*readln)       (SKIT_STREAM_T*,skit_loaf*);
-	skit_slice (*read)         (SKIT_STREAM_T*,skit_loaf*,size_t);
-	skit_slice (*read_fn)      (SKIT_STREAM_T*,skit_loaf*, void* context, int (*accept_char)(skit_custom_read_context *ctx));
-	void       (*appendln)     (SKIT_STREAM_T*,skit_slice);
-	void       (*appendf_va)   (SKIT_STREAM_T*,const char*,va_list);
-	void       (*append)       (SKIT_STREAM_T*,skit_slice);
-	void       (*flush)        (SKIT_STREAM_T*);
-	void       (*rewind)       (SKIT_STREAM_T*);
-	skit_slice (*slurp)        (SKIT_STREAM_T*,skit_loaf*);
-	skit_slice (*to_slice)     (SKIT_STREAM_T*,skit_loaf*);
-	void       (*dump)         (const SKIT_STREAM_T*,skit_stream*);
-	void       (*dtor)         (SKIT_STREAM_T*);
+	skit_slice  (*readln)       (SKIT_STREAM_T*,skit_loaf*);
+	skit_slice  (*read)         (SKIT_STREAM_T*,skit_loaf*,size_t);
+	skit_slice  (*read_fn)      (SKIT_STREAM_T*,skit_loaf*, void* context, int (*accept_char)(skit_custom_read_context *ctx));
+	void        (*appendln)     (SKIT_STREAM_T*,skit_slice);
+	void        (*appendf_va)   (SKIT_STREAM_T*,const char*,va_list);
+	void        (*append)       (SKIT_STREAM_T*,skit_slice);
+	void        (*flush)        (SKIT_STREAM_T*);
+	void        (*rewind)       (SKIT_STREAM_T*);
+	skit_slice  (*slurp)        (SKIT_STREAM_T*,skit_loaf*);
+	skit_slice  (*to_slice)     (SKIT_STREAM_T*,skit_loaf*);
+	void        (*dump)         (const SKIT_STREAM_T*,skit_stream*);
+	void        (*dtor)         (SKIT_STREAM_T*);
+	
+	/* Indent stream operations: optional. */
+	void        (*incr_indent)  (SKIT_STREAM_T*);
+	void        (*decr_indent)  (SKIT_STREAM_T*);
+	short       (*get_ind_lvl)  (const SKIT_STREAM_T*);
+	const char* (*get_ind_str)  (const SKIT_STREAM_T*);
+	void        (*set_ind_str)  (SKIT_STREAM_T*, const char*);
 	
 	/* File stream operations. */
 	void       (*open)        (SKIT_STREAM_T*,skit_slice,const char*);

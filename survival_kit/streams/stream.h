@@ -21,8 +21,7 @@ operations:
 typedef struct skit_stream_common_fields skit_stream_common_fields;
 struct skit_stream_common_fields
 {
-	const char *indent_str;
-	short      indent_level;
+	size_t place_holder;
 };
 
 
@@ -365,6 +364,36 @@ Be careful when stack-allocating polymorphic data structures like streams!
 void skit_stream_dtor(skit_stream *stream);
 
 /**
+(virtual, optional to implement)
+These functions allow manipulation of streams supporting indentation awareness.
+
+If a stream does not support indentation awareness, then calling these
+functions will do nothing and the stream will always behave as if the
+indentation level is zero and the indentation string is "".
+
+A stream supporting indentation awareness will scan all inputs to its append
+methods and replace instances of newlines with the newlines followed by the
+indentation string repeated (indentation level) number of times.
+
+This set of functions is useful for formatting nested structures without
+needing the nested structures to pass around indentation counts.  This solves
+the common problem with passing indentation counts: recursive formatting calls
+will often lose such counts when they must pass through other calls (such as 
+from 3rd parties) that do not support indentation.  Passing an indentation-
+aware stream into such functions will allow indentation information to be 
+preserved and even acted upon by 3rd party functions, without those functions 
+even having to consider indentation as a design decision at all.
+
+See skit_ind_stream for a basic stream that can forward all operations on it
+to another skit_stream while inserting indentation as necessary.
+*/
+void skit_stream_incr_indent(skit_stream *stream);
+void skit_stream_decr_indent(skit_stream *stream); /** ditto */
+short skit_stream_get_ind_lvl(const skit_stream *stream); /** ditto */
+const char *skit_stream_get_ind_str(const skit_stream *stream); /** ditto */
+void skit_stream_set_ind_str(skit_stream *stream, const char *c); /** ditto */
+
+/**
 (final)
 Calls skit_stream_dtor on the given stream object, then calls skit_free on
   the memory pointed to by *stream.  
@@ -377,13 +406,6 @@ void skit_stream_delete(skit_stream *stream);
 /* Streams can't be opened/closed in general, so those methods are absent. */
 
 /* -------------------------- final methods -------------------------------- */
-
-/** Not implemented yet. */
-void skit_stream_incr_indent(skit_stream *stream);
-void skit_stream_decr_indent(skit_stream *stream);
-short skit_stream_get_indent_lvl(skit_stream *stream);
-const char *skit_stream_get_indent_char(skit_stream *stream);
-void skit_stream_set_indent_char(skit_stream *stream, const char *c);
 
 /** 
 This does a number of routine things that objects tend to do when implementing

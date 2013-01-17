@@ -68,6 +68,33 @@ static void skit_stream_dump_not_impl(const skit_stream *stream, skit_stream* ou
 	skit_stream_func_not_implc(stream);
 }
 
+void skit_stream_incr_indent(skit_stream *stream)
+{
+	/* Do nothing. */
+}
+
+void skit_stream_decr_indent(skit_stream *stream)
+{
+	/* Do nothing. */
+}
+
+short skit_stream_get_ind_lvl(const skit_stream *stream)
+{
+	/* Streams that don't implement indentation will always have an indentation level of 0. */
+	return 0;
+}
+
+const char *skit_stream_get_ind_str(const skit_stream *stream)
+{
+	/* Streams that don't implement indentation will always have a blank indentation string. */
+	return "";
+}
+
+void skit_stream_set_ind_str(skit_stream *stream, const char *c)
+{
+	/* Do nothing. */
+}
+
 union skit_file_stream;
 static void skit_file_stream_open_not_impl(union skit_stream *stream, skit_slice fname, const char *mode)
 {
@@ -94,6 +121,13 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->to_slice      = &skit_stream_read_not_impl;
 	table->dump          = &skit_stream_dump_not_impl;
 	table->dtor          = &skit_stream_func_not_impl;
+	
+	table->incr_indent   = &skit_stream_incr_indent;
+	table->decr_indent   = &skit_stream_decr_indent;
+	table->get_ind_lvl   = &skit_stream_get_ind_lvl;
+	table->get_ind_str   = &skit_stream_get_ind_str;
+	table->set_ind_str   = &skit_stream_set_ind_str;
+	
 	table->open          = &skit_file_stream_open_not_impl;
 	table->close         = &skit_file_stream_close_not_impl;
 }
@@ -114,8 +148,6 @@ void skit_stream_init(skit_stream *stream)
 	skit_stream_internal *streami = &stream->as_internal;
 	streami->meta.vtable_ptr = &skit_stream_vtable;
 	streami->meta.class_name = sSLICE("skit_stream");
-	streami->common_fields.indent_str = "\t";
-	streami->common_fields.indent_level = 0;
 }
 
 skit_slice skit_stream_readln(skit_stream *stream, skit_loaf *buffer)
@@ -195,28 +227,6 @@ void skit_stream_delete(skit_stream *stream)
 /* Streams can't be opened/closed in general, so those methods are absent. */
 
 /* -------------------------- final methods -------------------------------- */
-
-void skit_stream_incr_indent(skit_stream *stream)
-{
-}
-
-void skit_stream_decr_indent(skit_stream *stream)
-{
-}
-
-short skit_stream_get_indent_lvl(skit_stream *stream)
-{
-	return 0;
-}
-
-const char *skit_stream_get_indent_str(skit_stream *stream)
-{
-	return "\t";
-}
-
-void skit_stream_set_indent_str(skit_stream *stream, const char *c)
-{
-}
 
 int skit_stream_dump_null( skit_stream *output, const void *ptr, const skit_slice text_if_null )
 {

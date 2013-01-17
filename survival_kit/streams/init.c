@@ -8,6 +8,7 @@
 #include "survival_kit/streams/file_stream.h"
 #include "survival_kit/streams/pfile_stream.h"
 #include "survival_kit/streams/tcp_stream.h"
+#include "survival_kit/streams/ind_stream.h"
 
 void skit_stream_static_init_all()
 {
@@ -16,4 +17,5 @@ void skit_stream_static_init_all()
 	skit_file_stream_static_init();
 	skit_pfile_stream_static_init();
 	skit_tcp_stream_static_init();
+	skit_ind_stream_static_init();
 }

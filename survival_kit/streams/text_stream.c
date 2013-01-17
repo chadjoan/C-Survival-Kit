@@ -226,14 +226,21 @@ skit_slice skit_text_stream_read_fn(skit_text_stream *stream, skit_loaf *buffer,
 
 /* ------------------------------------------------------------------------- */
 
+static void skit_tstream_internal_append(skit_text_stream_internal *tstreami, skit_slice text)
+{
+	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, text);
+}
+
+/* ------------------------------------------------------------------------- */
+
 void skit_text_stream_appendln(skit_text_stream *stream, skit_slice line)
 {
 	sASSERT(stream != NULL);
 	sASSERT(sSPTR(line) != NULL);
 	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
-	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, line);
-	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, sSLICE("\n"));
+	skit_tstream_internal_append(tstreami, line);
+	skit_tstream_internal_append(tstreami, sSLICE("\n"));
 	
 	tstreami->cursor += sSLENGTH(tstreami->text) + 1;
 }
@@ -261,7 +268,7 @@ void skit_text_stream_appendf_va(skit_text_stream *stream, const char *fmtstr, v
 	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
 	nchars_printed = vsnprintf(buffer, buf_size, fmtstr, vl);
-	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, skit_slice_of_cstrn(buffer, nchars_printed));
+	skit_tstream_internal_append(tstreami, skit_slice_of_cstrn(buffer, nchars_printed));
 	
 	tstreami->cursor = sSLENGTH(tstreami->text) + 1;
 }
@@ -274,7 +281,7 @@ void skit_text_stream_append(skit_text_stream *stream, skit_slice slice)
 	sASSERT(sSPTR(slice) != NULL);
 	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
-	skit_slice_buffered_append(&tstreami->buffer, &tstreami->text, slice);
+	skit_tstream_internal_append(tstreami, slice);
 	
 	tstreami->cursor = sSLENGTH(tstreami->text) + 1;
 }
@@ -324,7 +331,7 @@ void skit_text_stream_dump(const skit_text_stream *stream, skit_stream *output)
 	skit_text_stream *tstream = skit_text_stream_downcast(&(stream->as_stream));
 	if ( tstream == NULL )
 	{
-		skit_stream_appendln(output, sSLICE("skit_stream (Error: invalid call to skit_text_stream_dump() with a first argument that isn't a pfile stream.)"));
+		skit_stream_appendln(output, sSLICE("skit_stream (Error: invalid call to skit_text_stream_dump() with a first argument that isn't a text stream.)"));
 		return;
 	}
 	
