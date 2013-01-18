@@ -459,6 +459,7 @@ void skit_ind_stream_unittests()
 	skit_ind_stream_run_utest(&skit_stream_append_unittest,     sSLICE(SKIT_APPEND_UNITTEST_CONTENTS));
 	skit_ind_stream_run_utest(&skit_stream_append_xNN_unittest, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS));
 	skit_ind_stream_run_utest(&skit_stream_rewind_unittest,     sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));
+	skit_ind_stream_run_utest(&skit_stream_indent_unittest,     sSLICE(SKIT_INDENT_UNITTEST_CONTENTS));
 	
 	printf("  skit_ind_stream_unittests passed!\n");
 	printf("\n");

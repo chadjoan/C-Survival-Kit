@@ -574,4 +574,10 @@ void skit_stream_rewind_unittest(
 	skit_slice (*get_stream_contents)(void *context) );
 #define SKIT_REWIND_UNITTEST_CONTENTS ""
 
+void skit_stream_indent_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) );
+#define SKIT_INDENT_UNITTEST_CONTENTS ""
+
 #endif

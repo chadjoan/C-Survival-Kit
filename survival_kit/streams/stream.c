@@ -68,29 +68,29 @@ static void skit_stream_dump_not_impl(const skit_stream *stream, skit_stream* ou
 	skit_stream_func_not_implc(stream);
 }
 
-void skit_stream_incr_indent(skit_stream *stream)
+void skit_stream_incr_indent_base(skit_stream *stream)
 {
 	/* Do nothing. */
 }
 
-void skit_stream_decr_indent(skit_stream *stream)
+void skit_stream_decr_indent_base(skit_stream *stream)
 {
 	/* Do nothing. */
 }
 
-short skit_stream_get_ind_lvl(const skit_stream *stream)
+short skit_stream_get_ind_lvl_base(const skit_stream *stream)
 {
 	/* Streams that don't implement indentation will always have an indentation level of 0. */
 	return 0;
 }
 
-const char *skit_stream_get_ind_str(const skit_stream *stream)
+const char *skit_stream_get_ind_str_base(const skit_stream *stream)
 {
 	/* Streams that don't implement indentation will always have a blank indentation string. */
 	return "";
 }
 
-void skit_stream_set_ind_str(skit_stream *stream, const char *c)
+void skit_stream_set_ind_str_base(skit_stream *stream, const char *c)
 {
 	/* Do nothing. */
 }
@@ -122,11 +122,11 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->dump          = &skit_stream_dump_not_impl;
 	table->dtor          = &skit_stream_func_not_impl;
 	
-	table->incr_indent   = &skit_stream_incr_indent;
-	table->decr_indent   = &skit_stream_decr_indent;
-	table->get_ind_lvl   = &skit_stream_get_ind_lvl;
-	table->get_ind_str   = &skit_stream_get_ind_str;
-	table->set_ind_str   = &skit_stream_set_ind_str;
+	table->incr_indent   = &skit_stream_incr_indent_base;
+	table->decr_indent   = &skit_stream_decr_indent_base;
+	table->get_ind_lvl   = &skit_stream_get_ind_lvl_base;
+	table->get_ind_str   = &skit_stream_get_ind_str_base;
+	table->set_ind_str   = &skit_stream_set_ind_str_base;
 	
 	table->open          = &skit_file_stream_open_not_impl;
 	table->close         = &skit_file_stream_close_not_impl;
@@ -216,6 +216,31 @@ void skit_stream_dump(const skit_stream *stream, skit_stream *out)
 void skit_stream_dtor(skit_stream *stream)
 {
 	SKIT_STREAM_DISPATCH(stream, dtor);
+}
+
+void skit_stream_incr_indent(skit_stream *stream)
+{
+	SKIT_STREAM_DISPATCH(stream, incr_indent);
+}
+
+void skit_stream_decr_indent(skit_stream *stream)
+{
+	SKIT_STREAM_DISPATCH(stream, decr_indent);
+}
+
+short skit_stream_get_ind_lvl(const skit_stream *stream)
+{
+	return SKIT_STREAM_DISPATCH(stream, get_ind_lvl);
+}
+
+const char *skit_stream_get_ind_str(const skit_stream *stream)
+{
+	return SKIT_STREAM_DISPATCH(stream, get_ind_str);
+}
+
+void skit_stream_set_ind_str(skit_stream *stream, const char *c)
+{
+	return SKIT_STREAM_DISPATCH(stream, set_ind_str, c);
 }
 
 void skit_stream_delete(skit_stream *stream)
@@ -522,7 +547,6 @@ void skit_stream_appendln_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) )
 {
-	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
 	skit_stream_appendln(stream, sSLICE("foo"));
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
@@ -532,7 +556,6 @@ void skit_stream_appendln_unittest(
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\nbar\n"));
 	skit_stream_appendln(stream, sSLICE("baz"));
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\nbar\nbaz\n"));
-	skit_loaf_free(&buf);
 	printf("  skit_stream_appendln_unittest passed.\n");
 }
 
@@ -542,7 +565,6 @@ void skit_stream_appendf_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) )
 {
-	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
 	skit_stream_appendf(stream, "foo\n");
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
@@ -550,7 +572,6 @@ void skit_stream_appendf_unittest(
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\nbar\n"));
 	skit_stream_appendf(stream, "%d\n", 3);
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\nbar\n3\n"));
-	skit_loaf_free(&buf);
 	printf("  skit_stream_appendf_unittest passed.\n");
 }
 
@@ -560,7 +581,6 @@ void skit_stream_append_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context) )
 {
-	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
 	skit_stream_append(stream, sSLICE("foo"));
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foo"));
@@ -570,7 +590,6 @@ void skit_stream_append_unittest(
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foobar"));
 	skit_stream_append(stream, sSLICE("baz"));
 	sASSERT_EQS(get_stream_contents(context), sSLICE("foobarbaz"));
-	skit_loaf_free(&buf);
 	printf("  skit_stream_append_unittest passed.\n");
 }
 
@@ -606,4 +625,37 @@ void skit_stream_rewind_unittest(
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));
 	skit_loaf_free(&buf);
 	printf("  skit_stream_rewind_unittest passed.\n");
+}
+
+// The given stream has the contents ""
+void skit_stream_indent_unittest(
+	skit_stream *stream,
+	void *context,
+	skit_slice (*get_stream_contents)(void *context) )
+{
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
+	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("\t") );
+	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	skit_stream_appendf(stream, "foo\n");
+	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
+	
+	skit_stream_incr_indent(stream);
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1, "%d" );
+	skit_stream_append(stream, sSLICE("bar\nbaz"));
+	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\tbar\n\tbaz"));
+	
+	skit_stream_incr_indent(stream);
+	skit_stream_set_ind_str(stream, "  ");
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 2, "%d" );
+	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("  ") );
+	skit_stream_appendln(stream, sSLICE("\nqux"));
+	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\tbar\n\tbaz\n    qux\n"));
+	
+	skit_stream_decr_indent(stream);
+	skit_stream_decr_indent(stream);
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
+	skit_stream_append(stream, sSLICE("quux"));
+	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\tbar\n\tbaz\n    qux\nquux"));
+	
+	printf("  skit_stream_indent_unittest passed.\n");
 }
