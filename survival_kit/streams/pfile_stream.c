@@ -110,6 +110,38 @@ void skit_pfile_stream_init(skit_pfile_stream *pstream)
 	pstreami->name = skit_loaf_null();
 	pstreami->read_buffer = skit_loaf_null();
 	pstreami->file_handle = NULL;
+	pstreami->handle_owned_by_stream = 1;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static skit_pfile_stream *skit_pfile_stream_from_handle( FILE *file_handle, skit_slice name )
+{
+	skit_pfile_stream *result = skit_pfile_stream_new();
+	skit_pfile_stream_internal *pstreami = &(result->as_internal);
+	
+	pstreami->name = skit_loaf_dup(name);
+	pstreami->access_mode = skit_loaf_copy_cstr("rw");
+	
+	pstreami->file_handle = file_handle;
+	
+	pstreami->handle_owned_by_stream = 0;
+	
+	return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_pfile_stream *skit__pfile_stdout_cache = NULL;
+skit_pfile_stream *skit__pfile_stdin_cache  = NULL;
+skit_pfile_stream *skit__pfile_stderr_cache = NULL;
+
+skit_pfile_stream *skit__pfile_stream_cached( FILE *file_handle, skit_pfile_stream **cached_stream, skit_slice name )
+{
+	if ( *cached_stream == NULL )
+		*cached_stream = skit_pfile_stream_from_handle(file_handle, name);
+	
+	return *cached_stream;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -521,9 +553,14 @@ void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output
 	}
 	
 	skit_stream_appendf(output, "Opened skit_pfile_stream with the following properties:\n");
-	skit_stream_appendf(output, "File name:   '%s'\n", skit_loaf_as_cstr(pstreami->name));
-	skit_stream_appendf(output, "File handle: %p\n", pstreami->file_handle);
-	skit_stream_appendf(output, "Access:      %s\n", skit_loaf_as_cstr(pstreami->access_mode));
+	skit_stream_appendf(output, "File name:    '%s'\n", skit_loaf_as_cstr(pstreami->name));
+	skit_stream_appendf(output, "File handle:  %p\n", pstreami->file_handle);
+	skit_stream_appendf(output, "Access:       %s\n", skit_loaf_as_cstr(pstreami->access_mode));
+	skit_stream_appendf(output, "Handle owner: ");
+	if ( pstreami->handle_owned_by_stream )
+		skit_stream_appendf(output, "The stream owns its file handle.\n");
+	else
+		skit_stream_appendf(output, "The caller's FILE* pointer owns the handle.\n");
 
 	return;
 }
@@ -576,6 +613,7 @@ void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const c
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
 	
+	pstreami->handle_owned_by_stream = 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -588,12 +626,15 @@ void skit_pfile_stream_close(skit_pfile_stream *stream)
 	if( pstreami->file_handle == NULL )
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to close an unopened stream."));
 	
-	int errval = fclose(pstreami->file_handle);
-	if ( errval != 0 )
+	if ( pstreami->handle_owned_by_stream )
 	{
-		char errbuf[1024];
-		/* TODO: throw exception for invalid file handles when (errval == EBADF) */
-		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		int errval = fclose(pstreami->file_handle);
+		if ( errval != 0 )
+		{
+			char errbuf[1024];
+			/* TODO: throw exception for invalid file handles when (errval == EBADF) */
+			sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+		}
 	}
 	
 	pstreami->file_handle = NULL;
@@ -703,6 +744,9 @@ void skit_pfile_stream_unittests()
 	
 	skit_pfile_stream_dtor(&pstream);
 
+	/* TODO: It would be nice if there was some way to test this automatically.  For now, this will at least make sure it doesn't crash. */
+	skit_stream_appendln(&skit_pfile_stream_stdout->as_stream, sSLICE("  skit_pfile_stream_stdout test passed."));
+	
 	printf("  skit_pfile_stream_unittests passed!\n");
 	printf("\n");
 }

@@ -16,6 +16,7 @@ struct skit_pfile_stream_internal
 	skit_loaf                 read_buffer;
 	skit_loaf                 access_mode;
 	FILE                      *file_handle;
+	int                       handle_owned_by_stream;
 };
 
 /** File stream backed by POSIX style file I/O or equivalent. */
@@ -30,6 +31,21 @@ union skit_pfile_stream
 
 void skit_pfile_stream_static_init();
 
+/* Internal use stuff.  Macro backing. */
+extern skit_pfile_stream *skit__pfile_stdout_cache;
+extern skit_pfile_stream *skit__pfile_stdin_cache;
+extern skit_pfile_stream *skit__pfile_stderr_cache;
+skit_pfile_stream *skit__pfile_stream_cached( FILE *file_handle, skit_pfile_stream **cached_stream, skit_slice name );
+
+/** 
+These expose the standard stdout, stdin, and stderr file streams as pointers
+to skit_pfile_stream objects.  They are statically allocated on an as-needed
+basis and should never have their destructors called or be closed or free'd in
+any way. 
+*/
+#define skit_pfile_stream_stdout (skit__pfile_stream_cached(stdout, &skit__pfile_stdout_cache, sSLICE("stdout")))
+#define skit_pfile_stream_stdin  (skit__pfile_stream_cached(stdin,  &skit__pfile_stdin_cache,  sSLICE("stdin")))
+#define skit_pfile_stream_stderr (skit__pfile_stream_cached(stderr, &skit__pfile_stderr_cache, sSLICE("stderr")))
 
 /**
 Constructor
