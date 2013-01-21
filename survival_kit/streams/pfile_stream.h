@@ -47,6 +47,10 @@ any way.
 #define skit_pfile_stream_stdin  (skit__pfile_stream_cached(stdin,  &skit__pfile_stdin_cache,  sSLICE("stdin")))
 #define skit_pfile_stream_stderr (skit__pfile_stream_cached(stderr, &skit__pfile_stderr_cache, sSLICE("stderr")))
 
+#define skit_stream_stdout (&skit_pfile_stream_stdout->as_stream)
+#define skit_stream_stdin  (&skit_pfile_stream_stdin->as_stream)
+#define skit_stream_stderr (&skit_pfile_stream_stderr->as_stream)
+
 /**
 Constructor
 Allocates a new skit_pfile_stream and calls skit_pfile_stream_init(*) on it.

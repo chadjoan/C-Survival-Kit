@@ -745,7 +745,7 @@ void skit_pfile_stream_unittests()
 	skit_pfile_stream_dtor(&pstream);
 
 	/* TODO: It would be nice if there was some way to test this automatically.  For now, this will at least make sure it doesn't crash. */
-	skit_stream_appendln(&skit_pfile_stream_stdout->as_stream, sSLICE("  skit_pfile_stream_stdout test passed."));
+	skit_stream_appendln(skit_stream_stdout, sSLICE("  skit_pfile_stream_stdout test passed."));
 	
 	printf("  skit_pfile_stream_unittests passed!\n");
 	printf("\n");
