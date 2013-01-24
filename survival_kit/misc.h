@@ -4,7 +4,18 @@
 
 #include <stdlib.h>
 
-/** Unconditionally exit the program and print the formatted string 'mess'. */
+/** Print the given message along with any other error messages that would
+normally get printed at this point if "skit_die" was called. */
+void skit_death_cry(char *mess, ...);
+void skit_death_cry_va(char *mess, va_list vl); /** ditto */
+
+/** Die without printing any error messages. */
+void skit_die_only();
+
+/**
+Unconditionally exit the program and print the formatted string 'mess' along
+with any other diagnostic information available to the survival kit context.
+*/
 void skit_die(char *mess, ...);
 
 /** 

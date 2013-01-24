@@ -2,7 +2,7 @@
 #ifndef SKIT_MATH_INCLUDED
 #define SKIT_MATH_INCLUDED
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "survival_kit/macro.h"
 

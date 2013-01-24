@@ -20,22 +20,14 @@
 #include "survival_kit/feature_emulation.h"
 #include "survival_kit/misc.h"
 
-
-void skit_die(char *mess, ...)
+void skit_death_cry_va(char *mess, va_list vl)
 {
-	skit_thread_context *skit_thread_ctx = skit_thread_context_get();
-	
-	va_list vl;
-	va_start(vl, mess);
-	vsnprintf(skit_thread_ctx->error_text_buffer, skit_thread_ctx->error_text_buffer_size, mess, vl);
-	va_end(vl);
-	
 	fprintf(stderr,"\n");
 	fprintf(stderr,"ERROR: skit_die was called.\n");
-	fprintf(stderr,"Message:\n");
-	
-	fprintf(stderr,"%s\n",skit_thread_ctx->error_text_buffer);
 	fprintf(stderr,"\n");
+	fprintf(stderr,"Message:\n");
+	vfprintf(stderr,mess,vl);
+	fprintf(stderr,"\n\n");
 	
 	if ( errno != 0 )
 	{
@@ -51,11 +43,32 @@ void skit_die(char *mess, ...)
 	backtrace_symbols_fd(backtrace_buf, n_addresses, STDERR_FILENO);
 	fprintf(stderr,"\n");
 #endif
-	
+}
+
+void skit_death_cry(char *mess, ...)
+{
+	va_list vl;
+	va_start(vl, mess);
+	skit_death_cry_va(mess, vl);
+	va_end(vl);
+}
+
+void skit_die_only()
+{
 	/* TODO: this should probably not crash the program if this is not the main
 	 * thread.  If the thread is non-main, then it should just kill the thread. */
 	exit(1);
 	/*lib$signal(EXIT_FAILURE);*/ /* This produced too much spam when exiting after a bunch of setjmp/longjmps. */
+}
+
+void skit_die(char *mess, ...)
+{
+	va_list vl;
+	va_start(vl, mess);
+	skit_death_cry_va(mess, vl);
+	va_end(vl);
+	
+	skit_die_only();
 }
 
 void skit_print_mem(void *ptr, int size)

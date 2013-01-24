@@ -3,6 +3,7 @@
 #pragma module skit_math
 #endif
 
+#include <inttypes.h>
 #include <stdio.h>
 
 #include "survival_kit/math.h"
