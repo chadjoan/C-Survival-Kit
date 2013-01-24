@@ -3,6 +3,7 @@
 #define SKIT_MISC_INCLUDED
 
 #include <stdlib.h>
+#include <stdarg.h>
 
 /** Print the given message along with any other error messages that would
 normally get printed at this point if "skit_die" was called. */
