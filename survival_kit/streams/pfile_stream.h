@@ -80,8 +80,26 @@ skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer)
 skit_slice skit_pfile_stream_to_slice(skit_pfile_stream *stream, skit_loaf *buffer);
 void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output);
 void skit_pfile_stream_dtor(skit_pfile_stream *stream);
-void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const char *access_mode);
 void skit_pfile_stream_close(skit_pfile_stream *stream);
+
+/* OpenVMS has it's own very special fopen function with variadic args.
+It can't be asked to provide a version with a va_list argument, so it is
+necessary to implement this as a C99 variadic macro that can forward the
+arguments to the OpenVMS fopen. */
+#ifdef __VMS
+#define skit_pfile_stream_open(stream,fname,...) \
+	skit__pfile_stream_assign_fp(stream, fopen(skit__pfile_stream_populate(stream, fname, SKIT_PFILE_FIRST_VARG(__VA_ARGS__)), __VA_ARGS__))
+#else
+#define skit_pfile_stream_open(stream,fname,...) \
+	skit__pfile_stream_assign_fp(stream, fopen(skit__pfile_stream_populate(stream, fname, SKIT_PFILE_FIRST_VARG(__VA_ARGS__)), SKIT_PFILE_FIRST_VARG(__VA_ARGS__)))
+#endif
+
+/* Internal use functions that are used in the skit_pfile_stream_open macro. */
+/* Do not use directly. */
+const char *skit__pfile_stream_populate(skit_pfile_stream *stream, skit_slice fname, const char *access_mode);
+void skit__pfile_stream_assign_fp(skit_pfile_stream *stream, FILE *fp);
+#define SKIT_PFILE_FIRST_VARG(...) SKIT_PFILE_FIRST_VARG_(__VA_ARGS__, throwaway)
+#define SKIT_PFILE_FIRST_VARG_(first,...) first
 
 void skit_pfile_stream_unittests();
 

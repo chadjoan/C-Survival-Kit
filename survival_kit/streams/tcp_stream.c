@@ -3,6 +3,7 @@
 #pragma module skit_streams_tcp_stream
 #endif
 
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,7 +14,6 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <errno.h>
-#include <fcntl.h>
 
 #if defined(__DECC)
 /* On VMS, this isn't defined in sys/socket.h like the standard says. */
@@ -128,6 +128,7 @@ void skit_tcp_stream_init(skit_tcp_stream *tstream)
 	stream->meta.class_name = sSLICE("skit_tcp_stream");
 	
 	skit_tcp_stream_internal *tstreami = &tstream->as_internal;
+	tstreami->read_buffer = skit_loaf_null();
 	tstreami->connection_fd = -1;
 	tstreami->socket_fd = -1;
 }
@@ -584,17 +585,28 @@ sEND_SCOPE
 static int skit_connect_tcp_test_server(int socket_fd)
 {
 	SKIT_USE_FEATURE_EMULATION;
+	char errbuf[1024];
 	
 	int connection_fd = accept(socket_fd, NULL, NULL);
-
-	//if(0 > connection_fd)
-	//	sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Accept failed."));
 	if (0 > connection_fd)
 		sTHROW(SKIT_TCP_IO_EXCEPTION, "Test Server: Accept failed.");
-
+		
+/*
+	// This does not work on VMS.  No idea why.  Use ioctl instead.
+	// (The fcntl calls will return success values but the socket will
+	//    block on recv in the skit_tcp_utest_contents function)
 	int flags = fcntl(connection_fd, F_GETFL, 0);
-	fcntl(connection_fd, F_SETFL, flags | O_NONBLOCK);
-	
+	if (0 > flags || 0 > fcntl(connection_fd, F_SETFL, flags | O_NONBLOCK))
+		sTHROW(SKIT_TCP_IO_EXCEPTION, "Test Server: Could not set non-blocking mode.  Reason:\n%s",
+			skit_errno_to_cstr(errbuf, sizeof(errbuf)));
+*/
+
+	/* Blocking is bad for unittests.  Turn that junk off. */
+	int dont_block = 1;
+	if (0 > ioctl(connection_fd, FIONBIO, &dont_block))
+		sTHROW(SKIT_TCP_IO_EXCEPTION, "Test Server: Could not set non-blocking mode.  Reason:\n%s",
+			skit_errno_to_cstr(errbuf, sizeof(errbuf)));
+
 	return connection_fd;
 }
 
@@ -604,6 +616,7 @@ static skit_tcp_stream *skit_start_tcp_test_client(int port)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	skit_tcp_stream *result = skit_tcp_stream_new();
+	sTRACE(skit_tcp_stream_init(result));
 	sTRACE(skit_tcp_stream_connect(result, sSLICE("127.0.0.1"), port));
 	return result;
 }
@@ -622,34 +635,89 @@ struct skit_tcp_utest_context
 	skit_loaf *content_buffer;
 };
 
-static skit_slice skit_tcp_utest_contents( void *context )
+static skit_slice skit_tcp_utest_contents( void *context, int expected_size )
 {
 	SKIT_USE_FEATURE_EMULATION;
 	
 	skit_tcp_utest_context *ctx = context;
 	char errbuf[1024];
 	
-	/* Do a non-blocking peek at the receiving end. */
-	/* This should yield whatever has been written by append operations
-	    on the other side of the unittests. */
+	/* How many hundredths of a second to wait before timing out
+	on receiving the expected unittest value. */
+	int hundredths_max = 200; /* 2 seconds. */
+	
+	/* How many hundredths of a second we have spent waiting
+	for the data we want. */
+	int hundredths_waited = 0;
+	
+	/* Number of bytes received. */
 	ssize_t received = 0;
-	received = recv(
-		ctx->server_fd,
-		sLPTR(*ctx->content_buffer),
-		sLLENGTH(*ctx->content_buffer),
-		MSG_PEEK );
 	
-	/* We expect to receive nothing sometimes. */
-	/* In those cases recv may issue a EWOULDBLOCK error */
-	/*   because receiving any amount of bytes from an empty buffer */
-	/*   would require the call to block and wait for the buffer to fill. */
-	/* We don't care, so we just ignore the error code. */
-	if ( received == -1 && errno == EWOULDBLOCK )
-		received = 0;
+	/* Sleep to allow packets to catch up and coalesce. */
+	/* VMS seems to require up to 200 ms for this to happen. */
+	/* Linux seems instantaneous. */
+	/* We intentionally introduce a minimum wait to catch situations */
+	/*   where the stream might send too many bytes: in those cases */
+	/*   we could exit too early if we don't wait for the OS to flush */
+	/*   all of its sockets, and end up with a deceptive pass. */
+	#ifdef __VMS
+	int hundredths_min = 25; /* 250 ms to be safe. */
+	#else
+	int hundredths_min = 5; /* For now, this handles Linux, which is instant. */
+	#endif
 	
-	/* Other stuff is bad maybe? */
-	if ( received == -1 && errno != EWOULDBLOCK )
-		sTHROW(SKIT_TCP_IO_EXCEPTION, "Test server: %s", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
+	usleep(hundredths_min * 10 * 1000); 
+	hundredths_waited += hundredths_min;
+	
+	/* Repeatedly peek at the bytes we've received. */
+	/* When we've got enough, we'll return them to the test. */
+	while ( hundredths_waited < hundredths_max )
+	{
+		/* Do a non-blocking peek at the receiving end. */
+		/* This should yield whatever has been written by append operations
+		    on the other side of the unittests. */
+		received = recv(
+			ctx->server_fd,
+			sLPTR(*ctx->content_buffer),
+			sLLENGTH(*ctx->content_buffer),
+			MSG_PEEK );
+		
+		/* We expect to receive nothing sometimes. */
+		/* In those cases recv may issue a EWOULDBLOCK error */
+		/*   because receiving any amount of bytes from an empty buffer */
+		/*   would require the call to block and wait for the buffer to fill. */
+		/* We don't care, so we just ignore the error code. */
+		if ( received == -1 && errno == EWOULDBLOCK )
+			received = 0;
+		
+		/* Other stuff is bad maybe? */
+		if ( received == -1 && errno != EWOULDBLOCK )
+			sTHROW(SKIT_TCP_IO_EXCEPTION, "Test server: %s", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
+		
+		/* Good! We got all the bytes we came for. */
+		if ( received >= expected_size )
+			break;
+		
+		/* Sleep for 10ms (1/100 sec) to allow packets to catch up and coalesce. */
+		/* Otherwise the unittest might see PART of the test results arriving. */
+		/* This seems to actually matter on OpenVMS. */
+		usleep(10 * 1000);
+		
+		hundredths_waited++;
+	}
+	/* If we time-out, we'll just return whatever we got. */
+	/* If it's not good enough, then an assertion will trigger and tests */
+	/*   will fail. (as we want them to, if something is wrong) */
+	
+	if ( hundredths_waited > hundredths_min )
+	{
+		printf("\n");
+		printf("The system had to wait longer than expected for tcp packets to arrive.\n");
+		printf("This could result in false positives in the tests.\n");
+		printf("Please adjust hundredths_min so that it is safely larger than the amount of\n");
+		printf("  of time required for tcp packets to travel to localhost on this system.\n");
+		printf("(On this test, it waited %d +/- 10 milliseconds.)\n\n", hundredths_waited*10);
+	}
 	
 	skit_slice result = skit_slice_of(ctx->content_buffer->as_slice, 0, received);
 	return result;
@@ -661,7 +729,7 @@ static void skit_tcp_run_read_utest(
 	void (*utest_function)(
 		skit_stream *stream,
 		void *context,
-		skit_slice (*get_stream_contents)(void *context) )
+		skit_slice (*get_stream_contents)(void *context, int expected_size) )
 	)
 {
 	SKIT_USE_FEATURE_EMULATION;
@@ -669,18 +737,18 @@ static void skit_tcp_run_read_utest(
 	SKIT_LOAF_ON_STACK(content_buffer, 1024);
 	ctx.content_buffer = &content_buffer;
 	
-	int socket_fd = skit_start_tcp_test_server(test_port);
-	skit_tcp_stream *client = skit_start_tcp_test_client(*test_port);
-	ctx.server_fd = skit_connect_tcp_test_server(socket_fd);
+	int socket_fd = sETRACE(skit_start_tcp_test_server(test_port));
+	skit_tcp_stream *client = sETRACE(skit_start_tcp_test_client(*test_port));
+	ctx.server_fd = sETRACE(skit_connect_tcp_test_server(socket_fd));
 	
-	send( ctx.server_fd, sSPTR(server_sent_text), sSLENGTH(server_sent_text), 0 );
+	sTRACE(send( ctx.server_fd, sSPTR(server_sent_text), sSLENGTH(server_sent_text), 0 ));
 	
 	if (-1 == shutdown(ctx.server_fd, SHUT_RDWR))
 		sTHROW(SKIT_TCP_IO_EXCEPTION, "Test Server: Could not shutdown server_fd.");
 	
-	utest_function(&(client->as_stream), &ctx, &skit_tcp_utest_contents);
+	sTRACE(utest_function(&(client->as_stream), &ctx, &skit_tcp_utest_contents));
 	
-	skit_stop_tcp_test_client(client);
+	sTRACE(skit_stop_tcp_test_client(client));
 	close(ctx.server_fd);
 	close(socket_fd);
 	(*test_port)++;
@@ -694,7 +762,7 @@ static void skit_tcp_run_write_utest(
 	void (*utest_function)(
 		skit_stream *stream,
 		void *context,
-		skit_slice (*get_stream_contents)(void *context) )
+		skit_slice (*get_stream_contents)(void *context, int expected_size) )
 	)
 {
 	SKIT_USE_FEATURE_EMULATION;
@@ -702,15 +770,15 @@ static void skit_tcp_run_write_utest(
 	SKIT_LOAF_ON_STACK(content_buffer, 1024);
 	ctx.content_buffer = &content_buffer;
 	
-	int socket_fd = skit_start_tcp_test_server(test_port);
-	skit_tcp_stream *client = skit_start_tcp_test_client(*test_port);
-	ctx.server_fd = skit_connect_tcp_test_server(socket_fd);
+	int socket_fd = sETRACE(skit_start_tcp_test_server(test_port));
+	skit_tcp_stream *client = sETRACE(skit_start_tcp_test_client(*test_port));
+	ctx.server_fd = sETRACE(skit_connect_tcp_test_server(socket_fd));
 	
-	send( ctx.server_fd, sSPTR(server_sent_text), sSLENGTH(server_sent_text), 0 );
+	sTRACE(send( ctx.server_fd, sSPTR(server_sent_text), sSLENGTH(server_sent_text), 0 ));
 
-	utest_function(&(client->as_stream), &ctx, &skit_tcp_utest_contents);
+	sTRACE(utest_function(&(client->as_stream), &ctx, &skit_tcp_utest_contents));
 	
-	skit_stop_tcp_test_client(client);
+	sTRACE(skit_stop_tcp_test_client(client));
 
 	/* This shutdown comes at a different place than in the read test. */
 	/* This is important because you'll get a broken pipe if you try */

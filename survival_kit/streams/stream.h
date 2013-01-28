@@ -515,69 +515,69 @@ skit_slice skit_stream_buffered_slurp(
 void skit_stream_readln_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_READLN_UNITTEST_CONTENTS "foo\n\n\0bar\nbaz\n"
 
 // The given stream has the contents "foobarbaz"
 void skit_stream_read_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_READ_UNITTEST_CONTENTS "foobarbaz"
 
 // The given stream has the contents "XYYdoodabcddcba"
 void skit_stream_read_xNN_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_READ_XNN_UNITTEST_CONTENTS "XYYdoodabcddcba"
 
 // The given stream has the contents "abc"
 void skit_stream_read_fn_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_READ_FN_UNITTEST_CONTENTS "abc"
 
 // The given stream has the contents ""
 void skit_stream_appendln_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_APPENDLN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
 void skit_stream_appendf_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_APPENDF_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
 void skit_stream_append_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_APPEND_UNITTEST_CONTENTS ""
 
 // The given stream has the contents ""
 void skit_stream_append_xNN_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_APPEND_XNN_UNITTEST_CONTENTS ""
 
 // The given stream has the contents "".  The cursor starts at the begining.
 void skit_stream_rewind_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_REWIND_UNITTEST_CONTENTS ""
 
 void skit_stream_indent_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) );
+	skit_slice (*get_stream_contents)(void *context, int expected_size) );
 #define SKIT_INDENT_UNITTEST_CONTENTS ""
 
 #endif

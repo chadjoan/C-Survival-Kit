@@ -46,6 +46,10 @@ static skit_stream_vtable_t skit_pfile_stream_vtable;
 
 /* ------------------------------------------------------------------------- */
 
+static void skit_pfile_stream_open_no_vargs(skit_pfile_stream *stream, skit_slice fname, const char *access_mode);
+
+/* ------------------------------------------------------------------------- */
+
 void skit_pfile_stream_vtable_init(skit_stream_vtable_t *arg_table)
 {
 	skit_stream_vtable_init(arg_table);
@@ -62,7 +66,7 @@ void skit_pfile_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->to_slice      = &skit_pfile_stream_to_slice;
 	table->dump          = &skit_pfile_stream_dump;
 	table->dtor          = &skit_pfile_stream_dtor;
-	table->open          = &skit_pfile_stream_open;
+	table->open          = &skit_pfile_stream_open_no_vargs;
 	table->close         = &skit_pfile_stream_close;
 }
 
@@ -449,8 +453,8 @@ void skit_pfile_stream_append(skit_pfile_stream *stream, skit_slice slice)
 		/*sRETURN();*/
 	
 	/* Do the write. */
-	fwrite( sSPTR(slice), 1, length, pstreami->file_handle );
-	if ( ferror(pstreami->file_handle) )
+	size_t n_bytes_written = fwrite( sSPTR(slice), 1, length, pstreami->file_handle );
+	if ( n_bytes_written != length && ferror(pstreami->file_handle) )
 	{
 		char errbuf[1024];
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
@@ -467,7 +471,25 @@ void skit_pfile_stream_flush(skit_pfile_stream *stream)
 	if( pstreami->file_handle == NULL )
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to flush an unopened stream."));
 	
+	#ifdef __VMS
+	/* 
+	On OpenVMS, fflush does not force writes onto disk, but fsync does. 
+	Thus, the behavior the caller will probably expect is that of fsync.
+	Unittests will fail on OpenVMS if fflush is used.  Using fflush makes
+	it impossible to have one pfile_stream read the writes created by
+	another concurrent pfile_stream open to the same file.
+	Source: http://h71000.www7.hp.com/commercial/c/docs/5763p029.html
+	*/
+	int errval = fsync(fileno(pstreami->file_handle));
+	#else
+	/*
+	Linux, on the other hand, seems to prefer fflush as a way to make
+	writes immediately available to other open streams.  This was found
+	by expermintation after the VMS path made unittests fail.
+	*/
 	int errval = fflush(pstreami->file_handle);
+	#endif
+	
 	if ( errval != 0 )
 	{
 		char errbuf[1024];
@@ -591,11 +613,18 @@ void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 }
 
 /* ------------------------------------------------------------------------- */
+/* These implement skit_pfile_stream_open(). */
+/* This whole setup is a bit hacky and weird due to an OpenVMS API limitation. */
+/* See the comment above the skit_pfile_stream_open() in pfile_stream.h for details. */
 
-void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const char *access_mode)
+static void skit_pfile_stream_open_no_vargs(skit_pfile_stream *stream, skit_slice fname, const char *access_mode)
+{
+	skit_pfile_stream_open(stream,fname,access_mode);
+}
+
+const char *skit__pfile_stream_populate(skit_pfile_stream *stream, skit_slice fname, const char *access_mode)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	char errbuf[1024];
 	sASSERT(stream != NULL);
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	
@@ -605,8 +634,15 @@ void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice fname, const c
 	pstreami->name = skit_loaf_dup(fname);
 	pstreami->access_mode = skit_loaf_copy_cstr(access_mode);
 	
-	const char *cfname = skit_loaf_as_cstr(pstreami->name);
-	pstreami->file_handle = fopen(cfname, access_mode);
+	return skit_loaf_as_cstr(pstreami->name);
+}
+
+void skit__pfile_stream_assign_fp(skit_pfile_stream *stream, FILE *fp)
+{
+	SKIT_USE_FEATURE_EMULATION;
+	char errbuf[1024];
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
+	pstreami->file_handle = fp;
 	if ( pstreami->file_handle == NULL )
 	{
 		/* TODO: generate different kinds of exceptions depending on what went wrong. */
@@ -651,7 +687,7 @@ struct skit_pfile_utest_context
 	skit_loaf *content_buffer;
 };
 
-static skit_slice skit_pfile_utest_contents( void *context )
+static skit_slice skit_pfile_utest_contents( void *context, int expected_size )
 sSCOPE
 	SKIT_USE_FEATURE_EMULATION;
 	
@@ -662,7 +698,23 @@ sSCOPE
 	
 	skit_pfile_stream pstream;
 	skit_pfile_stream_init(&pstream);
-	skit_pfile_stream_open(&pstream, sSLICE(SKIT_PFILE_UTEST_FILE), "r");
+	
+	/*
+	Getting unittests to pass on VMS was ... challenging.
+	In particular, opening two streams to the same file tended to always create a
+	  %rms-e-flk, file currently locked by another user
+	error message.  Many combinations of "shr=blah,blah", "rop=nlk", etc. commands
+	were tried.  The only thing that seems to work is to have "shr=get,put,upd"
+	placed on BOTH streams attempting to access the file, even if one of them
+	is only doing read operations (you'd think it would only need "shr=get", right?).
+	Numerous resources were consulted for this troubleshooting.  
+	Here are some of the more notable ones:
+	http://h71000.www7.hp.com/commercial/c/docs/5763pro_024.html  (the create function lists all of the variadic thingies that can be passed to fopen)
+	http://h71000.www7.hp.com/wizard/wiz_2867.html   (some examples to work from)
+	http://unix.derkeiler.com/Newsgroups/comp.os.vms/2005-04/0633.html  (the one that said the magic words: "And you need them in both fopen() calls.")
+	-- Chad Joan
+	*/
+	sTRACE(skit_pfile_stream_open(&pstream, sSLICE(SKIT_PFILE_UTEST_FILE), "r", "shr=get,put,upd"));
 	sSCOPE_EXIT_BEGIN
 		skit_pfile_stream_close(&pstream);
 		skit_pfile_stream_dtor(&pstream);
@@ -709,15 +761,18 @@ static void skit_pfile_run_utest(
 	void (*utest_function)(
 		skit_stream *stream,
 		void *context,
-		skit_slice (*get_stream_contents)(void *context) )
+		skit_slice (*get_stream_contents)(void *context, int expected_size) )
 )
 {
+	SKIT_USE_FEATURE_EMULATION;
 	skit_pfile_utest_context ctx;
 	SKIT_LOAF_ON_STACK(content_buffer, 1024);
 	ctx.content_buffer = &content_buffer;
 	
 	skit_pfile_utest_prep_file(initial_file_contents);
-	skit_pfile_stream_open(stream, sSLICE(SKIT_PFILE_UTEST_FILE), "r+");
+	/* See the skit_pfile_stream_open in skit_pfile_utest_contents() for
+	an explanation of what went into "shr=get,put,upd" */
+	sTRACE(skit_pfile_stream_open(stream, sSLICE(SKIT_PFILE_UTEST_FILE), "r+", "ctx=stm", "shr=get,put,upd"));
 	ctx.under_test = stream;
 	utest_function(&(stream->as_stream), &ctx, &skit_pfile_utest_contents);
 	skit_pfile_stream_close(stream);

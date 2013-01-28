@@ -438,11 +438,16 @@ skit_slice skit_stream_buffered_slurp(
 
 /* ------------------------- generic unittests ----------------------------- */
 
+#define SKIT_ASSERT_CONTENTS(cstr) \
+	do { \
+		sASSERT_EQS(get_stream_contents(context, strlen(cstr)), sSLICE(cstr)); \
+	} while (0)
+
 // The given stream has the contents "foo\n\n\0bar\nbaz\n"
 void skit_stream_readln_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	skit_loaf buf = skit_loaf_alloc(3);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE("foo"));
@@ -459,7 +464,7 @@ void skit_stream_readln_unittest(
 void skit_stream_read_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	skit_loaf buf = skit_loaf_alloc(3);
 	sASSERT_EQS(skit_stream_read(stream,&buf,3), sSLICE("foo"));
@@ -475,7 +480,7 @@ void skit_stream_read_unittest(
 void skit_stream_read_xNN_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	sASSERT_EQ( skit_stream_read_i8(stream), 'X', "%c");
 	
@@ -529,7 +534,7 @@ static int skit_stream_read_fn_accept2( skit_custom_read_context *ctx )
 void skit_stream_read_fn_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	int count = 0;
 	skit_slice result;
@@ -545,17 +550,17 @@ void skit_stream_read_fn_unittest(
 void skit_stream_appendln_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
-	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	SKIT_ASSERT_CONTENTS("");
 	skit_stream_appendln(stream, sSLICE("foo"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
+	SKIT_ASSERT_CONTENTS("foo\n");
 	skit_stream_appendln(stream, sSLICE(""));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\n"));
+	SKIT_ASSERT_CONTENTS("foo\n\n");
 	skit_stream_appendln(stream, sSLICE("bar"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\nbar\n"));
+	SKIT_ASSERT_CONTENTS("foo\n\nbar\n");
 	skit_stream_appendln(stream, sSLICE("baz"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\nbar\nbaz\n"));
+	SKIT_ASSERT_CONTENTS("foo\n\nbar\nbaz\n");
 	printf("  skit_stream_appendln_unittest passed.\n");
 }
 
@@ -563,15 +568,15 @@ void skit_stream_appendln_unittest(
 void skit_stream_appendf_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
-	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	SKIT_ASSERT_CONTENTS("");
 	skit_stream_appendf(stream, "foo\n");
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
+	SKIT_ASSERT_CONTENTS("foo\n");
 	skit_stream_appendf(stream, "%s\n", "bar");
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\nbar\n"));
+	SKIT_ASSERT_CONTENTS("foo\nbar\n");
 	skit_stream_appendf(stream, "%d\n", 3);
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\nbar\n3\n"));
+	SKIT_ASSERT_CONTENTS("foo\nbar\n3\n");
 	printf("  skit_stream_appendf_unittest passed.\n");
 }
 
@@ -579,17 +584,17 @@ void skit_stream_appendf_unittest(
 void skit_stream_append_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
-	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	SKIT_ASSERT_CONTENTS("");
 	skit_stream_append(stream, sSLICE("foo"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo"));
+	SKIT_ASSERT_CONTENTS("foo");
 	skit_stream_append(stream, sSLICE(""));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo"));
+	SKIT_ASSERT_CONTENTS("foo");
 	skit_stream_append(stream, sSLICE("bar"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foobar"));
+	SKIT_ASSERT_CONTENTS("foobar");
 	skit_stream_append(stream, sSLICE("baz"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foobarbaz"));
+	SKIT_ASSERT_CONTENTS("foobarbaz");
 	printf("  skit_stream_append_unittest passed.\n");
 }
 
@@ -597,17 +602,17 @@ void skit_stream_append_unittest(
 void skit_stream_append_xNN_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
-	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	SKIT_ASSERT_CONTENTS("");
 	skit_stream_append_i8(stream, 'X');
-	sASSERT_EQS(get_stream_contents(context), sSLICE("X"));
+	SKIT_ASSERT_CONTENTS("X");
 	skit_stream_append_i16(stream, *(int16_t*)"YY");
-	sASSERT_EQS(get_stream_contents(context), sSLICE("XYY"));
+	SKIT_ASSERT_CONTENTS("XYY");
 	skit_stream_append_i32(stream, *(int32_t*)"dood");
-	sASSERT_EQS(get_stream_contents(context), sSLICE("XYYdood"));
+	SKIT_ASSERT_CONTENTS("XYYdood");
 	skit_stream_append_i64(stream, *(int64_t*)"abcddbca");
-	sASSERT_EQS(get_stream_contents(context), sSLICE("XYYdoodabcddbca"));
+	SKIT_ASSERT_CONTENTS("XYYdoodabcddbca");
 	printf("  skit_stream_append_xNN_unittest passed.\n");
 }
 
@@ -615,7 +620,7 @@ void skit_stream_append_xNN_unittest(
 void skit_stream_rewind_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	skit_loaf buf = skit_loaf_alloc(64);
 	sASSERT_EQS(skit_stream_readln(stream,&buf), sSLICE(""));
@@ -631,31 +636,31 @@ void skit_stream_rewind_unittest(
 void skit_stream_indent_unittest(
 	skit_stream *stream,
 	void *context,
-	skit_slice (*get_stream_contents)(void *context) )
+	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
 	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("\t") );
-	sASSERT_EQS(get_stream_contents(context), sSLICE(""));
+	SKIT_ASSERT_CONTENTS("");
 	skit_stream_appendf(stream, "foo\n");
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n"));
+	SKIT_ASSERT_CONTENTS("foo\n");
 	
 	skit_stream_incr_indent(stream);
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1, "%d" );
 	skit_stream_append(stream, sSLICE("bar\nbaz"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\tbar\n\tbaz"));
+	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz");
 	
 	skit_stream_incr_indent(stream);
 	skit_stream_set_ind_str(stream, "  ");
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 2, "%d" );
 	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("  ") );
 	skit_stream_appendln(stream, sSLICE("\nqux"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\tbar\n\tbaz\n    qux\n"));
+	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz\n    qux\n");
 	
 	skit_stream_decr_indent(stream);
 	skit_stream_decr_indent(stream);
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
 	skit_stream_append(stream, sSLICE("quux"));
-	sASSERT_EQS(get_stream_contents(context), sSLICE("foo\n\tbar\n\tbaz\n    qux\nquux"));
+	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz\n    qux\nquux");
 	
 	printf("  skit_stream_indent_unittest passed.\n");
 }

@@ -416,7 +416,7 @@ void skit_ind_stream_dtor(skit_ind_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-static skit_slice skit_ind_stream_utest_contents( void *context )
+static skit_slice skit_ind_stream_utest_contents( void *context, int expected_size )
 {
 	skit_ind_stream *istream = context;
 	skit_ind_stream_internal *istreami = &istream->as_internal;
@@ -430,7 +430,7 @@ static void skit_ind_stream_run_utest(
 	void (*utest_function)(
 		skit_stream *stream,
 		void *context,
-		skit_slice (*get_stream_contents)(void *context) ),
+		skit_slice (*get_stream_contents)(void *context, int expected_size) ),
 	skit_slice initial_contents
 )
 {
