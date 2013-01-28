@@ -13,6 +13,13 @@
 #include "survival_kit/assert.h"
 #include "survival_kit/memory.h"
 
+#define SKIT_DO_STRING_DEBUG 0
+#ifdef SKIT_DO_STRING_DEBUG
+#define DEBUG(x) (x)
+#else
+#define DEBUG(x) (void)
+#endif
+
 /* 
 -----------===== .meta layout =====-----------
 The hi 8 bits of the 'meta' member is layed out like so:
@@ -134,14 +141,14 @@ typedef enum skit_string_alloc_type skit_string_alloc_type;
 #define skit_string_init_meta() \
 	(META_CHECK_VAL | (1ULL << META_STRIDE_SHIFT))
 
-static void skit_slice_set_length(skit_slice *slice, size_t len)
+static void skit_slice_set_length(skit_slice *slice, uint64_t len)
 {
 	slice->meta = 
 		(slice->meta & ~META_LENGTH_MASK) | 
 		((len << META_LENGTH_SHIFT) & META_LENGTH_MASK);
 }
 
-static void skit_slice_set_offset(skit_slice *slice, size_t offset)
+static void skit_slice_set_offset(skit_slice *slice, uint64_t offset)
 {
 	slice->meta = 
 		(slice->meta & ~META_OFFSET_MASK) | 
@@ -754,6 +761,8 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	skit_slice result = skit_slice_null();
 	ssize_t length = skit_slice_len(slice);
 	ssize_t old_offset = skit_slice_get_offset(slice);
+	DEBUG(printf("skit_slice_of({ptr=%p,offset=%ld,len=%ld}, %ld, %ld)\n",
+		sSPTR(slice), old_offset, sSLENGTH(slice), index1, index2));
 	
 	/* Implement index2 as SKIT_EOT being length. */
 	if ( index2 == SKIT_EOT )
@@ -774,6 +783,9 @@ skit_slice skit_slice_of(skit_slice slice, ssize_t index1, ssize_t index2)
 	skit_slice_set_offset(&result, index1 + old_offset);
 	if ( SKIT_SLICE_IS_CSTR(slice) )
 		SKIT_STRING_SET_ALLOC_TYPE(result.meta, skit_string_alloc_type_cstr);
+	
+	DEBUG(printf("skit_slice_of.result = {ptr=%p,offset=%ld,len=%ld}\n",
+		sSPTR(result), skit_slice_get_offset(slice), sSLENGTH(result)));
 	
 	return result;
 }
