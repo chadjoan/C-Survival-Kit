@@ -53,7 +53,7 @@ static skit_trie_flags skit_parse_flags( const char *trie_flags )
 			default: sTHROW("Unexpected character %c in trie flags.\n", trie_flags[i]);
 		}
 	}
-	
+
 	sASSERT(0);
 	return 0;
 }
@@ -129,20 +129,20 @@ static skit_trie_coords skit_trie_find(
 
 	if ( trie->root == NULL )
 		return skit_trie_stop_lookup(NULL, 0, 0);
-	
-	char *key_return_buf = sLPTR(trie->key_return_buf);	
+
+	char *key_return_buf = sLPTR(trie->key_return_buf);
 	skit_trie_node *next = trie->root;
 	while ( 1 )
 	{
 		lookup = skit_trie_next_node(next, key, key_len, 0, key_return_buf);
-		
+
 		if ( lookup.lookup_stopped )
 			break;
-		
+
 		if ( skit_exact_match(lookup, key_len) )
 			return lookup; /* Match success. DONE. */
 	}
-	
+
 	return lookup;
 }
 
@@ -154,10 +154,10 @@ static skit_trie_coords skit_trie_next_node(
 	size_t key_len,
 	size_t pos)
 {
-	
+
 	sASSERT(current->nodes != NULL);
 	sASSERT(current->nodes_len > 0);
-	
+
 	if ( current->nodes_len == 1 )
 	{
 		/*
@@ -167,17 +167,17 @@ static skit_trie_coords skit_trie_next_node(
 		'chars_len'
 		*/
 		size_t chars_len = current->chars_len;
-		
+
 		size_t i = 0;
 		while ( i < chars_len )
 		{
 			if ( pos > key_len || key[pos] != current->chars[i] )
 				return skit_trie_stop_lookup(current, pos, i);
-			
+
 			pos++;
 			i++;
 		}
-		
+
 		return skit_trie_continue_lookup(&current->nodes[0], pos);
 	}
 	else if ( current->chars_len < SKIT__TRIE_NODE_PREALLOC )
@@ -190,19 +190,19 @@ static skit_trie_coords skit_trie_next_node(
 		in the 'nodes' array.
 		*/
 		sASSERT( current->chars_len == current->nodes_len );
-		
+
 		if ( pos >= key_len )
 			return skit_trie_stop_lookup(current, pos, 0);
-		
+
 		size_t chars_len = current->chars_len;
 		size_t i = 0;
 		for ( ; i < chars_len; i++ )
 			if ( current->chars[i] == key[pos] )
 				break;
-		
+
 		if ( i == chars_len )
 			return skit_trie_stop_lookup(current, pos, 0);
-		
+
 		return skit_trie_continue_lookup(&current->nodes[i], pos+1);
 	}
 	else
@@ -216,14 +216,14 @@ static skit_trie_coords skit_trie_next_node(
 		*/
 		if ( pos >= key_len )
 			return skit_trie_stop_lookup(current, pos, 0);
-		
+
 		skit_trie_node *next_node = current->node_table[(uint8_t)key[pos]];
 		if ( next_node == NULL )
 			return skit_trie_stop_lookup(current, pos, 0);
-		
+
 		return skit_trie_continue_lookup(next_node, pos+1);
 	}
-	
+
 	sASSERT(0);
 }
 
@@ -270,7 +270,7 @@ void skit_trie_dtor( skit_trie *trie )
 {
 	if ( trie->root != NULL )
 		skit_trie_node_free(trie->root);
-	
+
 	if ( !skit_loaf_is_null(trie->key_return_buf) )
 		trie->key_return_buf = skit_loaf_free(trie->key_return_buf);
 }
@@ -280,26 +280,44 @@ void skit_trie_dtor( skit_trie *trie )
 skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, const char *flags )
 {
 	sASSERT(value != NULL);
-	
+
 	skit_trie_flags tflags = skit_parse_flags( flags )
-	
+
 	sASSERT_MSG(tflags & ICASE, "Case insensitive operations are currently unsupported.");
-	
+
 	size_t key_len = sSLENGTH(key);
 	skit_trie_coords coords = skit_trie_find(trie, sSPTR(key), key_len);
-	
+
 	if ( skit_exact_match(coords, key_len) )
 	{
 		*value = coords.node->value;
 		return skit_slice_of(trie->key_result_buf.as_slice, 0, key_len);
 	}
-	
+
 	return skit_slice_null();
 }
 
 /* ------------------------------------------------------------------------- */
 
-/* 
+static void skit_trie_node_ctor( skit_trie_node *node )
+{
+	node->nodes = NULL;
+	node->value = NULL;
+	node->nodes_len = 0;
+	node->chars_len = 0;
+	node->have_value = 0;
+}
+
+static skit_trie_node *skit_trie_new_node()
+{
+	skit_trie_node *result = skit_malloc(sizeof(skit_trie_node));
+	skit_trie_node_ctor(result);
+	return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+/*
 . Converts
 .
 .     node -> "asdf" -> node -> "qwer" -> value
@@ -314,7 +332,7 @@ This is purely a space-optimization.
 */
 static void skit_trie_node_fold(skit_trie_node *node)
 {
-	lol fix me
+	return node;
 }
 
 static void skit_trie_node_set_value( skit_trie_node *node, const void *value )
@@ -329,7 +347,31 @@ static void skit_trie_node_insert_non0_str(
 	const char *str_ptr,
 	size_t str_len )
 {
-	
+	sASSERT(node != NULL);
+	sASSERT(tail != NULL);
+	sASSERT(node != tail);
+
+	skit_trie_node_ctor(node);
+
+	skit_trie_node *next_node;
+	if ( str_len > SKIT__TRIE_NODE_PREALLOC )
+	{
+		next_node = skit_trie_new_node();
+		skit_trie_node_instert_non0_str(next_node, tail,
+			str_ptr + SKIT__TRIE_NODE_PREALLOC,
+			str_len - SKIT__TRIE_NODE_PREALLOC);
+
+		node->chars_len = SKIT__TRIE_NODE_PREALLOC;
+	}
+	else
+	{
+		next_node = tail;
+		node->chars_len = str_len;
+	}
+
+	memcpy(node->chars, str_ptr, node->chars_len);
+	node->nodes_len = 1;
+	node->nodes = next_node;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -343,10 +385,32 @@ static void skit_trie_node_append_str(
 	if ( str_len == 0 ) {
 		*new_tail = node;
 	} else {
-		*new_tail = skit_malloc(sizeof(skit_trie_node));
+		*new_tail = skit_trie_new_node();
 		skit_trie_node_insert_non0_str(node, *new_tail, str_ptr, str_len);
 	}
 }
+
+/* ------------------------------------------------------------------------- */
+
+static skit_trie_node *skit_trie_finish_tail(
+	skit_trie_node *given_start_node,
+	const skit_trie_coords coords,
+	const char *key_ptr,
+	size_t key_len,
+	const void *value)
+{
+	skit_trie_node *new_value_node;
+
+	skit_trie_node_ctor(given_start_node);
+
+	char   *new_node_str = key_ptr + (coords.pos + 1);
+	size_t  new_node_len = key_len - (coords.pos + 1);
+	skit_trie_node_append_str(given_start_node, &new_value_node, new_node_str, new_node_len));
+	skit_trie_node_set_value(new_value_node, value);
+	return given_start_node;
+}
+
+/* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_table_node(
 	skit_trie_coords coords,
@@ -354,6 +418,16 @@ static void skit_trie_split_table_node(
 	size_t key_len,
 	const void *value)
 {
+	/* Easy case: just add a new entry in the table. */
+	skit_trie_node *node = coords.node;
+	sASSERT(node->nodes_len > SKIT__TRIE_NODE_PREALLOC);
+	uint8_t new_char = key_ptr[coords.pos];
+
+	/* skit_trie_finish_tail ensures that the rest of the key gets accounted for. */
+	node->node_table[new_char] =
+		skit_trie_finish_tail(skit_trie_node_new(), coords, key_ptr, key_len, value);
+
+	(node->nodes_len)++;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -367,14 +441,14 @@ static void skit_trie_split_multi_to_table(
 	size_t i;
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len == node->chars_len);
-	sASSERT(node->chars_len == SKIT__TRIE_NODE_PREALLOC);
+	sASSERT(node->nodes_len == SKIT__TRIE_NODE_PREALLOC);
 	uint8_t new_char = key_ptr[coords.pos];
-	
+
 	/* Default initialization for a node's lookup table. */
 	void **new_node_array = skit_malloc(sizeof(skit_trie_node*)*256);
 	for ( i = 0; i < 256; i++ )
 		new_node_array[i] = NULL;
-	
+
 	/* COPY all of the nodes out of the node->nodes array and into their */
 	/*   own blocks of memory, which are then indexed by node->node_table. */
 	/* The copying is important.  Since these keys might be removed later, */
@@ -393,21 +467,22 @@ static void skit_trie_split_multi_to_table(
 		memcpy(new_node, &node->nodes[i], sizeof(skit_trie_node));
 		new_node_array[node->chars[i]] = new_node;
 	}
-	
+
 	/* Free the original chunk of nodes. */
 	skit_free(node->nodes);
-	
+
 	/* Replace it with the new node array/table. */
 	node->node_table = new_node_array;
-	
+
 	/* Do the value insertion. */
-	skit_trie_node *value_node = skit_trie_node_new();
-	skit_trie_node_set_value(value_node, value);
-	node->node_table[new_char] = value_node;
-	
+	/* skit_trie_finish_tail ensures that the rest of the key gets accounted for. */
+	node->node_table[new_char] =
+		skit_trie_finish_tail(skit_trie_node_new(), coords, key_ptr, key_len, value);
+
+	/* Update length metadata. */
 	node->chars_len = 0xFF;
 	(node->nodes_len)++;
-	
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -421,8 +496,8 @@ static void skit_trie_split_multi_node(
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len > 1);
 	sASSERT(node->nodes_len == node->chars_len);
-	sASSERT(node->chars_len < SKIT__TRIE_NODE_PREALLOC); /* This does NOT handle the convert-to-table case. */
-	
+	sASSERT(node->nodes_len < SKIT__TRIE_NODE_PREALLOC); /* This does NOT handle the convert-to-table case. */
+
 	/*
 	New pair is {"cxyz",value}
 	Before
@@ -437,20 +512,14 @@ static void skit_trie_split_multi_node(
 	.        |
 	.         `-> 'c' -> new_node -> "xyz" ... -> new_cnode -> value
 	*/
-	
+
 	(node->nodes_len)++;
 	node->nodes = skit_realloc( node->nodes, sizeof(skit_trie_node) * node->nodes_len);
-	
+
 	(node->chars_len)++;
 	node->chars[node->chars_len - 1] = key_ptr[coords.pos];
 	skit_trie_node *new_node = &node->nodes[node->nodes_len - 1];
-	skit_trie_node *new_cnode;
-	
-	char   *new_node_str = key_ptr + (coords.pos + 1);
-	size_t  new_node_len = key_len - (coords.pos + 1);
-	skit_trie_node_append_str(new_node, &new_cnode, new_node_str, new_node_len));
-	
-	skit_trie_node_set_value(new_cnode, value);
+	skit_trie_finish_tail(new_node, coords, key_ptr, key_len, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -465,7 +534,7 @@ static void skit_trie_split_linear_node(
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len == 1);
 	sASSERT(node->chars_len > 1);
-	
+
 	if ( coords.n_chars_into_node == 0 )
 	{
 		/* No common prefix: split it into three nodes. */
@@ -480,39 +549,35 @@ static void skit_trie_split_linear_node(
 		.         `-> 'x' -> node1 -> "yz" ... -> cnode1 -> value
 		.
 		*/
-		
+
 		/* Avoid copying and temporary allocations. */
 		/* We allow cnode0 to remain where it is, and just create a new */
 		/*   block of memory for the new array of nodes. */
 		skit_trie_node *cnode0 = &node->nodes[0];
-		skit_trie_node *cnode1; /* ptr will be initialized by skit_trie_node_append_str */
-		
+
 		node->nodes = skit_malloc(2 * sizeof(skit_trie_node));
 		skit_trie_node *node0 = &node->nodes[0];
 		skit_trie_node *node1 = &node->nodes[1];
-		
+
 		/* Populate node0. */
 		char   *node0_str = node->chars + 1;
 		size_t  node0_len = node->chars_len - 1;
 		skit_trie_node_insert_non0_str(node0, cnode0, node0_str, node0_len);
-		
+
 		/* Populate node1. */
-		char   *node1_str = key_ptr + (coords.pos + 1);
-		size_t  node1_len = key_len - (coords.pos + 1);
-		skit_trie_node_append_str(node1, &cnode1, node1_str, node1_len);
-		skit_trie_node_set_value(cnode1, value);
-		
+		skit_trie_finish_tail(node1, coords, key_ptr, key_len, value);
+
 		/* Setup up the new char-to-node mapping table. */
 		/* Do this AFTER chars has been copied into other nodes. */
 		/* node->chars[0] = node->chars[0]; (already handled.) */
 		node->chars[1] = key[coords.pos];
-		
+
 		/* Meta-data update.  This should also be done later due to the */
 		/* possibility of overwriting values before they get used in the */
 		/* previous calculations. */
 		node->chars_len = 2;
 		node->nodes_len = 2;
-		
+
 		/* Optimizations. */
 		skit_trie_node_fold(node0);
 		skit_trie_node_fold(node1);
@@ -542,22 +607,22 @@ static void skit_trie_split_linear_node(
 		char   *new_ptr = node->chars + coords.n_chars_into_node;
 		size_t new_len  = node->chars_len - coords.n_chars_into_node;
 		skit_trie_node *node0 = skit_trie_node_from_str(new_ptr, new_len);
-		
+
 		/* Transfer the tail (cnode0 in the drawing) to the new node. */
 		node0->nodes = node->nodes;
 		node0->nodes_len = 1;
-		
+
 		/* Transfer the new node (node0) to the original node. */
 		node->nodes = node0;
 		sASSERT(node->nodes_len == 1);
 		node->chars_len = coords.n_chars_into_node;
-		
+
 		/* Calculate the coordinates for the next split. */
 		skit_trie_coords new_coords = coords;
 		new_coords.node = node0;
 		new_coords.pos += new_len;
 		new_coords.n_chars_into_node = 0;
-		
+
 		/* Note that (node0->chars_len == 1) is possible. */
 		/* This means that if we called skit_trie_split_linear_node, then */
 		/*   we could easily violate the assertion that (node->chars_len > 1) */
@@ -576,7 +641,7 @@ static void skit_trie_split_node(
 	const void *value)
 {
 	skit_trie_node *node = coords.node;
-	
+
 	if ( node->nodes_len == 1 && node->chars_len > 1 )
 		skit_trie_split_linear_node(coords, key_ptr, key_len, value);
 	else if  ( node->nodes_len < SKIT__TRIE_NODE_PREALLOC )
@@ -594,18 +659,18 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 	SKIT_USE_FEATURE_EMULATION;
 	size_t key_len = sSLENGTH(key);
 	const char *key_ptr = sSPTR(key);
-	
+
 	skit_trie_flags tflags = skit_parse_flags( flags )
 	sASSERT_MSG(tflags & ICASE, "Case insensitive operations are currently unsupported.");
-	
+
 	if ( !(tflags & (CREATE | OVERWRITE)) )
 		sTHROW(SKIT_TRIE_BAD_FLAGS,
 			"Call to skit_trie_set without providing 'c' or 'o' flags. key = \"%.\", flags = \"%s\"",
 			key_len, key_ptr, flags);
-	
+
 	if ( key_len > sLLENGTH(trie->key_return_buf) )
 		trie->key_return_buf = skit_loaf_resize(&trie->key_return_buf, key_len);
-	
+
 	/* First insertion. */
 	/* Check this first to avoid calling skit_trie_find in such cases. */
 	if ( trie->root == NULL )
@@ -619,10 +684,10 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 		memcpy( sLPTR(trie->key_result_buf), key_ptr, key_len );
 		return skit_slice_of(trie->key_result_buf.as_slice, 0, key_len);
 	}
-	
+
 	/* Insertions/replacements for already-existing keys. */
 	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len);
-	
+
 	if ( skit_exact_match(coords, key_len) )
 	{
 		if ( !(tflags & OVERWRITE) )
@@ -652,7 +717,7 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 	}
 	else
 		sASSERT_MSG(0, "Impossible result for trie lookup on key \"%.*s\".", key_len, sSPTR(key));
-	
+
 	return skit_slice_of(trie->key_result_buf.as_slice, 0, key_len);
 }
 
@@ -673,13 +738,13 @@ static size_t skit_trie_count_descendants( skit_trie_node *node )
 {
 	if ( node->nodes_len == 0 )
 		return 0;
-	
+
 	size_t i = 0;
 	size_t result = nodes_len;
 	for(; i < nodes_len; i++ )
 		if ( node->nodes[i] != NULL )
 			result += skit_trie_count_descendants(node->nodes[i]);
-	
+
 	return result;
 }
 
@@ -688,27 +753,74 @@ skit_trie_dump( const skit_trie *trie, skit_stream *output )
 }
 
 
+struct skit_trie_iter
+{
+	skit_trie *trie;
+	skit_trie_iter_frame *frames;
+	size_t current_frame;
+	char *key_buffer;
+};
+
+skit_trie_iter_frame_ctor( skit_trie_iter_frame *frame, const skit_trie_node *node )
+{
+	if ( node->nodes_len == 1 && node->chars_len > 1 )
+	{
+	}
+	else if ( node->nodes_len <= SKIT__TRIE_NODE_PREALLOC )
+	{
+		sASSERT_EQ(node->nodes_len, node->chars_len, "%d");
+
+
+	}
+	else
+	{
+
+	}
+}
+
+skit_trie_iter_next( skit_trie_iter *iter )
+{
+	skit_trie *trie = iter->trie;
+	skit_trie_coords *coords = iter->coords;
+	skit_trie_node *node = coords->node;
+	size_t i;
+
+	if ( node->nodes_len == 1 && node->chars_len > 1 )
+	{
+	}
+	else if ( node->nodes_len <= SKIT__TRIE_NODE_PREALLOC )
+	{
+		sASSERT_EQ(node->nodes_len, node->chars_len, "%d");
+
+
+	}
+	else
+	{
+
+	}
+}
+
 unittest
 {
 	void *val;
 	skit_trie_setc(trie, "abcde", (void*)1, "c");
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abcde", &val, ""), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1);
-	
+
 	skit_trie_setc(trie, "abxyz", (void*)2, "c");
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abcde", &val, ""), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abxyz", &val, ""), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2);
-	
+
 	skit_trie_setc(trie, "a1234", (void*)3, "c");
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abcde", &val, ""), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abxyz", &val, ""), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "a1234", &val, ""), sSLICE("a1234")); sASSERT_EQ((size_t)val, 3);
-	
+
 	skit_trie_setc(trie, "abcd!", (void*)4, "c");
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abcde", &val, ""), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abxyz", &val, ""), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "a1234", &val, ""), sSLICE("a1234")); sASSERT_EQ((size_t)val, 3);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abcd!", &val, ""), sSLICE("abcd!")); sASSERT_EQ((size_t)val, 4);
-	
+
 	skit_trie_setc(trie, "abcxy", (void*)5, "c");
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abcde", &val, ""), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1);
 	sASSERT_EQS((size_t)skit_trie_getc(trie, "abxyz", &val, ""), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2);
