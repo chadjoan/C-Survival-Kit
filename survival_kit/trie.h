@@ -2,25 +2,23 @@
 #ifndef SKIT_TRIE_INCLUDED
 #define SKIT_TRIE_INCLUDED
 
+#include <stdlib.h>
+#include <inttypes.h>
+#include <unistd.h> /* For ssize_t */
+
 #include "survival_kit/string.h"
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/feature_emulation.h"
 
+/* ------------------------------------------------------------------------- */
 
 extern skit_err_code SKIT_TRIE_EXCEPTION;
 extern skit_err_code SKIT_TRIE_KEY_ALREADY_EXISTS;
 extern skit_err_code SKIT_TRIE_KEY_NOT_FOUND;
 extern skit_err_code SKIT_TRIE_BAD_FLAGS;
+extern skit_err_code SKIT_TRIE_WRITE_IN_ITERATION;
 
 #define SKIT__TRIE_NODE_PREALLOC 12
-
-typedef struct skit_trie skit_trie;
-struct skit_trie
-{
-	size_t length;
-	skit_loaf key_return_buf; /* sLLENGTH(key_return_buf) should always be equal to the longest key. */
-	skit_trie_node *root;
-};
 
 typedef struct skit_trie_node skit_trie_node;
 struct skit_trie_node
@@ -29,13 +27,25 @@ struct skit_trie_node
 	{
 		void *nodes;
 		void **node_table;
-	}
+	};
 	const void *value;
 	uint16_t nodes_len;
 	uint8_t  have_value;
 	uint8_t  chars_len;
 	uint8_t chars[SKIT__TRIE_NODE_PREALLOC];
 };
+
+typedef struct skit_trie skit_trie;
+struct skit_trie
+{
+	size_t length;
+	skit_loaf key_return_buf; /* sLLENGTH(key_return_buf) should always be equal to the longest key. */
+	skit_trie_node *root;
+	
+	int32_t iterator_count;
+};
+
+typedef struct skit_trie_iter skit_trie_iter;
 
 /* Do not call directly.  skit_init() should handle this. */
 void skit_trie_module_init();
@@ -158,8 +168,20 @@ size_t skit_trie_len( const skit_trie *trie );
 Creates a graphical respresentation of the trie using ASCII characters and
 writes the resulting text into the output stream.
 */
-skit_trie_dump( const skit_trie *trie, skit_stream *output );
+void skit_trie_dump( const skit_trie *trie, skit_stream *output );
 
 /* TODO: iteration prefix subsets. */
+
+/**
+Creates an iterator that can iterate over all key/value pairs in the trie that
+have a key beginning with the given prefix.
+
+
+*/
+skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, const char *flags );
+skit_trie_iter *skit_trie_iter_free( skit_trie_iter *iter );
+int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value );
+
+void skit_trie_unittest();
 
 #endif

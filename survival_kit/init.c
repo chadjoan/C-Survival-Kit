@@ -9,6 +9,7 @@
 #include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/signal_handling.h"
 #include "survival_kit/streams/init.h"
+#include "survival_kit/trie.h"
 
 #include <pthread.h>
 
@@ -26,6 +27,7 @@ void skit_init()
 	skit_features_init();
 	skit_cstr_init();
 	skit_sig_init();
+	skit_trie_module_init();
 	skit_stream_static_init_all();
 	pthread_key_create(&skit__thread_init_called, &skit_thread_dummy_dtor);
 	skit__init_called = 1;

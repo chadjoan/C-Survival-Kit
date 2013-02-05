@@ -29,6 +29,7 @@ $ @'THIS_DIR'compile survival_kit/feature_emulation/init
 $ @'THIS_DIR'compile survival_kit/signal_handling
 $ @'THIS_DIR'compile survival_kit/math
 $ @'THIS_DIR'compile survival_kit/string
+$ @'THIS_DIR'compile survival_kit/trie
 $ @'THIS_DIR'compile survival_kit/regex
 $ @'THIS_DIR'compile survival_kit/array_builtins
 $ @'THIS_DIR'compile survival_kit/streams/stream

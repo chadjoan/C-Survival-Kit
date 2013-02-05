@@ -33,6 +33,7 @@ OBJECT_FILES= \
 	obj/signal_handling.o \
 	obj/math.o \
 	obj/string.o \
+	obj/trie.o \
 	obj/regex.o \
 	obj/array_builtins.o \
 	obj/streams/stream.o \
