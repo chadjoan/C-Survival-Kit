@@ -14,10 +14,10 @@
 #include "survival_kit/memory.h"
 
 #define SKIT_DO_STRING_DEBUG 0
-#ifdef SKIT_DO_STRING_DEBUG
+#if SKIT_DO_STRING_DEBUG != 0
 #define DEBUG(x) (x)
 #else
-#define DEBUG(x) (void)
+#define DEBUG(x) ((void)0)
 #endif
 
 /* 

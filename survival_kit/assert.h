@@ -16,7 +16,8 @@
 				__FILE__, __LINE__, __func__); \
 		} \
 	} while(0)
-	
+
+/* TODO: This should be variadic. */
 #define sASSERT_MSG( val, msg ) \
 	do { \
 		if ( !(val) ) { \

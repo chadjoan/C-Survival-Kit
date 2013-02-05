@@ -25,8 +25,8 @@ struct skit_trie_node
 {
 	union
 	{
-		void *nodes;
-		void **node_table;
+		skit_trie_node *nodes;
+		skit_trie_node **node_table;
 	};
 	const void *value;
 	uint16_t nodes_len;
