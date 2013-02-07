@@ -47,12 +47,12 @@
 		} \
 	} while(0)
 
-#define sASSERT_EQ( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_EQ", lhs == rhs, (fmt), (fmt), lhs, rhs)
-#define sASSERT_NE( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_NE", lhs != rhs, (fmt), (fmt), lhs, rhs)
-#define sASSERT_GE( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_GE", lhs >= rhs, (fmt), (fmt), lhs, rhs)
-#define sASSERT_LE( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_LE", lhs <= rhs, (fmt), (fmt), lhs, rhs)
-#define sASSERT_GT( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_GT", lhs > rhs,  (fmt), (fmt), lhs, rhs)
-#define sASSERT_LT( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_LT", lhs < rhs,  (fmt), (fmt), lhs, rhs)
+#define sASSERT_EQ( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_EQ", (lhs) == (rhs), (fmt), (fmt), lhs, rhs)
+#define sASSERT_NE( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_NE", (lhs) != (rhs), (fmt), (fmt), lhs, rhs)
+#define sASSERT_GE( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_GE", (lhs) >= (rhs), (fmt), (fmt), lhs, rhs)
+#define sASSERT_LE( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_LE", (lhs) <= (rhs), (fmt), (fmt), lhs, rhs)
+#define sASSERT_GT( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_GT", (lhs) >  (rhs),  (fmt), (fmt), lhs, rhs)
+#define sASSERT_LT( lhs, rhs, fmt ) sASSERT_COMPLICATED("sASSERT_LT", (lhs) <  (rhs),  (fmt), (fmt), lhs, rhs)
 
 #define sASSERT_EQ_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_EQ_CSTR", strcmp(lhs,rhs) == 0, "'%s'", "'%s'", lhs, rhs)
 #define sASSERT_NE_CSTR( lhs, rhs ) sASSERT_COMPLICATED("sASSERT_NE_CSTR", strcmp(lhs,rhs) != 0, "'%s'", "'%s'", lhs, rhs)

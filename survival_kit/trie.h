@@ -7,6 +7,7 @@
 #include <unistd.h> /* For ssize_t */
 
 #include "survival_kit/string.h"
+#include "survival_kit/flags.h"
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/feature_emulation.h"
 
@@ -100,8 +101,8 @@ checking the key against possible matches.  It is possible for a
 case-insensitive query to match multiple values.  In that case, implementation
 defined behavior will select one of the possibilities.
 */
-skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, const char *flags );
-skit_slice skit_trie_getc( skit_trie *trie, const char *key, void **value, const char *flags );
+skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, skit_flags flags );
+skit_slice skit_trie_getc( skit_trie *trie, const char *key, void **value, skit_flags flags );
 
 /**
 Associate the given key with the given value.
@@ -138,8 +139,8 @@ placed in it.
 Returns the /exact/ key acted on.  This returned slice may be modified by 
 any subsequent calls on the trie: copy it if you intend to use the value.
 */
-skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *value, const char *flags );
-skit_slice skit_trie_setc( skit_trie *trie, const char *key, const void *value, const char *flags );
+skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *value, skit_flags flags );
+skit_slice skit_trie_setc( skit_trie *trie, const char *key, const void *value, skit_flags flags );
 
 /**
 Removes a key-value pair from the trie that matches the given key.
@@ -157,7 +158,7 @@ NULL into the flags parameter.
 Returns the /exact/ key acted on.  This returned slice may be modified by 
 any subsequent calls on the trie: copy it if you intend to use the value.
 */
-skit_slice skit_trie_remove( skit_trie *trie, const skit_slice key, const char *flags );
+skit_slice skit_trie_remove( skit_trie *trie, const skit_slice key, skit_flags flags );
 
 /**
 Returns the number of key-value pairs in the trie.
@@ -178,7 +179,7 @@ have a key beginning with the given prefix.
 
 
 */
-skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, const char *flags );
+skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, skit_flags flags );
 skit_trie_iter *skit_trie_iter_free( skit_trie_iter *iter );
 int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value );
 
