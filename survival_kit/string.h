@@ -619,14 +619,14 @@ Example:
 char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size, int enquote );
 
 /* Internal use.  Please do not call directly. */
-#define sASSERT_SLICE( assert_name, comparison, lhs, rhs ) \
+#define SKIT__ENFORCE_SLICE( check_name, comparison, lhs, rhs ) \
 	do { \
 		/* lfmt and rfmt provide space for generating length-maxed printf formatters, */ \
 		/* such as: %.124s for a 124-character long slice. */ \
 		char lfmt[32]; \
 		char rfmt[32]; \
 		sASSERT_COMPLICATED( \
-			assert_name, \
+			check_name, \
 			comparison, \
 			skit_slice_get_printf_formatter( lhs, lfmt, sizeof(lfmt), 1 ), \
 			skit_slice_get_printf_formatter( rhs, rfmt, sizeof(rfmt), 1 ), \
@@ -634,18 +634,32 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 			sSPTR(rhs)); \
 	} while(0)
 
+/* Internal use.  Please do not call directly. */
+#define SKIT__ENFORCE_EQS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_EQS", skit_slice_eqs((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_NES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_NES", skit_slice_nes((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_GES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_GES", skit_slice_ges((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_LES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_LES", skit_slice_les((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_GTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_GTS", skit_slice_gts((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_LTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_LTS", skit_slice_lts((lhs),(rhs)), (lhs), (rhs))
+
 /**
-Assertions involving comparisons of slices.
+Assertions/enforcement involving comparisons of slices.
 These are good to use because they will print the slices involved in the
 comparison if anything goes wrong, thus aiding in fast debugging.
 */
-#define sASSERT_EQS(lhs,rhs) sASSERT_SLICE("sASSERT_EQS", skit_slice_eqs((lhs),(rhs)), (lhs), (rhs))
-#define sASSERT_NES(lhs,rhs) sASSERT_SLICE("sASSERT_NES", skit_slice_nes((lhs),(rhs)), (lhs), (rhs))
-#define sASSERT_GES(lhs,rhs) sASSERT_SLICE("sASSERT_GES", skit_slice_ges((lhs),(rhs)), (lhs), (rhs))
-#define sASSERT_LES(lhs,rhs) sASSERT_SLICE("sASSERT_LES", skit_slice_les((lhs),(rhs)), (lhs), (rhs))
-#define sASSERT_GTS(lhs,rhs) sASSERT_SLICE("sASSERT_GTS", skit_slice_gts((lhs),(rhs)), (lhs), (rhs))
-#define sASSERT_LTS(lhs,rhs) sASSERT_SLICE("sASSERT_LTS", skit_slice_lts((lhs),(rhs)), (lhs), (rhs))
+#define sENFORCE_EQS(lhs,rhs) SKIT__ENFORCE_EQS("sENFORCE",lhs,rhs)
+#define sENFORCE_NES(lhs,rhs) SKIT__ENFORCE_NES("sENFORCE",lhs,rhs)
+#define sENFORCE_GES(lhs,rhs) SKIT__ENFORCE_GES("sENFORCE",lhs,rhs)
+#define sENFORCE_LES(lhs,rhs) SKIT__ENFORCE_LES("sENFORCE",lhs,rhs)
+#define sENFORCE_GTS(lhs,rhs) SKIT__ENFORCE_GTS("sENFORCE",lhs,rhs)
+#define sENFORCE_LTS(lhs,rhs) SKIT__ENFORCE_LTS("sENFORCE",lhs,rhs)
 
+#define sASSERT_EQS(lhs,rhs) SKIT__ENFORCE_EQS("sASSERT",lhs,rhs)
+#define sASSERT_NES(lhs,rhs) SKIT__ENFORCE_NES("sASSERT",lhs,rhs)
+#define sASSERT_GES(lhs,rhs) SKIT__ENFORCE_GES("sASSERT",lhs,rhs)
+#define sASSERT_LES(lhs,rhs) SKIT__ENFORCE_LES("sASSERT",lhs,rhs)
+#define sASSERT_GTS(lhs,rhs) SKIT__ENFORCE_GTS("sASSERT",lhs,rhs)
+#define sASSERT_LTS(lhs,rhs) SKIT__ENFORCE_LTS("sASSERT",lhs,rhs)
 
 /* ------------------------- string misc functions ------------------------- */
 
