@@ -185,4 +185,13 @@ Example:
 */
 #define SKIT_UNUSED(expr) do { (void)(expr); } while (0)
 
+/**
+Returns the first argument from its list of arguments.
+Example:
+#define MY_VARIADIC_FUNC(...) (SKIT_FIRST_VARG(__VA_ARGS__))
+assert(MY_VARIADIC_FUNC(3,2,1) == 3);
+*/
+#define SKIT_FIRST_VARG(...) SKIT_FIRST_VARG_(__VA_ARGS__, throwaway)
+#define SKIT_FIRST_VARG_(first,...) first
+
 #endif

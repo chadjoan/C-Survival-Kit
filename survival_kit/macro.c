@@ -34,6 +34,10 @@ void skit_macro_unittest()
 	assert( MAX3(1,2,3) == 3 );
 	printf("  SKIT_MACRO_DISPATCHER_test passed.\n");
 	
+	#define MY_VARIADIC_FUNC(...) (SKIT_FIRST_VARG(__VA_ARGS__))
+	assert(MY_VARIADIC_FUNC(3,2,1) == 3);
+	printf("  SKIT_FIRST_VARG_test passed.\n");
+	
 	printf("  skit_macro_unittest passed!\n");
 	printf("\n");
 }
