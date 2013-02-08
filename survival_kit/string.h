@@ -682,6 +682,12 @@ This assumes that the character is in the ASCII range.
 skit_utf8c skit_char_ascii_to_lower(skit_utf8c c);
 
 /**
+Uppercases the given character.
+This assumes that the character is in the ASCII range.
+*/
+skit_utf8c skit_char_ascii_to_upper(skit_utf8c c);
+
+/**
 Lowercases the given slice in-place.
 This assumes that the slice consists of ASCII characters.
 */

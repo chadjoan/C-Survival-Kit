@@ -731,10 +731,14 @@ static void skit_loaf_assign_cstr_test()
 skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice)
 {
 	sASSERT(!skit_loaf_is_null(*loaf));
+	
 	ssize_t length = sSLENGTH(slice);
-	if ( length > sLLENGTH(*loaf) )
-		skit_loaf_resize(loaf, length);
-	strcpy((char*)sLPTR(*loaf), (char*)sSPTR(slice));
+	if ( length > 0 )
+	{
+		if ( length > sLLENGTH(*loaf) )
+			skit_loaf_resize(loaf, length);
+		memcpy((char*)sLPTR(*loaf), (char*)sSPTR(slice), length);
+	}
 	return skit_slice_of(loaf->as_slice, 0, length);
 }
 
@@ -751,6 +755,13 @@ static void skit_loaf_assign_slice_test()
 	sASSERT_NES( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish), "%d" );
 	skit_loaf_free(&loaf);
+	
+	loaf = skit_loaf_new();
+	skit_slice nullified = sSLICE("\0a");
+	skit_slice test3 = skit_loaf_assign_slice(&loaf, nullified);
+	sASSERT_EQS( test3, nullified );
+	skit_loaf_free(&loaf);
+	
 	printf("  skit_loaf_assign_slice_test passed.\n");
 }
 
@@ -990,6 +1001,31 @@ static void skit_char_ascii_to_lower_test()
 	sASSERT_EQ( skit_char_ascii_to_lower(' '), ' ', "%c" );
 	
 	printf("  skit_char_ascii_to_lower_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_utf8c skit_char_ascii_to_upper(skit_utf8c c)
+{
+	if ( 'a' <= c && c <= 'z' )
+		return (c - 'a') + 'A';
+	else
+		return c;
+}
+
+static void skit_char_ascii_to_upper_test()
+{
+	sASSERT_EQ( skit_char_ascii_to_upper('a'), 'A', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('A'), 'A', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('b'), 'B', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('B'), 'B', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('z'), 'Z', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('Z'), 'Z', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('0'), '0', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper('-'), '-', "%c" );
+	sASSERT_EQ( skit_char_ascii_to_upper(' '), ' ', "%c" );
+	
+	printf("  skit_char_ascii_to_upper_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1559,6 +1595,7 @@ void skit_string_unittest()
 	skit_is_digit_test();
 	skit_is_whitespace_test();
 	skit_char_ascii_to_lower_test();
+	skit_char_ascii_to_upper_test();
 	skit_slice_to_lower_test();
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();
