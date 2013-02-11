@@ -1157,26 +1157,30 @@ int skit_slice_ascii_ccmp(const skit_slice str1, const skit_slice str2, int case
 	ssize_t len1 = skit_slice_len(str1);
 	ssize_t len2 = skit_slice_len(str2);
 	
-	if ( len1 != len2 )
-		return len1 - len2;
+	skit_utf8c c1;
+	skit_utf8c c2;
+	skit_slice slice = skit_slice_common_cprefix(str1,str2,case_sensitive);
+	ssize_t pos = skit_slice_len(slice);
+	
+	ssize_t suffix_len_1 = len1 - pos;
+	ssize_t suffix_len_2 = len2 - pos;
+	
+	/* Don't try to dereference chars[length]... it might not be nul on slices! */
+	if ( suffix_len_1 == suffix_len_2 )
+	{
+		if ( suffix_len_1 == 0 )
+			return 0;
+	}
 	else
 	{
-		skit_utf8c c1;
-		skit_utf8c c2;
-		skit_slice slice = skit_slice_common_cprefix(str1,str2,case_sensitive);
-		ssize_t pos = skit_slice_len(slice);
-		
-		/* Don't try to dereference chars[pos]... it might not be nul on slices! */
-		if ( pos == len1 )
-			return 0;
-
-		c1 = chars1[pos];
-		c2 = chars2[pos];
-		
-		return skit_char_ascii_ccmp(c1,c2,case_sensitive);
+		if ( suffix_len_1 == 0 || suffix_len_2 == 0 )
+			return suffix_len_1 - suffix_len_2;
 	}
-	sASSERT(0);
-	return -55;
+
+	c1 = chars1[pos];
+	c2 = chars2[pos];
+	
+	return skit_char_ascii_ccmp(c1,c2,case_sensitive);
 }
 
 int skit_slice_ascii_cmp(const skit_slice str1, const skit_slice str2)
@@ -1192,10 +1196,11 @@ int skit_slice_ascii_icmp(const skit_slice str1, const skit_slice str2)
 static void skit_slice_ascii_cmp_test()
 {
 	// Basic equivalence and ordering.
-	skit_slice bigstr = sSLICE("Big string!");
-	skit_slice lilstr = sSLICE("lil str.");
+	skit_slice bigstr = sSLICE("----------");
+	skit_slice lilstr = sSLICE("-------");
 	skit_slice aaa = sSLICE("aaa");
 	skit_slice bbb = sSLICE("bbb");
+	skit_slice aaaa = sSLICE("aaaa");
 	skit_loaf aaab = skit_loaf_copy_cstr("aaab");
 	skit_slice aaa_slice = skit_slice_of(aaab.as_slice,0,3);
 	sASSERT(skit_slice_ascii_cmp(lilstr, bigstr) < 0); 
@@ -1204,6 +1209,8 @@ static void skit_slice_ascii_cmp_test()
 	sASSERT(skit_slice_ascii_cmp(aaa, bbb) < 0);
 	sASSERT(skit_slice_ascii_cmp(bbb, aaa) > 0);
 	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
+	sASSERT(skit_slice_ascii_cmp(aaa, aaaa) < 0);
+	sASSERT(skit_slice_ascii_cmp(aaaa, bbb) < 0);
 	skit_loaf_free(&aaab);
 	
 	// nullity.

@@ -769,10 +769,11 @@ null strings will always be less than non-null strings.
 
 Example:
 	// Basic equivalence and ordering.
-	skit_slice bigstr = sSLICE("Big string!");
-	skit_slice lilstr = sSLICE("lil str.");
+	skit_slice bigstr = sSLICE("----------");
+	skit_slice lilstr = sSLICE("-------");
 	skit_slice aaa = sSLICE("aaa");
 	skit_slice bbb = sSLICE("bbb");
+	skit_slice aaaa = sSLICE("aaaa");
 	skit_loaf aaab = skit_loaf_copy_cstr("aaab");
 	skit_slice aaa_slice = skit_slice_of(aaab.as_slice,0,3);
 	sASSERT(skit_slice_ascii_cmp(lilstr, bigstr) < 0); 
@@ -781,6 +782,8 @@ Example:
 	sASSERT(skit_slice_ascii_cmp(aaa, bbb) < 0);
 	sASSERT(skit_slice_ascii_cmp(bbb, aaa) > 0);
 	sASSERT(skit_slice_ascii_cmp(aaa, aaa_slice) == 0);
+	sASSERT(skit_slice_ascii_cmp(aaa, aaaa) < 0);
+	sASSERT(skit_slice_ascii_cmp(aaaa, bbb) < 0);
 	skit_loaf_free(&aaab);
 	
 	// nullity.
