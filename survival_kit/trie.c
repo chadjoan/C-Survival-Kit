@@ -17,6 +17,34 @@
 
 #include "survival_kit/streams/pfile_stream.h"
 
+#define SKIT_DO_FIND_DEBUG 0
+#if SKIT_DO_FIND_DEBUG != 0
+#define FIND_DEBUG(...) printf(__VA_ARGS__)
+#else
+#define FIND_DEBUG(...) ((void)0)
+#endif
+
+#define SKIT_DO_SPLIT_DEBUG 0
+#if SKIT_DO_SPLIT_DEBUG != 0
+#define SPLIT_DEBUG(...) printf(__VA_ARGS__)
+#else
+#define SPLIT_DEBUG(...) ((void)0)
+#endif
+
+#define SKIT_DO_ENTRY_DEBUG 0
+#if SKIT_DO_ENTRY_DEBUG != 0
+#define ENTRY_DEBUG(...) printf(__VA_ARGS__)
+#else
+#define ENTRY_DEBUG(...) ((void)0)
+#endif
+
+#define SKIT_DO_ITER_DEBUG 0
+#if SKIT_DO_ITER_DEBUG != 0
+#define ITER_DEBUG(...) printf(__VA_ARGS__)
+#else
+#define ITER_DEBUG(...) ((void)0)
+#endif
+
 /* ------------------------------------------------------------------------- */
 
 skit_err_code SKIT_TRIE_EXCEPTION;
@@ -44,6 +72,21 @@ typedef enum
 	OVERWRITE = SKIT_FLAG_O
 
 } skit_trie_flags;
+
+/* ------------------------------------------------------------------------- */
+
+static void skit_trie_enforce_valid_flags(skit_flags flags_given, skit_flags flags_allowed)
+{
+	skit_flags bad_flags = flags_given & ~flags_allowed;
+	if ( !bad_flags )
+	{
+		char flag_buf1[SKIT_FLAGS_BUF_SIZE];
+		char flag_buf2[SKIT_FLAGS_BUF_SIZE];
+		skit_flags_to_str(flags_given, flag_buf1);
+		skit_flags_to_str(bad_flags, flag_buf2);
+		sENFORCE_MSGF( !bad_flags, "Unexpected flags passed into skit_trie: \"%s\".  Flags given: \"%s\"\n", bad_flags, flags_given);
+	}
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -131,10 +174,10 @@ static int skit_no_match( skit_trie_coords coords, size_t key_len )
 
 /* ------------------------------------------------------------------------- */
 
-static void skit_trie_accumulate_key(skit_trie *trie, size_t pos, const char *key_frag, size_t frag_len)
+static void skit_trie_accumulate_key(skit_trie *trie, size_t pos, const uint8_t *key_frag, size_t frag_len)
 {
 	/* printf("skit_trie_accumulate_key(trie, %d, \"%.*s\")\n", pos, (int)frag_len, key_frag); */
-	char *key_return_buf = (char*)sLPTR(trie->key_return_buf);
+	uint8_t *key_return_buf = sLPTR(trie->key_return_buf);
 	
 	/* printf("  -> '%.*s' ~ '%.*s'\n", pos, key_return_buf, (int)frag_len, key_frag); */
 	
@@ -148,15 +191,22 @@ static void skit_trie_accumulate_key(skit_trie *trie, size_t pos, const char *ke
 static skit_trie_coords skit_trie_next_node(
 	skit_trie *trie,
 	skit_trie_node *current,
-	const char *key,
+	const uint8_t *key,
 	size_t key_len,
 	size_t pos)
 {
-	printf("skit_trie_next_node(trie, \"%.*s\", %ld)\n", (int)key_len, key, pos);
-	sASSERT(current->nodes != NULL);
-	sASSERT(current->nodes_len > 0);
+	FIND_DEBUG("skit_trie_next_node(trie, \"%.*s\", %ld)\n", (int)key_len, key, pos);
 
-	if ( current->nodes_len == 1 )
+	if ( current->nodes_len == 0 )
+	{
+		/*
+		This happens if the key is has one of the trie's keys as its
+		prefix.  It will cause the next_node algorithm to wander into
+		a value node that has no child nodes.
+		*/
+		return skit_trie_stop_lookup(current, pos, 0);
+	}
+	else if ( current->nodes_len == 1 )
 	{
 		/*
 		Narrow radix search: there is only one possible node to
@@ -164,16 +214,16 @@ static skit_trie_coords skit_trie_next_node(
 		contained in the 'chars' member and is no longer than
 		'chars_len'
 		*/
-		printf("%s, %d: Narrow node. node->chars == \"%.*s\"\n", __func__, __LINE__, (int)current->chars_len, (char*)current->chars);
+		FIND_DEBUG("%s, %d: Narrow node. node->chars == \"%.*s\"\n", __func__, __LINE__, (int)current->chars_len, (char*)current->chars);
 		size_t chars_len = current->chars_len;
 
 		size_t start_pos = pos;
 		size_t i = 0;
 		while ( i < chars_len )
 		{
-			if ( pos > key_len || key[pos] != current->chars[i] )
+			if ( pos >= key_len || key[pos] != current->chars[i] )
 			{
-				skit_trie_accumulate_key(trie, start_pos, (const char*)current->chars, i);
+				skit_trie_accumulate_key(trie, start_pos, (const uint8_t*)current->chars, i);
 				return skit_trie_stop_lookup(current, pos, i);
 			}
 
@@ -181,10 +231,10 @@ static skit_trie_coords skit_trie_next_node(
 			i++;
 		}
 
-		skit_trie_accumulate_key(trie, start_pos, (const char*)current->chars, current->chars_len);
+		skit_trie_accumulate_key(trie, start_pos, (const uint8_t*)current->chars, current->chars_len);
 		return skit_trie_continue_lookup(&current->nodes[0], pos);
 	}
-	else if ( current->chars_len < SKIT__TRIE_NODE_PREALLOC )
+	else if ( current->chars_len <= SKIT__TRIE_NODE_PREALLOC )
 	{
 		/*
 		There is more than one choice, but few enough that we can
@@ -193,7 +243,7 @@ static skit_trie_coords skit_trie_next_node(
 		current char in our key, then that index is the index to use
 		in the 'nodes' array.
 		*/
-		printf("%s, %d: Multi node. node->chars == \"%.*s\"\n", __func__, __LINE__, (int)current->chars_len, (char*)current->chars);
+		FIND_DEBUG("%s, %d: Multi node. node->chars == \"%.*s\"\n", __func__, __LINE__, (int)current->chars_len, (char*)current->chars);
 		sASSERT( current->chars_len == current->nodes_len );
 
 		if ( pos >= key_len )
@@ -208,7 +258,7 @@ static skit_trie_coords skit_trie_next_node(
 		if ( i == chars_len )
 			return skit_trie_stop_lookup(current, pos, 0);
 
-		skit_trie_accumulate_key(trie, pos, (char*)&current->chars[i], 1);
+		skit_trie_accumulate_key(trie, pos, &current->chars[i], 1);
 		return skit_trie_continue_lookup(&current->nodes[i], pos+1);
 	}
 	else
@@ -220,11 +270,11 @@ static skit_trie_coords skit_trie_next_node(
 		faster than any attempts to scan through a smaller array
 		of characters.
 		*/
-		printf("%s, %d: Table node. node->nodes_len == %d\n", __func__, __LINE__, current->nodes_len);
+		FIND_DEBUG("%s, %d: Table node. node->nodes_len == %d\n", __func__, __LINE__, current->nodes_len);
 		if ( pos >= key_len )
 			return skit_trie_stop_lookup(current, pos, 0);
 
-		skit_trie_node *next_node = current->node_table[(uint8_t)key[pos]];
+		skit_trie_node *next_node = current->node_table[key[pos]];
 		if ( next_node == NULL )
 			return skit_trie_stop_lookup(current, pos, 0);
 
@@ -239,13 +289,13 @@ static skit_trie_coords skit_trie_next_node(
 
 static skit_trie_coords skit_trie_find(
 	skit_trie *trie,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len)
 {
-	printf("skit_trie_find(trie, \"%.*s\")\n", (int)key_len, key_ptr);
+	FIND_DEBUG("skit_trie_find(trie, \"%.*s\")\n", (int)key_len, key_ptr);
 	sASSERT(key_ptr != NULL);
 
-	printf("%s, %d: trie->root == %p\n", __func__, __LINE__, trie->root);
+	FIND_DEBUG("%s, %d: trie->root == %p\n", __func__, __LINE__, trie->root);
 	if ( trie->root == NULL )
 		return skit_trie_stop_lookup(NULL, 0, 0);
 
@@ -259,31 +309,18 @@ static skit_trie_coords skit_trie_find(
 	
 	while ( 1 )
 	{
-	/*
-		if ( prev.node != NULL )
-			printf("%s, %d: prev.node->chars == \"%.*s\")\n",
-				__func__, __LINE__, (int)prev.node->chars_len, (char*)prev.node->chars );
-		else
-			printf("%s, %d: prev.node == NULL\n", __func__, __LINE__);
-*/
 		prev = coords;
 		coords = skit_trie_next_node(trie, coords.node, key_ptr, key_len, coords.pos);
-		
-		/*
-		printf("exact_match(coords,key_len)  == %d\n", skit_exact_match(coords,key_len));
-		printf("prefix_match(coords,key_len) == %d\n", skit_prefix_match(coords,key_len));
-		printf("no_match(coords,key_len)     == %d\n", skit_no_match(coords,key_len));
-		skit_trie_coords_dump(&coords, skit_stream_stdout);
-		skit_trie_coords_dump(&prev, skit_stream_stdout);
-		*/
-		
-		printf("%s, %d: \n", __func__, __LINE__);
+
+		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 		
 		if ( coords.lookup_stopped )
 			break;
 
+		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 		if ( skit_exact_match(coords, key_len) )
 			return coords; /* Match success. DONE. */
+		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 	}
 
 	return coords;
@@ -370,14 +407,18 @@ void skit_trie_dtor( skit_trie *trie )
 
 skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, skit_flags flags )
 {
-	sASSERT(value != NULL);
+	const uint8_t *key_ptr = sSPTR(key);
+	sENFORCE_MSG(value != NULL, "NULL value pointer given in call to skit_trie_set.  "
+		"This must be a pointer to a variable that can accept the returned value.");
+	sENFORCE_MSG(key_ptr != NULL, "NULL key given in call to skit_trie_set.");
 
+	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
+	
 	sASSERT_MSG( !(flags & ICASE), "Case insensitive operations are currently unsupported.");
-	printf("%s, %d: \n", __func__, __LINE__);
+	ENTRY_DEBUG("%s, %d: \n", __func__, __LINE__);
 
 	size_t key_len = sSLENGTH(key);
-	skit_trie_coords coords = skit_trie_find(trie, (char*)sSPTR(key), key_len);
-	printf("%s, %d: \n", __func__, __LINE__);
+	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len);
 
 	if ( skit_exact_match(coords, key_len) )
 	{
@@ -387,6 +428,7 @@ skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, s
 		return skit_slice_of(trie->key_return_buf.as_slice, 0, key_len);
 	}
 
+	*value = NULL;
 	return skit_slice_null();
 }
 
@@ -429,10 +471,16 @@ static skit_trie_node *skit_trie_node_new()
 If the tail has more complicated constructs in it, then the folding will
 stop at the first non-linear node.
 This is purely a space-optimization.
+
+(If you look at the output of skit_trie_dump after the tests in the linear_node
+unittest, you might notice that this function might not actually need to be
+implemented.  Some emergent behavior in the node splitting code seems to 
+inherently handle this optimization.  The calls to it are left around as hints
+for where it should be used, should it become useful.)
 */
 static skit_trie_node *skit_trie_node_fold(skit_trie_node *node)
 {
-	printf("%s, %d: Stub!\n", __func__, __LINE__);
+	/* printf("%s, %d: Stub!\n", __func__, __LINE__); */
 	return node;
 }
 
@@ -445,7 +493,7 @@ static void skit_trie_node_set_value( skit_trie_node *node, const void *value )
 static void skit_trie_node_insert_non0_str(
 	skit_trie_node *node,
 	skit_trie_node *tail,
-	const char *str_ptr,
+	const uint8_t *str_ptr,
 	size_t str_len )
 {
 	sASSERT(node != NULL);
@@ -480,7 +528,7 @@ static void skit_trie_node_insert_non0_str(
 static void skit_trie_node_append_str(
 	skit_trie_node *node,
 	skit_trie_node **new_tail,
-	const char *str_ptr,
+	const uint8_t *str_ptr,
 	size_t str_len )
 {
 	if ( str_len == 0 ) {
@@ -496,7 +544,7 @@ static void skit_trie_node_append_str(
 static skit_trie_node *skit_trie_finish_tail(
 	skit_trie_node *given_start_node,
 	const skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value)
 {
@@ -504,8 +552,8 @@ static skit_trie_node *skit_trie_finish_tail(
 
 	skit_trie_node_ctor(given_start_node);
 
-	const char *new_node_str = key_ptr + (coords.pos + 1);
-	size_t      new_node_len = key_len - (coords.pos + 1);
+	const uint8_t *new_node_str = key_ptr + (coords.pos + 1);
+	size_t         new_node_len = key_len - (coords.pos + 1);
 	skit_trie_node_append_str(given_start_node, &new_value_node, new_node_str, new_node_len);
 	skit_trie_node_set_value(new_value_node, value);
 	return given_start_node;
@@ -515,7 +563,7 @@ static skit_trie_node *skit_trie_finish_tail(
 
 static void skit_trie_split_node(
 	skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value);
 
@@ -523,10 +571,11 @@ static void skit_trie_split_node(
 
 static void skit_trie_split_table_node(
 	skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value)
 {
+	SPLIT_DEBUG("%s, %d: \n", __func__, __LINE__);
 	/* Easy case: just add a new entry in the table. */
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len > SKIT__TRIE_NODE_PREALLOC);
@@ -543,10 +592,11 @@ static void skit_trie_split_table_node(
 
 static void skit_trie_split_multi_to_table(
 	skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value)
 {
+	SPLIT_DEBUG("%s, %d: \n", __func__, __LINE__);
 	size_t i;
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len == node->chars_len);
@@ -598,10 +648,11 @@ static void skit_trie_split_multi_to_table(
 
 static void skit_trie_split_multi_node(
 	skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value)
 {
+	SPLIT_DEBUG("%s, %d: \n", __func__, __LINE__);
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len == node->chars_len);
 	sASSERT(node->nodes_len < SKIT__TRIE_NODE_PREALLOC); /* This does NOT handle the convert-to-table case. */
@@ -620,7 +671,7 @@ static void skit_trie_split_multi_node(
 	.        |
 	.         `-> 'c' -> new_node -> "xyz" ... -> new_cnode -> value
 	*/
-
+	
 	(node->nodes_len)++;
 	node->nodes = skit_realloc( node->nodes, sizeof(skit_trie_node) * node->nodes_len);
 
@@ -634,10 +685,11 @@ static void skit_trie_split_multi_node(
 
 static void skit_trie_split_linear_node(
 	skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value)
 {
+	SPLIT_DEBUG("%s, %d: \n", __func__, __LINE__);
 	/* Linear node that has >1 character. */
 	skit_trie_node *node = coords.node;
 	sASSERT(node->nodes_len == 1);
@@ -668,8 +720,8 @@ static void skit_trie_split_linear_node(
 		skit_trie_node *node1 = &node->nodes[1];
 
 		/* Populate node0. */
-		const char *node0_str = (const char*)node->chars + 1;
-		size_t      node0_len = node->chars_len - 1;
+		const uint8_t *node0_str = (const uint8_t*)node->chars + 1;
+		size_t         node0_len = node->chars_len - 1;
 		skit_trie_node_insert_non0_str(node0, cnode0, node0_str, node0_len);
 
 		/* Populate node1. */
@@ -747,13 +799,16 @@ static void skit_trie_split_linear_node(
 
 static void skit_trie_split_node(
 	skit_trie_coords coords,
-	const char *key_ptr,
+	const uint8_t *key_ptr,
 	size_t key_len,
 	const void *value)
 {
+	SPLIT_DEBUG("%s, %d: \n", __func__, __LINE__);
 	skit_trie_node *node = coords.node;
 
-	if ( node->nodes_len == 1 && node->chars_len > 1 )
+	if ( coords.n_chars_into_node == 0 && coords.pos == key_len )
+		skit_trie_node_set_value(node, value);
+	else if ( node->nodes_len == 1 && node->chars_len > 1 )
 		skit_trie_split_linear_node(coords, key_ptr, key_len, value);
 	else if  ( node->nodes_len < SKIT__TRIE_NODE_PREALLOC )
 		skit_trie_split_multi_node(coords, key_ptr, key_len, value);
@@ -769,8 +824,10 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 {
 	SKIT_USE_FEATURE_EMULATION;
 	size_t key_len = sSLENGTH(key);
-	const char *key_ptr = (const char*)sSPTR(key);
-	printf("skit_trie_set(trie, \"%.*s\", %p, %x)\n", (int)key_len, key_ptr, value, flags);
+	const uint8_t *key_ptr = (const uint8_t*)sSPTR(key);
+	ENTRY_DEBUG("skit_trie_set(trie, \"%.*s\", %p, %x)\n", (int)key_len, key_ptr, value, flags);
+	
+	sENFORCE_MSG(key_ptr != NULL, "NULL key given in call to skit_trie_set.");
 	
 	if ( trie->iterator_count > 0 )
 		sTHROW(SKIT_TRIE_WRITE_IN_ITERATION,
@@ -779,6 +836,8 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 
 	sASSERT_MSG( !(flags & ICASE), "Case insensitive operations are currently unsupported.");
 
+	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
+	
 	if ( !(flags & (CREATE | OVERWRITE)) )
 		sTHROW(SKIT_TRIE_BAD_FLAGS,
 			"Call to skit_trie_set without providing 'c' or 'o' flags. key = \"%.*s\", flags = \"%s\"",
@@ -796,13 +855,16 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 				"Wrote a value to an empty trie. Key is \"%.*s\". 'c' (create) not passed in flags.",
 				key_len, key_ptr);
 
-		printf("%s, %d: new root.\n", __func__, __LINE__);
+		ENTRY_DEBUG("%s, %d: new root.\n", __func__, __LINE__);
 		trie->root = skit_trie_node_new();
 		skit_trie_node *end_node;
 		skit_trie_node_append_str(trie->root, &end_node, key_ptr, key_len);
 		skit_trie_node_set_value(end_node, value);
 		
 		memcpy( sLPTR(trie->key_return_buf), key_ptr, key_len );
+		
+		(trie->length)++;
+		
 		return skit_slice_of(trie->key_return_buf.as_slice, 0, key_len);
 	}
 
@@ -838,6 +900,9 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 
 		/* Split a node to insert the new value. */
 		skit_trie_split_node(coords, key_ptr, key_len, value);
+		
+		/* Update this. */
+		(trie->length)++;
 	}
 	else
 		sTHROW(SKIT_FATAL_EXCEPTION, "Impossible result for trie lookup on key \"%.*s\".", key_len, sSPTR(key));
@@ -858,7 +923,7 @@ skit_slice skit_trie_remove( skit_trie *trie, const skit_slice key, skit_flags f
 {
 	SKIT_USE_FEATURE_EMULATION;
 	size_t key_len = sSLENGTH(key);
-	const char *key_ptr = (const char*)sSPTR(key);
+	const uint8_t *key_ptr = (const uint8_t*)sSPTR(key);
 	
 	if ( trie->iterator_count > 0 )
 		sTHROW(SKIT_TRIE_WRITE_IN_ITERATION,
@@ -1054,7 +1119,7 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 		cursor.x = x;
 		cursor.y = (y2 + y1) / 2;
 		
-		skit_trie_draw( dst, &cursor, "-> " );
+		/*skit_trie_draw( dst, &cursor, "-> " );*/
 		
 		if ( node->have_value )
 			skit_trie_draw_value( dst, &cursor, node->value );
@@ -1069,13 +1134,13 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 		cursor.x = x;
 		cursor.y = (y2 + y1) / 2;
 		
-		skit_trie_draw( dst, &cursor, "-> " );
-		
 		if ( node->have_value )
 		{
 			skit_trie_draw_value( dst, &cursor, node->value );
 			skit_trie_draw( dst, &cursor, " " );
 		}
+		
+		skit_trie_draw( dst, &cursor, "-> " );
 		
 		const char *delimiter;
 		if ( node->chars_len > 1 )
@@ -1100,6 +1165,15 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 		int32_t cy2 = y1;
 		int32_t vert_branch_top = dst->height;
 		int32_t vert_branch_bottom = 0;
+		
+		cursor.x = x;
+		cursor.y = (y2 + y1) / 2;
+		if ( node->have_value )
+		{
+			skit_trie_draw_value( dst, &cursor, node->value );
+			skit_trie_draw( dst, &cursor, " " );
+		}
+		
 		for( i = 0; i < node->nodes_len; i++ )
 		{
 			/* x+2 makes room for the vertical branch
@@ -1108,12 +1182,12 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 			.                      `
 			. construct that will be filled in later. */
 			skit_trie_draw_horiz_branch(
-				dst, &node->nodes[i], node->chars[i], x+2, &cy1, &cy2,
-				&vert_branch_top, &vert_branch_bottom);
+				dst, &node->nodes[i], node->chars[i], cursor.x+2, 
+				&cy1, &cy2, &vert_branch_top, &vert_branch_bottom);
 		}
 		
 		skit_trie_draw_vert_branch(
-			dst, x, y1, y2, "", vert_branch_top, vert_branch_bottom);
+			dst, cursor.x, y1, y2, "", vert_branch_top, vert_branch_bottom);
 	}
 	else
 	{
@@ -1123,6 +1197,15 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 		int32_t cy2 = y1;
 		int32_t vert_branch_top = dst->height;
 		int32_t vert_branch_bottom = 0;
+		
+		cursor.x = x;
+		cursor.y = (y2 + y1) / 2;
+		if ( node->have_value )
+		{
+			skit_trie_draw_value( dst, &cursor, node->value );
+			skit_trie_draw( dst, &cursor, " " );
+		}
+		
 		for( i = 0; i < 256; i++ )
 		{
 			if ( node->node_table[i] == NULL )
@@ -1134,12 +1217,12 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 			.                      `
 			. construct that will be filled in later. */
 			skit_trie_draw_horiz_branch(
-				dst, node->node_table[i], i, x+4, &cy1, &cy2,
-				&vert_branch_top, &vert_branch_bottom);
+				dst, node->node_table[i], i, cursor.x+4,
+				&cy1, &cy2, &vert_branch_top, &vert_branch_bottom);
 		}
 		
 		skit_trie_draw_vert_branch(
-			dst, x, y1, y2, "[]", vert_branch_top, vert_branch_bottom);
+			dst, cursor.x, y1, y2, "[]", vert_branch_top, vert_branch_bottom);
 	}
 	
 }
@@ -1243,8 +1326,22 @@ struct skit_trie_iter
 	skit_trie_frame *frames;
 	ssize_t current_frame;
 	ssize_t prev_frame;
-	char *key_buffer;
+	uint8_t *key_buffer;
 };
+
+/* ------------------------------------------------------------------------- */
+
+static void skit_iter_accumulate_key(skit_trie_iter *iter, size_t pos, const uint8_t *key_frag, size_t frag_len)
+{
+	/* printf("skit_trie_accumulate_key(iter, %d, \"%.*s\")\n", pos, (int)frag_len, key_frag); */
+	uint8_t *key_return_buf = iter->key_buffer;
+	
+	/* printf("  -> '%.*s' ~ '%.*s'\n", pos, key_return_buf, (int)frag_len, key_frag); */
+	
+	void       *dst_start = key_return_buf + pos;
+	const void *src_start = key_frag;
+	memcpy(dst_start, src_start, frag_len);
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -1256,8 +1353,10 @@ static void skit_trie_iter_push( skit_trie_iter *iter, skit_trie_node *node, siz
 	skit_trie_coords_ctor(&frame->coords);
 	frame->coords.node = node;
 	frame->coords.pos = pos;
+	frame->current_char = 0;
 	
 	/* update the key_buffer as needed. */
+	/*
 	if ( iter->current_frame >= 0 )
 	{
 		skit_trie_frame *prev_frame = &iter->frames[iter->current_frame];
@@ -1268,7 +1367,7 @@ static void skit_trie_iter_push( skit_trie_iter *iter, skit_trie_node *node, siz
 			size_t copy_len = pos - prev_frame->coords.pos;
 			memcpy(dst_start, src_start, copy_len);
 		}
-	}
+	}*/
 	
 	/* commit the results */
 	iter->prev_frame = iter->current_frame;
@@ -1288,8 +1387,10 @@ skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, sk
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT_MSG( !(flags & ICASE), "Case insensitive operations are currently unsupported.");
 	
+	ITER_DEBUG("%s, %d: \n", __func__, __LINE__);
+	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
 	size_t key_len = sSLENGTH(prefix);
-	const char *key_ptr = (const char*)sSPTR(prefix);
+	const uint8_t *key_ptr = (const uint8_t*)sSPTR(prefix);
 
 	if ( flags & (CREATE | OVERWRITE) )
 		sTHROW(SKIT_TRIE_BAD_FLAGS,
@@ -1314,14 +1415,20 @@ skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, sk
 		return result;
 	}
 	
+	/* skit_trie_find accumulates the found key into trie->key_return_buf. */
+	/* We actually need it in iter->key_buffer. */
+	/* This call should fix that. */
+	skit_iter_accumulate_key(result, 0, sLPTR(trie->key_return_buf), coords.pos);
+	
+	/* */
 	result->frames = skit_malloc(sizeof(skit_trie_frame) * ((longest_key_len - coords.pos) + 1));
 
+	/* skit_trie_find should only return coords.n_chars_into_node > 0  */
+	/*   for linear nodes that the prefix doesn't completely encompass. */
+	/* The iterator can't handle that, so we'll skip ahead to the next */
+	/*   complete node in those cases. */
 	if ( coords.n_chars_into_node > 0 )
 	{
-		/* skit_trie_find should only return coords.n_chars_into_node > 0  */
-		/*   for linear nodes that the prefix doesn't completely encompass. */
-		/* The iterator can't handle that, so we'll skip ahead to the next */
-		/*   complete node in those cases. */
 		skit_trie_node *node = coords.node;
 		sASSERT_EQ(node->nodes_len, 1, "%d");
 		sASSERT_GT(node->chars_len, 1, "%d"); /* chars_len > 1 */
@@ -1372,6 +1479,13 @@ skit_trie_iter *skit_trie_iter_free( skit_trie_iter *iter )
 
 int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 {
+	ITER_DEBUG("skit_trie_iter_next(...): %d\n", __LINE__);
+	ITER_DEBUG("%s, %d: iter->current_frame == %d\n", __func__, __LINE__, iter->current_frame);
+	sENFORCE_MSG(value != NULL, "NULL value pointer given in call to skit_trie_iter_next.  "
+		"This must be a pointer to a variable that can accept the returned value.");
+	sENFORCE_MSG(key != NULL, "NULL key pointer given in call to skit_trie_iter_next.  "
+		"This must be a pointer to a skit_slice that can accept the returned key.");
+	
 	/* Global termination case: we just popped the last frame. */
 	/*   That means we left the first node we ever visited, and there are no */
 	/*   more children to descend into: iteration is over. */
@@ -1385,6 +1499,8 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 	skit_trie_frame *frame = &iter->frames[iter->current_frame];
 	skit_trie_coords *coords = &frame->coords;
 	skit_trie_node *node = coords->node;
+
+	ITER_DEBUG("%s, %d: current key: %.*s\n", __func__, __LINE__, coords->pos, iter->key_buffer);
 	
 	/* It seems our iterator is alive.  Let's iterate! */
 	
@@ -1392,14 +1508,16 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 	/* This means we just enetered the node for the first time. */
 	if ( iter->prev_frame < iter->current_frame )
 	{
+		ITER_DEBUG("%s, %d: Entry case.\n", __func__, __LINE__);
 		/* Check for a value, yield it if one is found. */
 		if ( node->have_value )
 		{
+			ITER_DEBUG("%s, %d: Have value.\n", __func__, __LINE__);
 			/* Update this so that we don't loop forever. */
 			iter->prev_frame = iter->current_frame;
 			
 			/* Yield the value. */
-			*key = skit_slice_of_cstrn(iter->key_buffer, coords->pos);
+			*key = skit_slice_of_cstrn((char*)iter->key_buffer, coords->pos);
 			*value = (void*)node->value;
 			return 1;
 		}
@@ -1408,6 +1526,7 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 	/* Exit case: We just exhausted the node and must do a pop. */
 	if ( frame->current_char > 255 )
 	{
+		ITER_DEBUG("%s, %d: Exiting.\n", __func__, __LINE__);
 		skit_trie_iter_pop(iter);
 		
 		/* Refresh function-scope variables by recursing. */
@@ -1417,17 +1536,20 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 	/* Iteration case: visit the next child node. */
 	if ( node->nodes_len == 1 && node->chars_len > 1 )
 	{
+		ITER_DEBUG("%s, %d: Linear node.\n", __func__, __LINE__);
 		/* Linear nodes. */
 		
 		/* Mark this node as exhausted and then push the child into focus. */
 		frame->current_char = 256;
 		skit_trie_iter_push(iter, &node->nodes[0], coords->pos + node->chars_len);
+		skit_iter_accumulate_key(iter, coords->pos, node->chars, node->chars_len);
 		
 		/* Continue searching for a value. */
 		return skit_trie_iter_next(iter, key, value);
 	}
 	else if ( node->nodes_len <= SKIT__TRIE_NODE_PREALLOC )
 	{
+		ITER_DEBUG("%s, %d: Multi-node.\n", __func__, __LINE__);
 		/* Multi-nodes. */
 		size_t i;
 		ssize_t node_index = -1;
@@ -1463,10 +1585,13 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 		
 		/* Normal case: there is a node_index for us to descend into. */
 		skit_trie_iter_push(iter, &node->nodes[node_index], coords->pos + 1);
+		skit_iter_accumulate_key(iter, coords->pos, &node->chars[node_index], 1);
+		
 		return skit_trie_iter_next(iter, key, value);
 	}
 	else
 	{
+		ITER_DEBUG("%s, %d: Table node.\n", __func__, __LINE__);
 		/* Table nodes. */
 		size_t i;
 		ssize_t node_index = frame->current_char;
@@ -1498,6 +1623,10 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 		
 		/* Normal case: there is a node_index for us to descend into. */
 		skit_trie_iter_push(iter, node->node_table[node_index], coords->pos + 1);
+		
+		uint8_t c = node_index;
+		skit_iter_accumulate_key(iter, coords->pos, &c, 1);
+		
 		return skit_trie_iter_next(iter, key, value);
 	}
 	
@@ -1507,50 +1636,337 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 
 /* ------------------------------------------------------------------------- */
 
-static void skit_trie_unittest_basics()
+static void skit_trie_exhaustive_get_test(
+	skit_trie *trie,
+	const skit_slice* slices,
+	size_t trie_size,
+	size_t n_slices )
 {
 	void *val;
+	size_t i;
+	
+	sASSERT_EQ(skit_trie_len(trie), trie_size, "%d");
+	
+	/* Test for false negatives. */
+	for ( i = 0; i < trie_size; i++ )
+	{
+		sASSERT_EQS(skit_trie_get(trie, slices[i], &val, SKIT_FLAGS_NONE), slices[i]);
+		sASSERT_EQ((size_t)val, i+1, "%d");
+	}
+	
+	/* Test against false positives. */
+	for ( i = trie_size; i < n_slices; i++ )
+	{
+		sASSERT_EQS(skit_trie_get(trie, slices[i], &val, SKIT_FLAGS_NONE), skit_slice_null());
+		sASSERT_EQ(val, NULL, "%d");
+	}
+}
+
+typedef struct skit_slice_val_tuple skit_slice_val_tuple;
+struct skit_slice_val_tuple
+{
+	skit_slice slice;
+	size_t val;
+};
+
+static void skit_slice_val_tuple_ctor(skit_slice_val_tuple *tuple, skit_slice slice, size_t val)
+{
+	tuple->slice = slice;
+	tuple->val = val;
+}
+
+static int skit_trie_cmp_tuple( const void *a, const void *b )
+{
+	skit_slice_val_tuple *t1 = (skit_slice_val_tuple*)a;
+	skit_slice_val_tuple *t2 = (skit_slice_val_tuple*)b;
+	return skit_slice_ascii_cmp( t1->slice, t2->slice );
+}
+
+static void skit_trie_iter_test(
+	skit_trie *trie,
+	skit_slice_val_tuple *tuples, /* Must be sorted. */
+	size_t n_tuples,
+	size_t pos,
+	int recurse )
+{
+	skit_slice prefix = skit_slice_of(tuples[0].slice, 0, pos);
+	
+	ITER_DEBUG("\n\n");
+	ITER_DEBUG("skit_trie_iter_test(trie, tuples[%ld], %ld, %d), prefix == '%.*s'\n",
+		n_tuples, pos, recurse, sSLENGTH(prefix), sSPTR(prefix));
+	
+	skit_trie_iter *iter = skit_trie_iter_new(trie, prefix, SKIT_FLAGS_NONE);
+	
+	skit_slice key;
+	void *val;
+	size_t i = 0;
+	while ( skit_trie_iter_next( iter, &key, &val ) )
+	{
+		ITER_DEBUG("%s, %d: calling skit_trie_iter_next(iter, \"%.*s\", %ld); i == %d; expect %ld\n",
+			__func__, __LINE__,
+			sSLENGTH(key), sSPTR(key),
+			(size_t)val, i, tuples[i].val);
+		
+		sASSERT_EQS( tuples[i].slice, key );
+		sASSERT_EQ ( tuples[i].val, (size_t)val, "%d" );
+		i++;
+	}
+	
+	sASSERT_EQ( i, n_tuples, "%d" );
+	
+	skit_trie_iter_free(iter);
+	
+	if ( recurse && n_tuples > 1 )
+	{
+		uint8_t *key_ptr = sSPTR(tuples[0].slice);
+		size_t   key_len = sSLENGTH(tuples[0].slice);
+		uint16_t prev_char = 0x800;
+		uint16_t this_char = (pos == key_len ? 0x800 : key_ptr[pos]);
+		size_t prev_index = 0;
+		for ( i = 1; i < n_tuples; i++ )
+		{
+			key_ptr = sSPTR(tuples[i].slice);
+			key_len = sSLENGTH(tuples[i].slice);
+			
+			prev_char = this_char;
+			
+			sASSERT( pos <= key_len ); /* We should reach n_tuples before falling off any cliffs. */
+			if ( pos == key_len )
+				this_char = 0x800; /* Cases where we iterate on exact matches. */
+			else
+				this_char = key_ptr[pos]; /* Prefix stuff. */
+			
+			if ( this_char != prev_char && i > prev_index )
+			{
+				if ( prev_char < 0x800 )
+					skit_trie_iter_test( trie, &tuples[prev_index], i - prev_index, pos+1, 1 );
+				prev_index = i;
+			}
+		}
+
+		/* Pick up anything left-over. */
+		skit_trie_iter_test( trie, &tuples[prev_index], n_tuples - prev_index, pos+1, 1 );
+	}
+}
+
+static void skit_trie_exhaustive_test( skit_slice* slices, size_t n_slices, int harder )
+{
+	size_t i;
 	skit_trie *trie = skit_trie_new();
-	skit_trie_dump(trie, skit_stream_stdout);
-	sASSERT_EQS(skit_trie_setc(trie, "abcde", (void*)1, sFLAGS("c")), sSLICE("abcde"));
-	skit_trie_dump(trie, skit_stream_stdout);
-	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1, "%d");
+	
+	for ( i = 0; i < n_slices; i++ )
+	{
+		/*printf("Going to set with %p, %ld\n", sSPTR(slices[i]), sSLENGTH(slices[i]));*/
+		sASSERT_EQS(skit_trie_set(trie, slices[i], (void*)(i+1), sFLAGS("c")), slices[i]);
+		
+		/*
+		if ( harder )
+			skit_trie_dump(trie, skit_stream_stdout);
+		*/
 
-	sASSERT_EQS(skit_trie_setc(trie, "abxyz", (void*)2, sFLAGS("c")), sSLICE("abxyz"));
-	skit_trie_dump(trie, skit_stream_stdout);
-	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abxyz", &val, SKIT_FLAGS_NONE), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2, "%d");
+		if ( harder )
+			skit_trie_exhaustive_get_test(trie, slices, i+1, n_slices);
+	}
+	
+	#if 0
+	if ( !harder )
+	{
+		skit_trie_dump(trie, skit_stream_stdout);
+		/*sASSERT_MSG(0, "Here is your tree, sir.");*/
+	}
+	#endif
+	
+	if ( !harder )
+		skit_trie_exhaustive_get_test(trie, slices, n_slices, n_slices);
+	
+	skit_slice_val_tuple *tuples = skit_malloc(n_slices * sizeof(skit_slice_val_tuple));
+	
+	for ( i = 0; i < n_slices; i++ )
+		skit_slice_val_tuple_ctor(&tuples[i], slices[i], i+1);
+	
+	qsort( tuples, n_slices, sizeof(skit_slice_val_tuple), &skit_trie_cmp_tuple );
+	
+	int recurse = 0;
+	if ( harder )
+		recurse = 1;
 
-	sASSERT_EQS(skit_trie_setc(trie, "a1234", (void*)3, sFLAGS("c")), sSLICE("a1234"));
-	skit_trie_dump(trie, skit_stream_stdout);
-	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abxyz", &val, SKIT_FLAGS_NONE), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "a1234", &val, SKIT_FLAGS_NONE), sSLICE("a1234")); sASSERT_EQ((size_t)val, 3, "%d");
-
-	sASSERT_EQS(skit_trie_setc(trie, "abcd!", (void*)4, sFLAGS("c")), sSLICE("abcd!"));
-	skit_trie_dump(trie, skit_stream_stdout);
-	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abxyz", &val, SKIT_FLAGS_NONE), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "a1234", &val, SKIT_FLAGS_NONE), sSLICE("a1234")); sASSERT_EQ((size_t)val, 3, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abcd!", &val, SKIT_FLAGS_NONE), sSLICE("abcd!")); sASSERT_EQ((size_t)val, 4, "%d");
-
-	sASSERT_EQS(skit_trie_setc(trie, "abcxy", (void*)5, sFLAGS("c")), sSLICE("abcxy"));
-	skit_trie_dump(trie, skit_stream_stdout);
-	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde")); sASSERT_EQ((size_t)val, 1, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abxyz", &val, SKIT_FLAGS_NONE), sSLICE("abxyz")); sASSERT_EQ((size_t)val, 2, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "a1234", &val, SKIT_FLAGS_NONE), sSLICE("a1234")); sASSERT_EQ((size_t)val, 3, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abcd!", &val, SKIT_FLAGS_NONE), sSLICE("abcd!")); sASSERT_EQ((size_t)val, 4, "%d");
-	sASSERT_EQS(skit_trie_getc(trie, "abcxy", &val, SKIT_FLAGS_NONE), sSLICE("abcxy")); sASSERT_EQ((size_t)val, 5, "%d");
+	ITER_DEBUG("\n\n-------- Iteration test begins. ---------\n\n\n");
+	skit_trie_iter_test( trie, tuples, n_slices, 0, recurse );
+	
+	skit_free(tuples);
 	
 	skit_trie_free(trie);
+}
+
+static void skit_trie_unittest_basics()
+{
+	size_t n_tests = 10;
+	skit_slice *slices = skit_malloc(sizeof(skit_slice) * n_tests);
+	slices[0] = sSLICE("abcde"         );
+	slices[1] = sSLICE("abxyz"         );
+	slices[2] = sSLICE("a1234"         );
+	slices[3] = sSLICE("abcd!"         );
+	slices[4] = sSLICE("abcxy"         );
+	slices[5] = sSLICE("abc"           );
+	slices[6] = sSLICE("\0\xFF\0\xFF"  );
+	slices[7] = sSLICE("\0\xFF\x7F"    );
+	slices[8] = sSLICE("\0\x7F\x7F"    );
+	slices[9] = sSLICE(""              );
+
+	skit_trie_exhaustive_test(slices, n_tests, 1);
+	
+	/* Test inserting successively longer keys. */
+	/* (The previous mix tests successively shorter keys.) */
+	void *val;
+	skit_trie *trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "abc", (void*)1, sFLAGS("c")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
+	sASSERT_EQ(val, NULL, "%d");
+	sASSERT_EQS(skit_trie_setc(trie, "abcde", (void*)1, sFLAGS("c")), sSLICE("abcde"));
+	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde"));
+	sASSERT_EQ((size_t)val, 1, "%d");
+	
+	skit_free(slices);
 	
 	printf("  skit_trie_unittest_basics passed.\n");
+}
+
+static void skit_trie_unittest_linear_nodes()
+{
+	skit_slice *slices = skit_malloc(sizeof(skit_slice) * 3);
+	size_t i;
+	
+	#define teststr_len  (SKIT__TRIE_NODE_PREALLOC*3 + 2)
+	#define teststr_mid1 (SKIT__TRIE_NODE_PREALLOC*2 - 4)
+	#define teststr_mid2 (SKIT__TRIE_NODE_PREALLOC*2 - 2)
+	
+	/* This is not a requirement of the trie, but it IS an assumption of the unittest. */
+	/* It mostly affects the choice of teststr_mid1 and teststr_mid2, */
+	/*   which were chosen to leave at least 2 characters between the */
+	/*   splitting that they cause. */
+	sASSERT_GE(SKIT__TRIE_NODE_PREALLOC, 6, "%d");
+	
+	/* "abcdefghijklmnopqrstuvwxyzabcdefg..." */
+	char teststr0[teststr_len+1];
+	slices[0] = skit_slice_of_cstrn(teststr0, teststr_len);
+	for ( i = 0; i < teststr_len; i++ )
+		teststr0[i] = 'a' + (i % 26);
+	teststr0[teststr_len] = '\0';
+	
+	/* "abcdefghijklmnopqRSTUVWXYZABCDEFG..." */
+	char teststr1[teststr_len+1];
+	slices[1] = skit_slice_of_cstrn(teststr1, teststr_len);
+	memcpy(teststr1, teststr0, teststr_len);
+	for ( i = teststr_mid1; i < teststr_len; i++ )
+		teststr1[i] = skit_char_ascii_to_upper(teststr1[i]);
+	teststr1[teststr_len] = '\0';
+	
+	/* "abcdefghijklmnopqrs" */
+	char teststr2[teststr_mid2+1];
+	slices[2] = skit_slice_of_cstrn(teststr2, teststr_mid2);
+	memcpy(teststr2, teststr0, teststr_mid2);
+	teststr2[teststr_mid2] = '\0';
+	
+	skit_trie_exhaustive_test(slices, 3, 1);
+	
+	skit_free(slices);
+	
+	printf("  skit_trie_unittest_linear_nodes passed.\n");
+}
+
+/* If don't already know what a trigram is and you want to know, then I suggest
+lookup up ngram or n-gram rather than trigram.  As a search term, "trigram" is
+likely to bring up the Chinese bagua, which is quite a different entity. 
+
+Long and short: trigrams are sequences of 3-characters, usually the first three
+of words in a corpus of text, and usually used to index that text for fast 
+lookup of contained words and such.
+*/
+static void skit_trie_test_make_trigram(
+	skit_loaf *loaf,
+	size_t *loaf_index,
+	size_t max_index,
+	const skit_slice parent,
+	int breadth,
+	int depth)
+{
+	size_t i;
+	
+	/*
+	printf("%s, %d: skit_trigram(%p, %ld, %ld, \"%.*s\", %d, %d)\n", __func__, __LINE__,
+		loaf, *loaf_index, max_index, (int)sSLENGTH(parent), sSPTR(parent), breadth, depth);
+	*/
+	sASSERT_LE( *loaf_index, max_index, "%d" );
+	
+	if ( depth > 3 )
+		return;
+	
+	if ( depth == 0 )
+	{
+		skit_loaf current = skit_loaf_new();
+		loaf[*loaf_index] = current;
+		(*loaf_index)++;
+		skit_trie_test_make_trigram(loaf, loaf_index, max_index, current.as_slice, breadth, depth+1);
+		return;
+	}
+	
+	int frequency = 256 / SKIT__TRIE_NODE_PREALLOC;
+	
+	for ( i = 0; i < breadth; i++ )
+	{
+		skit_loaf current = skit_loaf_alloc(depth);
+		loaf[*loaf_index] = current;
+		skit_loaf_assign_slice(&current, parent);
+		uint8_t *ptr = sLPTR(current);
+		
+		if ( i == 0 )
+			ptr[depth-1] = 0x00;
+		else if ( i == breadth-1 ) /* Always ensure that the highest possible branch value gets tested. */
+			ptr[depth-1] = 0xFF;
+		else 
+			ptr[depth-1] = (i*frequency) + depth;
+		/*ptr[depth-1] = i + 'a';*/
+		
+		(*loaf_index)++;
+		skit_trie_test_make_trigram(loaf, loaf_index, max_index, current.as_slice, breadth, depth+1);
+	}
+}
+
+static void skit_trie_unittest_table_nodes()
+{
+	size_t i;
+	size_t breadth = SKIT__TRIE_NODE_PREALLOC+1;
+	
+	/* Create a trie of trigrams (and their subsets). */
+	/* Make each level slightly fatter than the prealloc number. */
+	size_t n_strings = 
+		skit_ipow(breadth, 3)+
+		skit_ipow(breadth, 2)+
+		skit_ipow(breadth, 1)+1;
+	
+	skit_loaf  *loaves = skit_malloc(sizeof(skit_loaf) * n_strings);
+	skit_slice *slices = skit_malloc(sizeof(skit_slice) * n_strings);
+	size_t loaf_index = 0;
+	skit_trie_test_make_trigram( loaves, &loaf_index, n_strings, sSLICE(""), breadth, 0 );
+	
+	for ( i = 0; i < n_strings; i++ )
+		slices[i] = loaves[i].as_slice;
+	
+	skit_trie_exhaustive_test(slices, n_strings, 0);
+	
+	for ( i = 0; i < n_strings; i++ )
+		skit_loaf_free(&loaves[i]);
+	
+	skit_free(loaves);
+	skit_free(slices);
 }
 
 void skit_trie_unittest()
 {
 	printf("skit_trie_unittest()\n");
 	skit_trie_unittest_basics();
+	skit_trie_unittest_linear_nodes();
+	skit_trie_unittest_table_nodes();
 	printf("  skit_trie_unittest passed!\n");
 	printf("\n");
 	
