@@ -218,19 +218,6 @@ skit_loaf skit_loaf_null()
 skit_loaf skit_loaf_new()
 {
 	return skit_loaf_alloc(0);
-	
-	/* TODO: cleanup. */
-	skit_loaf result = skit_loaf_null();
-	
-	/* Allocate a null handle followed by a zero-length string. */
-	/* The zero-length string is represented by a single nul byte. */
-	result.chars_handle = (skit_utf8c*)skit_malloc(SKIT_LOAF_EMPLACEMENT_OVERHEAD);
-	memset( result.chars_handle, 0, sizeof(skit_utf8c*)+1 );
-	
-	/* Set the length to agree with the string data. */
-	skit_slice_set_length(&result.as_slice,0);
-	
-	return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -249,17 +236,6 @@ skit_loaf skit_loaf_alloc(size_t length)
 	size_t mem_size = SKIT_LOAF_EMPLACEMENT_OVERHEAD + length;
 	void *mem = skit_malloc(mem_size);
 	return skit_loaf_emplace_internal(mem, mem_size, skit_string_alloc_type_malloc);
-
-	/* TODO: cleanup */
-	skit_loaf result = skit_loaf_null();
-	
-	/* Allocate enough memory for (null handle)+(desired length)+(nul-terminating byte) */
-	result.chars_handle = (skit_utf8c*)skit_malloc(sizeof(skit_utf8c*) + length + 1);
-	memset(result.chars_handle, 0, sizeof(skit_utf8c*)+1); /* nullify the handle and provide a nul-terminator right after it. */
-	result.chars_handle[sizeof(skit_utf8c*)+length] = '\0'; /* put a nul-terminator at the very end, just incase. */
-	
-	skit_slice_set_length(&result.as_slice, length);
-	return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1573,6 +1549,126 @@ static void skit_slice_match_test_nl()
 	printf("  skit_slice_match_test_nl passed.\n");
 }
 
+/* ------------------------------------------------------------------------- */
+
+static int skit_char_is_printable( skit_utf8c c )
+{
+	/* Printable chars between space (inclusive) and delete (exclusive) */
+	if ( 0x20 <= c && c < 0x7F )
+		return 1;
+	else
+		return 0;
+}
+
+static const skit_utf8c skit_escape_table[] =
+	"0      abtn fr  " /* 0x00 */
+	"                " /* 0x10 */
+	"                " /* 0x20 */
+	"                " /* 0x30 */
+	"                " /* 0x40 */
+	"                " /* 0x50 */
+	"                " /* 0x60 */
+	"                " /* 0x70 */
+	"                " /* 0x80 */
+	"                " /* 0x90 */
+	"                " /* 0xA0 */
+	"                " /* 0xB0 */
+	"                " /* 0xC0 */
+	"                " /* 0xD0 */
+	"                " /* 0xE0 */
+	"                " /* 0xF0 */ ;
+
+static skit_utf8c skit_int_to_hex( int x )
+{
+	if ( x < 10 )
+		return x + '0';
+	else
+		return x - 10 + 'A';
+}
+	
+skit_slice skit_slice_escapify(skit_slice str, skit_loaf *buffer)
+{
+	size_t i;
+	size_t req_size;
+	skit_utf8c *str_ptr = sSPTR(str);
+	ssize_t     str_len = sSLENGTH(str);
+	
+	req_size = 0;
+	for ( i = 0; i < str_len; i++ )
+	{
+		skit_utf8c c = str_ptr[i];
+		if ( skit_char_is_printable(c) )
+			req_size++;
+		else if ( skit_escape_table[c] != ' ' )
+			req_size += 2;
+		else
+			req_size += 4;
+	}
+	
+	ssize_t  buf_len = sLLENGTH(*buffer);
+	
+	if ( req_size > buf_len )
+	{
+		buffer = skit_loaf_resize(buffer, req_size);
+		buf_len = req_size;
+	}
+	
+	skit_utf8c *buf_ptr = sLPTR(*buffer);
+	
+	size_t j = 0;
+	for ( i = 0; i < str_len; i++ )
+	{
+		skit_utf8c c = str_ptr[i];
+		
+		if ( skit_char_is_printable(c) )
+			buf_ptr[j++] = c;
+		else if ( skit_escape_table[c] != ' ' )
+		{
+			buf_ptr[j++] = '\\';
+			buf_ptr[j++] = skit_escape_table[c];
+		}
+		else
+		{
+			buf_ptr[j++] = '\\';
+			buf_ptr[j++] = 'x';
+			buf_ptr[j++] = skit_int_to_hex((c >> 4) & 0x0F);
+			buf_ptr[j++] = skit_int_to_hex((c >> 0) & 0x0F);
+		}
+	}
+	
+	return skit_slice_of(buffer->as_slice, 0, req_size);
+}
+
+static void skit_slice_escapify_test()
+{
+	skit_utf8c cFF[1];
+	cFF[0] = 255;
+	
+	sASSERT_EQ(skit_escape_table['\0'], '0', "%d");
+	sASSERT_EQ(skit_escape_table['\a'], 'a', "%d");
+	sASSERT_EQ(skit_escape_table['\b'], 'b', "%d");
+	sASSERT_EQ(skit_escape_table['\t'], 't', "%d");
+	sASSERT_EQ(skit_escape_table['\n'], 'n', "%d");
+	sASSERT_EQ(skit_escape_table['\t'], 't', "%d");
+	sASSERT_EQ(skit_escape_table['\f'], 'f', "%d");
+	sASSERT_EQ(skit_escape_table['0'],  ' ', "%d");
+	sASSERT_EQ(skit_escape_table[cFF[0]], ' ', "%d");
+	
+	SKIT_LOAF_ON_STACK(buffer, 4);
+	/*
+	sASSERT_EQS(skit_slice_escapify(sSLICE("\0a"),&buffer), sSLICE("\\0a"));
+	sASSERT_EQS(skit_slice_escapify(sSLICE("\r\nxy\x02"), &buffer), sSLICE("\\r\\nxy\\x02"));
+	sASSERT_EQS(skit_slice_escapify(skit_slice_of_cstrn(cFF,1), &buffer), sSLICE("\\xFF"));
+	*/
+	sASSERT(skit_slice_eqs(skit_slice_escapify(sSLICE("\0a"),&buffer), sSLICE("\\0a")));
+	sASSERT(skit_slice_eqs(skit_slice_escapify(sSLICE("\r\nxy\x02"), &buffer), sSLICE("\\r\\nxy\\x02")));
+	sASSERT(skit_slice_eqs(skit_slice_escapify(sSLICE("\xFF"), &buffer), sSLICE("\\xFF")));
+	
+	skit_loaf_free(&buffer);
+	
+	printf("  skit_slice_escapify passed.\n");
+}
+
 /* ========================================================================= */
 /* ----------------------------- unittest list ----------------------------- */
 
@@ -1611,6 +1707,7 @@ void skit_string_unittest()
 	skit_slice_truncate_test();
 	skit_slice_match_test();
 	skit_slice_match_test_nl();
+	skit_slice_escapify_test();
 	printf("  skit_slice_unittest passed!\n");
 	printf("\n");
 }

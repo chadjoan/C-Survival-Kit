@@ -621,17 +621,20 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 /* Internal use.  Please do not call directly. */
 #define SKIT__ENFORCE_SLICE( check_name, comparison, lhs, rhs ) \
 	do { \
-		/* lfmt and rfmt provide space for generating length-maxed printf formatters, */ \
-		/* such as: %.124s for a 124-character long slice. */ \
-		char lfmt[32]; \
-		char rfmt[32]; \
-		sASSERT_COMPLICATED( \
-			check_name, \
-			comparison, \
-			skit_slice_get_printf_formatter( lhs, lfmt, sizeof(lfmt), 1 ), \
-			skit_slice_get_printf_formatter( rhs, rfmt, sizeof(rfmt), 1 ), \
-			sSPTR(lhs), \
-			sSPTR(rhs)); \
+		if ( !(comparison) ) { \
+			skit_print_stack_trace(); \
+			SKIT_LOAF_ON_STACK(lhs_buf, 32); \
+			SKIT_LOAF_ON_STACK(rhs_buf, 32); \
+			skit_slice lhs_escape = skit_slice_escapify((lhs), &lhs_buf); \
+			skit_slice rhs_escape = skit_slice_escapify((rhs), &rhs_buf); \
+			skit_die ( \
+				"%s: at line %d in function %s: " check_name "(" #lhs "," #rhs ") failed.\n" \
+				"  lhs == \"%.*s\"\n" \
+				"  rhs == \"%.*s\"", \
+				__FILE__, __LINE__, __func__, \
+				sSLENGTH(lhs_escape), sSPTR(lhs_escape), \
+				sSLENGTH(rhs_escape), sSPTR(rhs_escape)); \
+		} \
 	} while(0)
 
 /* Internal use.  Please do not call directly. */
@@ -641,6 +644,13 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 #define SKIT__ENFORCE_LES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_LES", skit_slice_les((lhs),(rhs)), (lhs), (rhs))
 #define SKIT__ENFORCE_GTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_GTS", skit_slice_gts((lhs),(rhs)), (lhs), (rhs))
 #define SKIT__ENFORCE_LTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_LTS", skit_slice_lts((lhs),(rhs)), (lhs), (rhs))
+
+#define SKIT__ENFORCE_IEQS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_IEQS", skit_slice_ieqs((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_INES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_INES", skit_slice_ines((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_IGES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_IGES", skit_slice_iges((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_ILES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_ILES", skit_slice_iles((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_IGTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_IGTS", skit_slice_igts((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__ENFORCE_ILTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_ILTS", skit_slice_ilts((lhs),(rhs)), (lhs), (rhs))
 
 /**
 Assertions/enforcement involving comparisons of slices.
@@ -654,12 +664,26 @@ comparison if anything goes wrong, thus aiding in fast debugging.
 #define sENFORCE_GTS(lhs,rhs) SKIT__ENFORCE_GTS("sENFORCE",lhs,rhs)
 #define sENFORCE_LTS(lhs,rhs) SKIT__ENFORCE_LTS("sENFORCE",lhs,rhs)
 
+#define sENFORCE_IEQS(lhs,rhs) SKIT__ENFORCE_IEQS("sENFORCE",lhs,rhs)
+#define sENFORCE_INES(lhs,rhs) SKIT__ENFORCE_INES("sENFORCE",lhs,rhs)
+#define sENFORCE_IGES(lhs,rhs) SKIT__ENFORCE_IGES("sENFORCE",lhs,rhs)
+#define sENFORCE_ILES(lhs,rhs) SKIT__ENFORCE_ILES("sENFORCE",lhs,rhs)
+#define sENFORCE_IGTS(lhs,rhs) SKIT__ENFORCE_IGTS("sENFORCE",lhs,rhs)
+#define sENFORCE_ILTS(lhs,rhs) SKIT__ENFORCE_ILTS("sENFORCE",lhs,rhs)
+
 #define sASSERT_EQS(lhs,rhs) SKIT__ENFORCE_EQS("sASSERT",lhs,rhs)
 #define sASSERT_NES(lhs,rhs) SKIT__ENFORCE_NES("sASSERT",lhs,rhs)
 #define sASSERT_GES(lhs,rhs) SKIT__ENFORCE_GES("sASSERT",lhs,rhs)
 #define sASSERT_LES(lhs,rhs) SKIT__ENFORCE_LES("sASSERT",lhs,rhs)
 #define sASSERT_GTS(lhs,rhs) SKIT__ENFORCE_GTS("sASSERT",lhs,rhs)
 #define sASSERT_LTS(lhs,rhs) SKIT__ENFORCE_LTS("sASSERT",lhs,rhs)
+
+#define sASSERT_IEQS(lhs,rhs) SKIT__ENFORCE_IEQS("sASSERT",lhs,rhs)
+#define sASSERT_INES(lhs,rhs) SKIT__ENFORCE_INES("sASSERT",lhs,rhs)
+#define sASSERT_IGES(lhs,rhs) SKIT__ENFORCE_IGES("sASSERT",lhs,rhs)
+#define sASSERT_ILES(lhs,rhs) SKIT__ENFORCE_ILES("sASSERT",lhs,rhs)
+#define sASSERT_IGTS(lhs,rhs) SKIT__ENFORCE_IGTS("sASSERT",lhs,rhs)
+#define sASSERT_ILTS(lhs,rhs) SKIT__ENFORCE_ILTS("sASSERT",lhs,rhs)
 
 /* ------------------------- string misc functions ------------------------- */
 
@@ -945,6 +969,14 @@ Example:
 int skit_slice_match_nl(
 	const skit_slice text,
 	ssize_t pos);
+
+/**
+Applies C-style escaping to the given string.  This allows non-printable
+characters to be passed into places like terminal output and displayed.
+
+'buffer' will be grown as needed to contain the resulting string.
+*/
+skit_slice skit_slice_escapify(skit_slice str, skit_loaf *buffer);
 
 /* Unittests all string functions. */
 void skit_string_unittest();
