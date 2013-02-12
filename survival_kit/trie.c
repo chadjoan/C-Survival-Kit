@@ -193,7 +193,8 @@ static skit_trie_coords skit_trie_next_node(
 	skit_trie_node *current,
 	const uint8_t *key,
 	size_t key_len,
-	size_t pos)
+	size_t pos,
+	int case_sensitive)
 {
 	FIND_DEBUG("skit_trie_next_node(trie, \"%.*s\", %ld)\n", (int)key_len, key, pos);
 
@@ -221,7 +222,8 @@ static skit_trie_coords skit_trie_next_node(
 		size_t i = 0;
 		while ( i < chars_len )
 		{
-			if ( pos >= key_len || key[pos] != current->chars[i] )
+			if ( pos >= key_len ||
+				0 != skit_char_ascii_ccmp(key[pos], current->chars[i], case_sensitive) )
 			{
 				skit_trie_accumulate_key(trie, start_pos, (const uint8_t*)current->chars, i);
 				return skit_trie_stop_lookup(current, pos, i);
@@ -252,7 +254,7 @@ static skit_trie_coords skit_trie_next_node(
 		size_t chars_len = current->chars_len;
 		size_t i = 0;
 		for ( ; i < chars_len; i++ )
-			if ( current->chars[i] == key[pos] )
+			if ( 0 == skit_char_ascii_ccmp(current->chars[i], key[pos], case_sensitive) )
 				break;
 
 		if ( i == chars_len )
@@ -274,7 +276,16 @@ static skit_trie_coords skit_trie_next_node(
 		if ( pos >= key_len )
 			return skit_trie_stop_lookup(current, pos, 0);
 
-		skit_trie_node *next_node = current->node_table[key[pos]];
+		skit_trie_node *next_node = NULL;
+		if ( case_sensitive )
+			next_node = current->node_table[key[pos]];
+		else
+		{
+			next_node = current->node_table[skit_char_ascii_to_upper(key[pos])];
+			if ( next_node == NULL )
+				next_node = current->node_table[skit_char_ascii_to_lower(key[pos])];
+		}
+		
 		if ( next_node == NULL )
 			return skit_trie_stop_lookup(current, pos, 0);
 
@@ -290,7 +301,8 @@ static skit_trie_coords skit_trie_next_node(
 static skit_trie_coords skit_trie_find(
 	skit_trie *trie,
 	const uint8_t *key_ptr,
-	size_t key_len)
+	size_t key_len,
+	int case_sensitive)
 {
 	FIND_DEBUG("skit_trie_find(trie, \"%.*s\")\n", (int)key_len, key_ptr);
 	sASSERT(key_ptr != NULL);
@@ -310,17 +322,15 @@ static skit_trie_coords skit_trie_find(
 	while ( 1 )
 	{
 		prev = coords;
-		coords = skit_trie_next_node(trie, coords.node, key_ptr, key_len, coords.pos);
+		coords = skit_trie_next_node(trie, coords.node, key_ptr, key_len, coords.pos, case_sensitive);
 
 		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 		
 		if ( coords.lookup_stopped )
 			break;
 
-		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 		if ( skit_exact_match(coords, key_len) )
 			return coords; /* Match success. DONE. */
-		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 	}
 
 	return coords;
@@ -414,11 +424,10 @@ skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, s
 
 	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
 	
-	sASSERT_MSG( !(flags & ICASE), "Case insensitive operations are currently unsupported.");
 	ENTRY_DEBUG("%s, %d: \n", __func__, __LINE__);
 
 	size_t key_len = sSLENGTH(key);
-	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len);
+	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len, (flags & ICASE) ? 0 : 1);
 
 	if ( skit_exact_match(coords, key_len) )
 	{
@@ -834,8 +843,6 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 			"Call to skit_trie_set during iteration. #iters = %d, key = \"%.*s\", flags = \"%s\"",
 			trie->iterator_count, key_len, key_ptr, flags);
 
-	sASSERT_MSG( !(flags & ICASE), "Case insensitive operations are currently unsupported.");
-
 	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
 	
 	if ( !(flags & (CREATE | OVERWRITE)) )
@@ -869,7 +876,7 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 	}
 
 	/* Insertions/replacements for already-existing keys. */
-	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len);
+	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len, (flags & ICASE) ? 0 : 1);
 
 	if ( skit_exact_match(coords, key_len) )
 	{
@@ -1355,20 +1362,6 @@ static void skit_trie_iter_push( skit_trie_iter *iter, skit_trie_node *node, siz
 	frame->coords.pos = pos;
 	frame->current_char = 0;
 	
-	/* update the key_buffer as needed. */
-	/*
-	if ( iter->current_frame >= 0 )
-	{
-		skit_trie_frame *prev_frame = &iter->frames[iter->current_frame];
-		if ( prev_frame->coords.pos < pos )
-		{
-			void *dst_start = iter->key_buffer + prev_frame->coords.pos;
-			void *src_start = prev_frame->coords.node->chars;
-			size_t copy_len = pos - prev_frame->coords.pos;
-			memcpy(dst_start, src_start, copy_len);
-		}
-	}*/
-	
 	/* commit the results */
 	iter->prev_frame = iter->current_frame;
 	(iter->current_frame)++;
@@ -1385,7 +1378,19 @@ static void skit_trie_iter_pop( skit_trie_iter *iter )
 skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, skit_flags flags )
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sASSERT_MSG( !(flags & ICASE), "Case insensitive operations are currently unsupported.");
+	
+	/*
+	Case-insensitive iteration is potentially tricky because skit_trie_find
+	would need to be able to return multiple nodes that the iterator could
+	walk over to cover all possible prefixes that case-insensitively match.
+	Ex:
+	trie = trie of { "ABCD", "abcd", "aBcX", "AbCx" }
+	iter = skit_trie_iter_new( trie, "abc", sFLAGS("i") );
+	This iterator should return all keys in the above trie.  Using the
+	current implementation of skit_trie_find, it would probably only return
+	"ABCD" because "ABC" is the first node that skit_trie_find would find.
+	*/
+	sENFORCE_MSG( !(flags & ICASE), "Case insensitive operations are currently unimplemented for skit_trie_iter.");
 	
 	ITER_DEBUG("%s, %d: \n", __func__, __LINE__);
 	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
@@ -1408,7 +1413,7 @@ skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, sk
 	
 	(trie->iterator_count)++;
 	
-	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len);
+	skit_trie_coords coords = skit_trie_find(trie, key_ptr, key_len, 1);
 	if ( skit_no_match(coords, key_len) )
 	{
 		/* Leave result->current_frame as -1 so that skit_trie_iter_next returns 0 immediately. */
@@ -1635,12 +1640,36 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 }
 
 /* ------------------------------------------------------------------------- */
+/* ------------------------------ testing! --------------------------------- */
+
+
+typedef struct skit_trie_test skit_trie_test;
+struct skit_trie_test
+{
+	skit_slice slice;
+	skit_slice islice;
+	size_t val;
+};
+
+static void skit_trie_test_ctor(
+	skit_trie_test *test,
+	skit_slice slice,
+	skit_slice islice,
+	size_t val)
+{
+	test->slice = slice;
+	test->islice = islice;
+	test->val = val;
+}
+
+/* ------------------------------------------------------------------------- */
 
 static void skit_trie_exhaustive_get_test(
 	skit_trie *trie,
-	const skit_slice* slices,
+	const skit_trie_test* tests,
 	size_t trie_size,
-	size_t n_slices )
+	size_t n_slices,
+	int test_vals )
 {
 	void *val;
 	size_t i;
@@ -1650,50 +1679,44 @@ static void skit_trie_exhaustive_get_test(
 	/* Test for false negatives. */
 	for ( i = 0; i < trie_size; i++ )
 	{
-		sASSERT_EQS(skit_trie_get(trie, slices[i], &val, SKIT_FLAGS_NONE), slices[i]);
-		sASSERT_EQ((size_t)val, i+1, "%d");
+		sASSERT_EQS(skit_trie_get(trie, tests[i].slice, &val, SKIT_FLAGS_NONE), tests[i].slice);
+		if ( test_vals )
+			sASSERT_EQ((size_t)val, tests[i].val, "%d");
+		
+		SKIT_LOAF_ON_STACK(buffer, 64);
+		skit_slice esc = skit_slice_escapify(tests[i].islice, &buffer);
+		sASSERT_IEQS(skit_trie_get(trie, tests[i].islice, &val, SKIT_FLAG_I), tests[i].slice );
+		skit_loaf_free(&buffer);
+		/* sASSERT_EQ((size_t)val, tests[i].val, "%d"); */
 	}
 	
 	/* Test against false positives. */
 	for ( i = trie_size; i < n_slices; i++ )
 	{
-		sASSERT_EQS(skit_trie_get(trie, slices[i], &val, SKIT_FLAGS_NONE), skit_slice_null());
+		sASSERT_EQS(skit_trie_get(trie, tests[i].slice, &val, SKIT_FLAGS_NONE), skit_slice_null());
 		sASSERT_EQ(val, NULL, "%d");
 	}
 }
 
-typedef struct skit_slice_val_tuple skit_slice_val_tuple;
-struct skit_slice_val_tuple
+static int skit_trie_cmp_test( const void *a, const void *b )
 {
-	skit_slice slice;
-	size_t val;
-};
-
-static void skit_slice_val_tuple_ctor(skit_slice_val_tuple *tuple, skit_slice slice, size_t val)
-{
-	tuple->slice = slice;
-	tuple->val = val;
-}
-
-static int skit_trie_cmp_tuple( const void *a, const void *b )
-{
-	skit_slice_val_tuple *t1 = (skit_slice_val_tuple*)a;
-	skit_slice_val_tuple *t2 = (skit_slice_val_tuple*)b;
+	skit_trie_test *t1 = (skit_trie_test*)a;
+	skit_trie_test *t2 = (skit_trie_test*)b;
 	return skit_slice_ascii_cmp( t1->slice, t2->slice );
 }
 
 static void skit_trie_iter_test(
 	skit_trie *trie,
-	skit_slice_val_tuple *tuples, /* Must be sorted. */
-	size_t n_tuples,
+	skit_trie_test *tests, /* Must be sorted. */
+	size_t n_tests,
 	size_t pos,
 	int recurse )
 {
-	skit_slice prefix = skit_slice_of(tuples[0].slice, 0, pos);
+	skit_slice prefix = skit_slice_of(tests[0].slice, 0, pos);
 	
 	ITER_DEBUG("\n\n");
-	ITER_DEBUG("skit_trie_iter_test(trie, tuples[%ld], %ld, %d), prefix == '%.*s'\n",
-		n_tuples, pos, recurse, sSLENGTH(prefix), sSPTR(prefix));
+	ITER_DEBUG("skit_trie_iter_test(trie, tests[%ld], %ld, %d), prefix == '%.*s'\n",
+		n_tests, pos, recurse, sSLENGTH(prefix), sSPTR(prefix));
 	
 	skit_trie_iter *iter = skit_trie_iter_new(trie, prefix, SKIT_FLAGS_NONE);
 	
@@ -1705,32 +1728,32 @@ static void skit_trie_iter_test(
 		ITER_DEBUG("%s, %d: calling skit_trie_iter_next(iter, \"%.*s\", %ld); i == %d; expect %ld\n",
 			__func__, __LINE__,
 			sSLENGTH(key), sSPTR(key),
-			(size_t)val, i, tuples[i].val);
+			(size_t)val, i, tests[i].val);
 		
-		sASSERT_EQS( tuples[i].slice, key );
-		sASSERT_EQ ( tuples[i].val, (size_t)val, "%d" );
+		sASSERT_EQS( tests[i].slice, key );
+		sASSERT_EQ ( tests[i].val, (size_t)val, "%d" );
 		i++;
 	}
 	
-	sASSERT_EQ( i, n_tuples, "%d" );
+	sASSERT_EQ( i, n_tests, "%d" );
 	
 	skit_trie_iter_free(iter);
 	
-	if ( recurse && n_tuples > 1 )
+	if ( recurse && n_tests > 1 )
 	{
-		uint8_t *key_ptr = sSPTR(tuples[0].slice);
-		size_t   key_len = sSLENGTH(tuples[0].slice);
+		uint8_t *key_ptr = sSPTR(tests[0].slice);
+		size_t   key_len = sSLENGTH(tests[0].slice);
 		uint16_t prev_char = 0x800;
 		uint16_t this_char = (pos == key_len ? 0x800 : key_ptr[pos]);
 		size_t prev_index = 0;
-		for ( i = 1; i < n_tuples; i++ )
+		for ( i = 1; i < n_tests; i++ )
 		{
-			key_ptr = sSPTR(tuples[i].slice);
-			key_len = sSLENGTH(tuples[i].slice);
+			key_ptr = sSPTR(tests[i].slice);
+			key_len = sSLENGTH(tests[i].slice);
 			
 			prev_char = this_char;
 			
-			sASSERT( pos <= key_len ); /* We should reach n_tuples before falling off any cliffs. */
+			sASSERT( pos <= key_len ); /* We should reach n_tests before falling off any cliffs. */
 			if ( pos == key_len )
 				this_char = 0x800; /* Cases where we iterate on exact matches. */
 			else
@@ -1739,25 +1762,26 @@ static void skit_trie_iter_test(
 			if ( this_char != prev_char && i > prev_index )
 			{
 				if ( prev_char < 0x800 )
-					skit_trie_iter_test( trie, &tuples[prev_index], i - prev_index, pos+1, 1 );
+					skit_trie_iter_test( trie, &tests[prev_index], i - prev_index, pos+1, 1 );
 				prev_index = i;
 			}
 		}
 
 		/* Pick up anything left-over. */
-		skit_trie_iter_test( trie, &tuples[prev_index], n_tuples - prev_index, pos+1, 1 );
+		skit_trie_iter_test( trie, &tests[prev_index], n_tests - prev_index, pos+1, 1 );
 	}
 }
 
-static void skit_trie_exhaustive_test( skit_slice* slices, size_t n_slices, int harder )
+static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, int harder )
 {
 	size_t i;
 	skit_trie *trie = skit_trie_new();
 	
-	for ( i = 0; i < n_slices; i++ )
+	/* ----- Get/set ----- */
+	for ( i = 0; i < n_tests; i++ )
 	{
-		/*printf("Going to set with %p, %ld\n", sSPTR(slices[i]), sSLENGTH(slices[i]));*/
-		sASSERT_EQS(skit_trie_set(trie, slices[i], (void*)(i+1), sFLAGS("c")), slices[i]);
+		/*printf("Going to set with %p, %ld\n", sSPTR(tests[i]), sSLENGTH(tests[i]));*/
+		sASSERT_EQS(skit_trie_set(trie, tests[i].slice, (void*)tests[i].val, sFLAGS("c")), tests[i].slice);
 		
 		/*
 		if ( harder )
@@ -1765,7 +1789,7 @@ static void skit_trie_exhaustive_test( skit_slice* slices, size_t n_slices, int 
 		*/
 
 		if ( harder )
-			skit_trie_exhaustive_get_test(trie, slices, i+1, n_slices);
+			skit_trie_exhaustive_get_test(trie, tests, i+1, n_tests, 1);
 	}
 	
 	#if 0
@@ -1777,23 +1801,41 @@ static void skit_trie_exhaustive_test( skit_slice* slices, size_t n_slices, int 
 	#endif
 	
 	if ( !harder )
-		skit_trie_exhaustive_get_test(trie, slices, n_slices, n_slices);
+		skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 1);
 	
-	skit_slice_val_tuple *tuples = skit_malloc(n_slices * sizeof(skit_slice_val_tuple));
-	
-	for ( i = 0; i < n_slices; i++ )
-		skit_slice_val_tuple_ctor(&tuples[i], slices[i], i+1);
-	
-	qsort( tuples, n_slices, sizeof(skit_slice_val_tuple), &skit_trie_cmp_tuple );
+	/* ----- Iteration test ----- */
+	qsort( tests, n_tests, sizeof(skit_trie_test), &skit_trie_cmp_test );
 	
 	int recurse = 0;
 	if ( harder )
 		recurse = 1;
 
 	ITER_DEBUG("\n\n-------- Iteration test begins. ---------\n\n\n");
-	skit_trie_iter_test( trie, tuples, n_slices, 0, recurse );
+	skit_trie_iter_test( trie, tests, n_tests, 0, recurse );
 	
-	skit_free(tuples);
+	/* ----- Case sensitivity ----- */
+	/* It should be possible to do overwriting assignments into all of the
+	keys in a case-insensitive manner without altering the trie.
+	We test this by inserting all of the test islice's and then checking
+	the length and running the get test again.  
+	If these insertions grow the trie, then the length assertion will 
+	catch it. 
+	If these insertions alter the keys then the get_test will catch it.
+	This test should be done last, because it may alter the values
+	corresponding to various keys in unpredictable ways. */
+	size_t length_before = skit_trie_len(trie);
+	for ( i = 0; i < n_tests; i++ )
+	{
+		sASSERT_IEQS(skit_trie_set(trie, tests[i].islice, (void*)tests[i].val, sFLAGS("io")), tests[i].slice);
+		
+		/*
+		if ( harder )
+			skit_trie_dump(trie, skit_stream_stdout);
+		*/
+	}
+	
+	sASSERT_EQ( length_before, skit_trie_len(trie), "%d" );
+	skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 0);
 	
 	skit_trie_free(trie);
 }
@@ -1801,19 +1843,19 @@ static void skit_trie_exhaustive_test( skit_slice* slices, size_t n_slices, int 
 static void skit_trie_unittest_basics()
 {
 	size_t n_tests = 10;
-	skit_slice *slices = skit_malloc(sizeof(skit_slice) * n_tests);
-	slices[0] = sSLICE("abcde"         );
-	slices[1] = sSLICE("abxyz"         );
-	slices[2] = sSLICE("a1234"         );
-	slices[3] = sSLICE("abcd!"         );
-	slices[4] = sSLICE("abcxy"         );
-	slices[5] = sSLICE("abc"           );
-	slices[6] = sSLICE("\0\xFF\0\xFF"  );
-	slices[7] = sSLICE("\0\xFF\x7F"    );
-	slices[8] = sSLICE("\0\x7F\x7F"    );
-	slices[9] = sSLICE(""              );
+	skit_trie_test *tests = skit_malloc(sizeof(skit_trie_test) * n_tests);
+	skit_trie_test_ctor(&tests[0], sSLICE("abcde"        ), sSLICE("Abcde"        ), 1  );
+	skit_trie_test_ctor(&tests[1], sSLICE("abxyz"        ), sSLICE("abXYZ"        ), 2  );
+	skit_trie_test_ctor(&tests[2], sSLICE("a1234"        ), sSLICE("A1234"        ), 3  );
+	skit_trie_test_ctor(&tests[3], sSLICE("abcd!"        ), sSLICE("aBcD!"        ), 4  );
+	skit_trie_test_ctor(&tests[4], sSLICE("abcxy"        ), sSLICE("abCxy"        ), 5  );
+	skit_trie_test_ctor(&tests[5], sSLICE("abc"          ), sSLICE("ABC"          ), 6  );
+	skit_trie_test_ctor(&tests[6], sSLICE("\0\xFF\0\xFF" ), sSLICE("\0\xFF\0\xFF" ), 7  );
+	skit_trie_test_ctor(&tests[7], sSLICE("\0\xFF\x7F"   ), sSLICE("\0\xFF\x7F"   ), 8  );
+	skit_trie_test_ctor(&tests[8], sSLICE("\0\x7F\x7F"   ), sSLICE("\0\x7F\x7F"   ), 9  );
+	skit_trie_test_ctor(&tests[9], sSLICE(""             ), sSLICE(""             ), 10 );
 
-	skit_trie_exhaustive_test(slices, n_tests, 1);
+	skit_trie_exhaustive_test(tests, n_tests, 1);
 	
 	/* Test inserting successively longer keys. */
 	/* (The previous mix tests successively shorter keys.) */
@@ -1826,14 +1868,14 @@ static void skit_trie_unittest_basics()
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde"));
 	sASSERT_EQ((size_t)val, 1, "%d");
 	
-	skit_free(slices);
+	skit_free(tests);
 	
 	printf("  skit_trie_unittest_basics passed.\n");
 }
 
 static void skit_trie_unittest_linear_nodes()
 {
-	skit_slice *slices = skit_malloc(sizeof(skit_slice) * 3);
+	skit_trie_test *tests = skit_malloc(sizeof(skit_trie_test) * 3);
 	size_t i;
 	
 	#define teststr_len  (SKIT__TRIE_NODE_PREALLOC*3 + 2)
@@ -1848,14 +1890,14 @@ static void skit_trie_unittest_linear_nodes()
 	
 	/* "abcdefghijklmnopqrstuvwxyzabcdefg..." */
 	char teststr0[teststr_len+1];
-	slices[0] = skit_slice_of_cstrn(teststr0, teststr_len);
+	tests[0].slice = skit_slice_of_cstrn(teststr0, teststr_len);
 	for ( i = 0; i < teststr_len; i++ )
 		teststr0[i] = 'a' + (i % 26);
 	teststr0[teststr_len] = '\0';
 	
 	/* "abcdefghijklmnopqRSTUVWXYZABCDEFG..." */
 	char teststr1[teststr_len+1];
-	slices[1] = skit_slice_of_cstrn(teststr1, teststr_len);
+	tests[1].slice = skit_slice_of_cstrn(teststr1, teststr_len);
 	memcpy(teststr1, teststr0, teststr_len);
 	for ( i = teststr_mid1; i < teststr_len; i++ )
 		teststr1[i] = skit_char_ascii_to_upper(teststr1[i]);
@@ -1863,13 +1905,21 @@ static void skit_trie_unittest_linear_nodes()
 	
 	/* "abcdefghijklmnopqrs" */
 	char teststr2[teststr_mid2+1];
-	slices[2] = skit_slice_of_cstrn(teststr2, teststr_mid2);
+	tests[2].slice = skit_slice_of_cstrn(teststr2, teststr_mid2);
 	memcpy(teststr2, teststr0, teststr_mid2);
 	teststr2[teststr_mid2] = '\0';
 	
-	skit_trie_exhaustive_test(slices, 3, 1);
+	tests[0].islice = tests[1].slice;
+	tests[1].islice = tests[0].slice;
+	tests[2].islice = tests[2].slice; /* TODO: this test could be better. */
 	
-	skit_free(slices);
+	tests[0].val = 1;
+	tests[1].val = 2;
+	tests[2].val = 3;
+	
+	skit_trie_exhaustive_test(tests, 3, 1);
+	
+	skit_free(tests);
 	
 	printf("  skit_trie_unittest_linear_nodes passed.\n");
 }
@@ -1934,7 +1984,7 @@ static void skit_trie_test_make_trigram(
 
 static void skit_trie_unittest_table_nodes()
 {
-	size_t i;
+	size_t i, j;
 	size_t breadth = SKIT__TRIE_NODE_PREALLOC+1;
 	
 	/* Create a trie of trigrams (and their subsets). */
@@ -1944,21 +1994,49 @@ static void skit_trie_unittest_table_nodes()
 		skit_ipow(breadth, 2)+
 		skit_ipow(breadth, 1)+1;
 	
-	skit_loaf  *loaves = skit_malloc(sizeof(skit_loaf) * n_strings);
-	skit_slice *slices = skit_malloc(sizeof(skit_slice) * n_strings);
+	skit_loaf      *loaves  = skit_malloc(sizeof(skit_loaf) * n_strings);
+	skit_loaf      *iloaves = skit_malloc(sizeof(skit_loaf) * n_strings);
+	skit_trie_test *tests   = skit_malloc(sizeof(skit_trie_test) * n_strings);
 	size_t loaf_index = 0;
 	skit_trie_test_make_trigram( loaves, &loaf_index, n_strings, sSLICE(""), breadth, 0 );
 	
 	for ( i = 0; i < n_strings; i++ )
-		slices[i] = loaves[i].as_slice;
-	
-	skit_trie_exhaustive_test(slices, n_strings, 0);
+	{
+		uint8_t *lptr = sLPTR(loaves[i]);
+		ssize_t len = sLLENGTH(loaves[i]);
+		
+		iloaves[i] = skit_loaf_alloc(len);
+		uint8_t *ilptr = sLPTR(iloaves[i]);
+		
+		/* Reverse casing where it matters. */
+		for ( j = 0; j < len; j++ )
+		{
+			uint8_t c = lptr[j];
+			if ( c == skit_char_ascii_to_lower(c) )
+				ilptr[j] = skit_char_ascii_to_upper(c);
+			else
+				ilptr[j] = skit_char_ascii_to_lower(c);
+		}
+	}
 	
 	for ( i = 0; i < n_strings; i++ )
+	{
+		tests[i].slice = loaves[i].as_slice;
+		tests[i].islice = iloaves[i].as_slice;
+		tests[i].val = i+1;
+	}
+	
+	skit_trie_exhaustive_test(tests, n_strings, 0);
+	
+	for ( i = 0; i < n_strings; i++ )
+	{
 		skit_loaf_free(&loaves[i]);
+		skit_loaf_free(&iloaves[i]);
+	}
 	
 	skit_free(loaves);
-	skit_free(slices);
+	skit_free(iloaves);
+	skit_free(tests);
 }
 
 void skit_trie_unittest()
