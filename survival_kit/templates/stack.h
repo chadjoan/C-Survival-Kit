@@ -43,7 +43,7 @@ SKIT_T_NAME (required) -
 	skit_int_stack  list;        // The type 'skit_int_stack' is defined.
 	skit_int_snode  node;        // The type 'skit_int_snode' is defined.
 	node.val = 42;
-	skit_int_stack_init(&list);        // The function 'skit_int_stack_init' is defined.
+	skit_int_stack_ctor(&list);        // The function 'skit_int_stack_ctor' is defined.
 	skit_int_stack_push(&list,&node);  // The function 'skit_int_stack_push' is defined.
 	
 	EXAMPLE2:
@@ -56,7 +56,7 @@ SKIT_T_NAME (required) -
 	skit_my_type_snode  node;        // The type 'skit_my_type_snode' is defined.
 	my_type_with_a_really_long_name foo = create_my_type(...);
 	node.val = foo;
-	skit_my_type_stack_init(&list);        // The function 'skit_my_type_stack_init' is defined.
+	skit_my_type_stack_ctor(&list);        // The function 'skit_my_type_stack_ctor' is defined.
 	skit_my_type_stack_push(&list,&node);  // The function 'skit_my_type_stack_push' is defined.
 
 SKIT_T_FUNC_ATTR (optional, defaualts to nothing) - 
@@ -108,7 +108,7 @@ This is an in-place operation.  The result is provided as a return value so
   that this function may appear within expressions.
 Returns: The list object that was passed in, initialized to an empty list.
 */
-SKIT_T(stack) *SKIT_T(stack_init)(SKIT_T(stack) *list);
+SKIT_T(stack) *SKIT_T(stack_ctor)(SKIT_T(stack) *list);
 
 /** Pushes a stnode onto the front of the list. O(1) operation. */
 void SKIT_T(stack_push)(SKIT_T(stack) *list, SKIT_T(stnode) *node);

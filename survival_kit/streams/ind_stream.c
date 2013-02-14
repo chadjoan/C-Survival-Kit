@@ -61,10 +61,10 @@ void skit_ind_stream_static_init()
 
 /* ------------------------------------------------------------------------- */
 
-void skit_ind_stream_init(skit_ind_stream *istream, skit_stream *backing)
+void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing)
 {
 	skit_stream *stream = &istream->as_stream;
-	skit_stream_init(stream);
+	skit_stream_ctor(stream);
 	stream->meta.vtable_ptr = &skit_ind_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_ind_stream");
 	
@@ -437,7 +437,7 @@ static void skit_ind_stream_run_utest(
 	skit_text_stream tstream;
 	skit_ind_stream istream;
 	skit_text_stream_init_str(&tstream, initial_contents);
-	skit_ind_stream_init(&istream, &tstream.as_stream);
+	skit_ind_stream_ctor(&istream, &tstream.as_stream);
 	skit_stream *stream = &istream.as_stream;
 	
 	utest_function(stream, stream, &skit_ind_stream_utest_contents);

@@ -26,9 +26,9 @@ void skit_text_stream_static_init();
 
 /**
 Constructor
-Allocates a new skit_text_stream and calls skit_text_stream_init(*) on it.
+Allocates a new skit_text_stream and calls skit_text_stream_ctor(*) on it.
 If the caller wishes to stack-allocate the new instance, then they do not need
-to call this function.  They must instead call skit_text_stream_init(*)
+to call this function.  They must instead call skit_text_stream_ctor(*)
 directly.
 */
 skit_text_stream *skit_text_stream_new();
@@ -39,7 +39,7 @@ This will return NULL if the given stream isn't actually a skit_text_stream.
 */
 skit_text_stream *skit_text_stream_downcast(const skit_stream *stream);
 
-void skit_text_stream_init(skit_text_stream *tstream);
+void skit_text_stream_ctor(skit_text_stream *tstream);
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
 skit_slice skit_text_stream_readln(skit_text_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_read(skit_text_stream *stream, skit_loaf *buffer, size_t nbytes);

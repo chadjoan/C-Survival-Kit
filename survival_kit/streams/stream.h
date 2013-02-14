@@ -63,7 +63,7 @@ Do not try to construct a pure skit_stream object: it is considered an abstract
 class and none of its methods will be able to dispatch to anything, which
 would result in thrown exceptions or some form of crashing.
 */
-void skit_stream_init(skit_stream *stream);
+void skit_stream_ctor(skit_stream *stream);
 
 /**
 (virtual)

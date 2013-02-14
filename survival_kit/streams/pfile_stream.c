@@ -86,7 +86,7 @@ void skit_pfile_stream_static_init()
 skit_pfile_stream *skit_pfile_stream_new()
 {
 	skit_pfile_stream *result = (skit_pfile_stream*)skit_malloc(sizeof(skit_pfile_stream));
-	skit_pfile_stream_init(result);
+	skit_pfile_stream_ctor(result);
 	return result;
 }
 
@@ -103,10 +103,10 @@ skit_pfile_stream *skit_pfile_stream_downcast(const skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_pfile_stream_init(skit_pfile_stream *pstream)
+void skit_pfile_stream_ctor(skit_pfile_stream *pstream)
 {
 	skit_stream *stream = &(pstream->as_stream);
-	skit_stream_init(stream);
+	skit_stream_ctor(stream);
 	stream->meta.vtable_ptr = &skit_pfile_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_pfile_stream");
 	
@@ -697,7 +697,7 @@ sSCOPE
 	skit_pfile_stream_flush(ctx->under_test);
 	
 	skit_pfile_stream pstream;
-	skit_pfile_stream_init(&pstream);
+	skit_pfile_stream_ctor(&pstream);
 	
 	/*
 	Getting unittests to pass on VMS was ... challenging.
@@ -785,7 +785,7 @@ void skit_pfile_stream_unittests()
 	skit_pfile_stream pstream;
 	printf("skit_pfile_stream_unittests()\n");
 	
-	skit_pfile_stream_init(&pstream);
+	skit_pfile_stream_ctor(&pstream);
 	
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READLN_UNITTEST_CONTENTS),     &skit_stream_readln_unittest);
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_READ_UNITTEST_CONTENTS),       &skit_stream_read_unittest);

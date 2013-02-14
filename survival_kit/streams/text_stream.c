@@ -53,7 +53,7 @@ void skit_text_stream_static_init()
 skit_text_stream *skit_text_stream_new()
 {
 	skit_text_stream *result = skit_malloc(sizeof(skit_text_stream));
-	skit_text_stream_init(result);
+	skit_text_stream_ctor(result);
 	return result;
 }
 
@@ -70,10 +70,10 @@ skit_text_stream *skit_text_stream_downcast(const skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_text_stream_init(skit_text_stream *tstream)
+void skit_text_stream_ctor(skit_text_stream *tstream)
 {
 	skit_stream *stream = &tstream->as_stream;
-	skit_stream_init(stream);
+	skit_stream_ctor(stream);
 	stream->meta.vtable_ptr = &skit_text_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_text_stream");
 	
@@ -88,7 +88,7 @@ void skit_text_stream_init(skit_text_stream *tstream)
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice)
 {
 	skit_stream *stream = &tstream->as_stream;
-	skit_stream_init(stream);
+	skit_stream_ctor(stream);
 	stream->meta.vtable_ptr = &skit_text_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_text_stream");
 	

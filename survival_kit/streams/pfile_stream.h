@@ -53,9 +53,9 @@ any way.
 
 /**
 Constructor
-Allocates a new skit_pfile_stream and calls skit_pfile_stream_init(*) on it.
+Allocates a new skit_pfile_stream and calls skit_pfile_stream_ctor(*) on it.
 If the caller wishes to stack-allocate the new instance, then they do not need
-to call this function.  They must instead call skit_pfile_stream_init(*)
+to call this function.  They must instead call skit_pfile_stream_ctor(*)
 directly.
 */
 skit_pfile_stream *skit_pfile_stream_new();
@@ -66,7 +66,7 @@ This will return NULL if the given stream isn't actually a skit_pfile_stream.
 */
 skit_pfile_stream *skit_pfile_stream_downcast(const skit_stream *stream);
 
-void skit_pfile_stream_init(skit_pfile_stream *stream);
+void skit_pfile_stream_ctor(skit_pfile_stream *stream);
 skit_slice skit_pfile_stream_readln(skit_pfile_stream *stream, skit_loaf *buffer);
 skit_slice skit_pfile_stream_read(skit_pfile_stream *stream, skit_loaf *buffer, size_t nbytes);
 skit_slice skit_pfile_stream_read_fn(skit_pfile_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));

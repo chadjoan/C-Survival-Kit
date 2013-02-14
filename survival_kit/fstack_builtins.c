@@ -61,7 +61,7 @@ void skit_fstack_unittest()
 	int32_t *i32;
 	skit_i32_stnode *node_save;
 	skit_i32_fstack i32stack;
-	skit_i32_fstack_init(&i32stack);
+	skit_i32_fstack_ctor(&i32stack);
 	i32 = skit_i32_fstack_alloc(&i32stack,&skit_malloc);
 	*i32 = 1;
 	

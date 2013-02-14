@@ -143,7 +143,7 @@ void skit_stream_static_init()
 
 /* ------------------------ virtual methods -------------------------------- */
 
-void skit_stream_init(skit_stream *stream)
+void skit_stream_ctor(skit_stream *stream)
 {
 	skit_stream_internal *streami = &stream->as_internal;
 	streami->meta.vtable_ptr = &skit_stream_vtable;
@@ -327,7 +327,7 @@ void skit_stream_throw_exc( skit_err_code ecode, skit_stream *stream, const char
 sSCOPE
 	SKIT_USE_FEATURE_EMULATION;
 	skit_text_stream err_stream;
-	skit_text_stream_init(&err_stream);
+	skit_text_stream_ctor(&err_stream);
 	va_list vl;
 	
 	/* Prevent memory leaks. */

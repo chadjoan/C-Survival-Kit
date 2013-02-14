@@ -77,11 +77,11 @@ ssize_t skit_stack_depth( skit_thread_context *ctx )
 
 void skit__thread_context_ctor( skit_thread_context *ctx )
 {
-	skit_jmp_fstack_init(&ctx->try_jmp_stack);
-	skit_jmp_fstack_init(&ctx->exc_jmp_stack);
-	skit_jmp_fstack_init(&ctx->scope_jmp_stack);
-	skit_debug_fstack_init(&ctx->debug_info_stack);
-	skit_exc_fstack_init(&ctx->exc_instance_stack);
+	skit_jmp_fstack_ctor(&ctx->try_jmp_stack);
+	skit_jmp_fstack_ctor(&ctx->exc_jmp_stack);
+	skit_jmp_fstack_ctor(&ctx->scope_jmp_stack);
+	skit_debug_fstack_ctor(&ctx->debug_info_stack);
+	skit_exc_fstack_ctor(&ctx->exc_instance_stack);
 	
 	/* 16kB has GOT to be enough.  Riiight? */
 	ctx->error_text_buffer_size = 16384;

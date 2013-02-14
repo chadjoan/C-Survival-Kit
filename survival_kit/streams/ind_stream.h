@@ -34,9 +34,9 @@ void skit_ind_stream_static_init();
 
 /**
 Constructor
-Allocates a new skit_ind_stream and calls skit_ind_stream_init(*) on it.
+Allocates a new skit_ind_stream and calls skit_ind_stream_ctor(*) on it.
 If the caller wishes to stack-allocate the new instance, then they do not need
-to call this function.  They must instead call skit_ind_stream_init(*)
+to call this function.  They must instead call skit_ind_stream_ctor(*)
 directly.
 */
 skit_ind_stream *skit_ind_stream_new(skit_stream *backing);
@@ -47,7 +47,7 @@ This will return NULL if the given stream isn't actually a skit_ind_stream.
 */
 skit_ind_stream *skit_ind_stream_downcast(const skit_stream *stream);
 
-void skit_ind_stream_init(skit_ind_stream *istream, skit_stream *backing);
+void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing);
 skit_slice skit_ind_stream_readln(skit_ind_stream *stream, skit_loaf *buffer);
 skit_slice skit_ind_stream_read(skit_ind_stream *stream, skit_loaf *buffer, size_t nbytes);
 skit_slice skit_ind_stream_read_fn(skit_ind_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));

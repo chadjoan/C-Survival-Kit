@@ -31,7 +31,7 @@ void skit_throw_exception_no_ctx(
 
 #include <stdio.h>
 
-SKIT_T(stack) *SKIT_T(stack_init)(SKIT_T(stack) *stack)
+SKIT_T(stack) *SKIT_T(stack_ctor)(SKIT_T(stack) *stack)
 {
 	sASSERT(stack != NULL);
 	stack->front = NULL;
@@ -121,7 +121,7 @@ SKIT_T(stack) *SKIT_T(stack_rdup)(SKIT_T(stack) *stack)
 	sASSERT(stack != NULL);
 	
 	SKIT_T(stack) *new_stack = skit_malloc(sizeof(SKIT_T(stack)));
-	SKIT_T(stack_init)(new_stack);
+	SKIT_T(stack_ctor)(new_stack);
 	
 	SKIT_T(stack_walk)(stack, &SKIT_T(stack_rdup_iter), new_stack, NULL, NULL);
 	
@@ -142,7 +142,7 @@ SKIT_T(stack) *SKIT_T(stack_dup)(SKIT_T(stack) *stack)
 	sASSERT(stack != NULL);
 	
 	SKIT_T(stack) *new_stack = skit_malloc(sizeof(SKIT_T(stack)));
-	SKIT_T(stack_init)(new_stack);
+	SKIT_T(stack_ctor)(new_stack);
 	
 	SKIT_T(stack_walk)(stack, &SKIT_T(stack_dup_iter), new_stack, NULL, NULL);
 	

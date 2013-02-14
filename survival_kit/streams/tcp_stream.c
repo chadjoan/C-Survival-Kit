@@ -103,7 +103,7 @@ void skit_tcp_stream_static_init()
 skit_tcp_stream *skit_tcp_stream_new()
 {
 	skit_tcp_stream *result = skit_malloc(sizeof(skit_tcp_stream));
-	skit_tcp_stream_init(result);
+	skit_tcp_stream_ctor(result);
 	return result;
 }
 
@@ -120,10 +120,10 @@ skit_tcp_stream *skit_tcp_stream_downcast(const skit_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_tcp_stream_init(skit_tcp_stream *tstream)
+void skit_tcp_stream_ctor(skit_tcp_stream *tstream)
 {
 	skit_stream *stream = &(tstream->as_stream);
-	skit_stream_init(stream);
+	skit_stream_ctor(stream);
 	stream->meta.vtable_ptr = &skit_tcp_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_tcp_stream");
 	
@@ -616,7 +616,7 @@ static skit_tcp_stream *skit_start_tcp_test_client(int port)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	skit_tcp_stream *result = skit_tcp_stream_new();
-	sTRACE(skit_tcp_stream_init(result));
+	sTRACE(skit_tcp_stream_ctor(result));
 	sTRACE(skit_tcp_stream_connect(result, sSLICE("127.0.0.1"), port));
 	return result;
 }

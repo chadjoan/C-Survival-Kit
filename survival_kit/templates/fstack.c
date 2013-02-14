@@ -31,11 +31,11 @@ void skit_throw_exception_no_ctx(
 #include <stdlib.h> /* for size_t */
 #include <stdio.h>
 
-void SKIT_T(fstack_init)( SKIT_T(fstack) *stack )
+void SKIT_T(fstack_ctor)( SKIT_T(fstack) *stack )
 {
 	sASSERT(stack != NULL);
-	SKIT_T(stack_init)(&(stack->unused));
-	SKIT_T(stack_init)(&(stack->used));
+	SKIT_T(stack_ctor)(&(stack->unused));
+	SKIT_T(stack_ctor)(&(stack->used));
 }
 
 void SKIT_T(fstack_grow)( SKIT_T(fstack) *stack, void *node )

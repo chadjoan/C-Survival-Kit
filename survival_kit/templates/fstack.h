@@ -37,7 +37,7 @@ EXAMPLE:
 
 int end_was_reached = 0;
 skit_jmp_fstack stack;
-skit_jmp_fstack_init(&stack);
+skit_jmp_fstack_ctor(&stack);
 if (stack.used.length <= 0)
 	skit_jmp_fstack_grow(&stack,alloca(sizeof(skit_jmp_stnode*)));
 if( setjmp(*skit_jmp_fstack_push(&stack)) == 0 )
@@ -92,7 +92,7 @@ SKIT_T_NAME (required) -
 	#undefine SKIT_T_ELEM_TYPE
 	#undefine SKIT_T_NAME
 	skit_int_fstack  stack;        // The type 'skit_int_fstack' is defined.
-	skit_int_fstack_init(&stack);        // The function 'skit_int_fstack_init' is defined.
+	skit_int_fstack_ctor(&stack);        // The function 'skit_int_fstack_ctor' is defined.
 
 SKIT_T_FUNC_ATTR (optional, defaualts to nothing) - 
 	Specifies function attributes to be used on all functions created.
@@ -130,7 +130,7 @@ struct SKIT_T(fstack)
 Initializes the freestack and any substacks.
 Call this on a freestack before calling any of the other freestack functions.
 */
-void SKIT_T(fstack_init)( SKIT_T(fstack) *stack );
+void SKIT_T(fstack_ctor)( SKIT_T(fstack) *stack );
 
 /**
 This is a way to check if a free stack has any free nodes left or not.

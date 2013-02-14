@@ -1683,10 +1683,7 @@ static void skit_trie_exhaustive_get_test(
 		if ( test_vals )
 			sASSERT_EQ((size_t)val, tests[i].val, "%d");
 		
-		SKIT_LOAF_ON_STACK(buffer, 64);
-		skit_slice esc = skit_slice_escapify(tests[i].islice, &buffer);
 		sASSERT_IEQS(skit_trie_get(trie, tests[i].islice, &val, SKIT_FLAG_I), tests[i].slice );
-		skit_loaf_free(&buffer);
 		/* sASSERT_EQ((size_t)val, tests[i].val, "%d"); */
 	}
 	

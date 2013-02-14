@@ -220,7 +220,7 @@ static void skit_fill_exception(
 		exc->error_len  = error_len;
 		
 		exc->debug_info_stack = skit_malloc(sizeof(skit_debug_stack));
-		skit_debug_stack_init(exc->debug_info_stack);
+		skit_debug_stack_ctor(exc->debug_info_stack);
 		
 		skit_debug_stnode *fi = skit_malloc(sizeof(skit_debug_stnode));
 		skit_debug_info_store(&fi->val, line, file, func, " <- exception happened here.");

@@ -69,7 +69,7 @@ void skit_stack_unittest()
 	node2.val = 42;
 	node3.val = 1337;
 	
-	skit_utest_int_stack_init(&list);
+	skit_utest_int_stack_ctor(&list);
 	assert(list.length == 0);
 	assert(list.front == NULL);
 	assert(list.back == NULL);
