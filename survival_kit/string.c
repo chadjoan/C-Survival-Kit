@@ -1034,6 +1034,34 @@ static void skit_slice_to_lower_test()
 
 /* ------------------------------------------------------------------------- */
 
+void skit_slice_ascii_to_upper(skit_slice *slice)
+{
+	sASSERT(slice != NULL);
+	skit_utf8c *txt = sSPTR(*slice);
+	ssize_t length = sSLENGTH(*slice);
+	ssize_t i;
+	for ( i = 0; i < length; i++ )
+		txt[i] = skit_char_ascii_to_upper(txt[i]);
+}
+
+void skit_slice_to_upper(skit_slice *slice)
+{
+	skit_slice_ascii_to_upper(slice);
+}
+
+static void skit_slice_to_upper_test()
+{
+	skit_loaf loaf = skit_loaf_copy_cstr("fOObaR");
+	skit_slice slice = loaf.as_slice;
+	skit_slice_to_upper(&slice);
+	sASSERT_EQS(slice,sSLICE("FOOBAR"));
+	skit_loaf_free(&loaf);
+	
+	printf("  skit_slice_to_upper_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 int skit_char_ascii_ccmp(skit_utf8c c1, skit_utf8c c2, int case_sensitive)
 {
 	if ( case_sensitive )
@@ -1700,6 +1728,7 @@ void skit_string_unittest()
 	skit_char_ascii_to_lower_test();
 	skit_char_ascii_to_upper_test();
 	skit_slice_to_lower_test();
+	skit_slice_to_upper_test();
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();
 	skit_slice_comparison_ops_test();
