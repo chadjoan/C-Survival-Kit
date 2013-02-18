@@ -75,6 +75,7 @@ extern skit_err_code SKIT_IO_EXCEPTION;
 extern skit_err_code SKIT_FILE_IO_EXCEPTION;
 extern skit_err_code SKIT_TCP_IO_EXCEPTION;
 extern skit_err_code SKIT_FILE_NOT_FOUND;
+extern skit_err_code SKIT_END_OF_FILE;
 
 int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 );
 

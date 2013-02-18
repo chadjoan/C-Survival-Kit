@@ -35,6 +35,7 @@ skit_err_code SKIT_IO_EXCEPTION;
 skit_err_code SKIT_FILE_IO_EXCEPTION;
 skit_err_code SKIT_TCP_IO_EXCEPTION;
 skit_err_code SKIT_FILE_NOT_FOUND;
+skit_err_code SKIT_END_OF_FILE;
 
 static int skit_exceptions_initialized = 0;
 
@@ -59,6 +60,7 @@ void skit_init_exceptions()
 	SKIT_REGISTER_EXCEPTION(SKIT_FILE_IO_EXCEPTION,     SKIT_IO_EXCEPTION,      "File I/O exception.");
 	SKIT_REGISTER_EXCEPTION(SKIT_TCP_IO_EXCEPTION,      SKIT_IO_EXCEPTION,      "TCP Network I/O exception.");
 	SKIT_REGISTER_EXCEPTION(SKIT_FILE_NOT_FOUND,        SKIT_FILE_IO_EXCEPTION, "File not found.");
+	SKIT_REGISTER_EXCEPTION(SKIT_END_OF_FILE,           SKIT_FILE_IO_EXCEPTION, "Attempt to access past end of file.");
 
 	skit_exceptions_initialized = 1;
 }

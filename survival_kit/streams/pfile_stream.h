@@ -52,7 +52,6 @@ any way.
 #define skit_stream_stderr (&skit_pfile_stream_stderr->as_stream)
 
 /**
-Constructor
 Allocates a new skit_pfile_stream and calls skit_pfile_stream_ctor(*) on it.
 If the caller wishes to stack-allocate the new instance, then they do not need
 to call this function.  They must instead call skit_pfile_stream_ctor(*)
