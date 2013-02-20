@@ -66,6 +66,8 @@ sASSERT_EQ(moreflags & SKIT_FLAG_Q, SKIT_FLAG_Q, "%x");
 
 #include <inttypes.h>
 
+#include "survival_kit/feature_emulation/exception.h"
+
 extern skit_err_code SKIT_BAD_FLAGS;
 
 /* Do not call directly.  skit_init() should handle this. */

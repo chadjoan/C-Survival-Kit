@@ -836,19 +836,28 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 	const uint8_t *key_ptr = (const uint8_t*)sSPTR(key);
 	ENTRY_DEBUG("skit_trie_set(trie, \"%.*s\", %p, %x)\n", (int)key_len, key_ptr, value, flags);
 	
+	sENFORCE_MSG(trie != NULL, "NULL trie given in call to skit_trie_set.");
 	sENFORCE_MSG(key_ptr != NULL, "NULL key given in call to skit_trie_set.");
 	
 	if ( trie->iterator_count > 0 )
+	{
+		char flags_str[SKIT_FLAGS_BUF_SIZE];
+		skit_flags_to_str(flags, flags_str);
 		sTHROW(SKIT_TRIE_WRITE_IN_ITERATION,
 			"Call to skit_trie_set during iteration. #iters = %d, key = \"%.*s\", flags = \"%s\"",
-			trie->iterator_count, key_len, key_ptr, flags);
+			trie->iterator_count, key_len, key_ptr, flags_str);
+	}
 
 	skit_trie_enforce_valid_flags(flags, CREATE | OVERWRITE | ICASE);
 	
 	if ( !(flags & (CREATE | OVERWRITE)) )
+	{
+		char flags_str[SKIT_FLAGS_BUF_SIZE];
+		skit_flags_to_str(flags, flags_str);
 		sTHROW(SKIT_TRIE_BAD_FLAGS,
 			"Call to skit_trie_set without providing 'c' or 'o' flags. key = \"%.*s\", flags = \"%s\"",
-			key_len, key_ptr, flags);
+			key_len, key_ptr, flags_str);
+	}
 
 	if ( key_len > sLLENGTH(trie->key_return_buf) )
 		trie->key_return_buf = *skit_loaf_resize(&trie->key_return_buf, key_len);
@@ -933,9 +942,13 @@ skit_slice skit_trie_remove( skit_trie *trie, const skit_slice key, skit_flags f
 	const uint8_t *key_ptr = (const uint8_t*)sSPTR(key);
 	
 	if ( trie->iterator_count > 0 )
+	{
+		char flags_str[SKIT_FLAGS_BUF_SIZE];
+		skit_flags_to_str(flags, flags_str);
 		sTHROW(SKIT_TRIE_WRITE_IN_ITERATION,
 			"Call to skit_trie_remove during iteration. #iters = %d, key = \"%.*s\", flags = \"%s\"",
-			trie->iterator_count, key_len, key_ptr, flags);
+			trie->iterator_count, key_len, key_ptr, flags_str);
+	}
 
 	printf("%s, %d: Stub!  Not implemented.\n", __func__, __LINE__);
 	return skit_slice_null();
@@ -1398,9 +1411,13 @@ skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, sk
 	const uint8_t *key_ptr = (const uint8_t*)sSPTR(prefix);
 
 	if ( flags & (CREATE | OVERWRITE) )
+	{
+		char flags_str[SKIT_FLAGS_BUF_SIZE];
+		skit_flags_to_str(flags, flags_str);
 		sTHROW(SKIT_TRIE_BAD_FLAGS,
 			"Call to skit_trie_iter_new with 'c' or 'o' flags. These are invalid for iteration. prefix = \"%.\", flags = \"%s\"",
-			key_len, key_ptr, flags);
+			key_len, key_ptr, flags_str);
+	}
 	
 	size_t longest_key_len = sLLENGTH(trie->key_return_buf);
 	
