@@ -26,9 +26,9 @@ struct skit_trie_node
 {
 	union
 	{
-		skit_trie_node *nodes;
-		skit_trie_node **node_table;
-	};
+		skit_trie_node *array;
+		skit_trie_node **table;
+	} nodes;
 	const void *value;
 	uint16_t nodes_len;
 	uint8_t  have_value;

@@ -234,7 +234,7 @@ static skit_trie_coords skit_trie_next_node(
 		}
 
 		skit_trie_accumulate_key(trie, start_pos, (const uint8_t*)current->chars, current->chars_len);
-		return skit_trie_continue_lookup(&current->nodes[0], pos);
+		return skit_trie_continue_lookup(&current->nodes.array[0], pos);
 	}
 	else if ( current->chars_len <= SKIT__TRIE_NODE_PREALLOC )
 	{
@@ -261,7 +261,7 @@ static skit_trie_coords skit_trie_next_node(
 			return skit_trie_stop_lookup(current, pos, 0);
 
 		skit_trie_accumulate_key(trie, pos, &current->chars[i], 1);
-		return skit_trie_continue_lookup(&current->nodes[i], pos+1);
+		return skit_trie_continue_lookup(&current->nodes.array[i], pos+1);
 	}
 	else
 	{
@@ -278,12 +278,12 @@ static skit_trie_coords skit_trie_next_node(
 
 		skit_trie_node *next_node = NULL;
 		if ( case_sensitive )
-			next_node = current->node_table[key[pos]];
+			next_node = current->nodes.table[key[pos]];
 		else
 		{
-			next_node = current->node_table[skit_char_ascii_to_upper(key[pos])];
+			next_node = current->nodes.table[skit_char_ascii_to_upper(key[pos])];
 			if ( next_node == NULL )
-				next_node = current->node_table[skit_char_ascii_to_lower(key[pos])];
+				next_node = current->nodes.table[skit_char_ascii_to_lower(key[pos])];
 		}
 		
 		if ( next_node == NULL )
@@ -345,22 +345,22 @@ static void skit_trie_node_dtor(skit_trie_node *node)
 	if ( node->nodes_len <= SKIT__TRIE_NODE_PREALLOC )
 	{
 		for(; i < node->nodes_len; i++ )
-			skit_trie_node_dtor(&node->nodes[i]);
+			skit_trie_node_dtor(&node->nodes.array[i]);
 		
-		skit_free(node->nodes);
+		skit_free(node->nodes.array);
 	}
 	else
 	{
 		for(; i < 256; i++ )
 		{
-			if ( node->node_table[i] != NULL )
+			if ( node->nodes.table[i] != NULL )
 			{
-				skit_trie_node_dtor(node->node_table[i]);
-				skit_free(node->node_table[i]);
+				skit_trie_node_dtor(node->nodes.table[i]);
+				skit_free(node->nodes.table[i]);
 			}
 		}
 		
-		skit_free(node->node_table);
+		skit_free(node->nodes.table);
 	}
 }
 
@@ -452,7 +452,7 @@ skit_slice skit_trie_getc( skit_trie *trie, const char *key, void **value, skit_
 
 static void skit_trie_node_ctor( skit_trie_node *node )
 {
-	node->nodes = NULL;
+	node->nodes.array = NULL;
 	node->value = NULL;
 	node->nodes_len = 0;
 	node->chars_len = 0;
@@ -529,7 +529,7 @@ static void skit_trie_node_insert_non0_str(
 
 	memcpy(node->chars, str_ptr, node->chars_len);
 	node->nodes_len = 1;
-	node->nodes = next_node;
+	node->nodes.array = next_node;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -591,7 +591,7 @@ static void skit_trie_split_table_node(
 	uint8_t new_char = key_ptr[coords.pos];
 
 	/* skit_trie_finish_tail ensures that the rest of the key gets accounted for. */
-	node->node_table[new_char] =
+	node->nodes.table[new_char] =
 		skit_trie_finish_tail(skit_trie_node_new(), coords, key_ptr, key_len, value);
 
 	(node->nodes_len)++;
@@ -618,7 +618,7 @@ static void skit_trie_split_multi_to_table(
 		new_node_array[i] = NULL;
 
 	/* COPY all of the nodes out of the node->nodes array and into their */
-	/*   own blocks of memory, which are then indexed by node->node_table. */
+	/*   own blocks of memory, which are then indexed by node->nodes.table. */
 	/* The copying is important.  Since these keys might be removed later, */
 	/*   it needs to be possible to call skit_free on each individual node. */
 	/*   Having some, but not all, of the table's nodes be allocated in the */
@@ -632,19 +632,19 @@ static void skit_trie_split_multi_to_table(
 	{
 		sASSERT(node->chars[i] != new_char);
 		skit_trie_node *new_node = skit_malloc(sizeof(skit_trie_node));
-		memcpy(new_node, &node->nodes[i], sizeof(skit_trie_node));
+		memcpy(new_node, &node->nodes.array[i], sizeof(skit_trie_node));
 		new_node_array[node->chars[i]] = new_node;
 	}
 
 	/* Free the original chunk of nodes. */
-	skit_free(node->nodes);
+	skit_free(node->nodes.array);
 
 	/* Replace it with the new node array/table. */
-	node->node_table = new_node_array;
+	node->nodes.table = new_node_array;
 
 	/* Do the value insertion. */
 	/* skit_trie_finish_tail ensures that the rest of the key gets accounted for. */
-	node->node_table[new_char] =
+	node->nodes.table[new_char] =
 		skit_trie_finish_tail(skit_trie_node_new(), coords, key_ptr, key_len, value);
 
 	/* Update length metadata. */
@@ -682,11 +682,11 @@ static void skit_trie_split_multi_node(
 	*/
 	
 	(node->nodes_len)++;
-	node->nodes = skit_realloc( node->nodes, sizeof(skit_trie_node) * node->nodes_len);
+	node->nodes.array = skit_realloc( node->nodes.array, sizeof(skit_trie_node) * node->nodes_len);
 
 	(node->chars_len)++;
 	node->chars[node->chars_len - 1] = key_ptr[coords.pos];
-	skit_trie_node *new_node = &node->nodes[node->nodes_len - 1];
+	skit_trie_node *new_node = &node->nodes.array[node->nodes_len - 1];
 	skit_trie_finish_tail(new_node, coords, key_ptr, key_len, value);
 }
 
@@ -722,11 +722,11 @@ static void skit_trie_split_linear_node(
 		/* Avoid copying and temporary allocations. */
 		/* We allow cnode0 to remain where it is, and just create a new */
 		/*   block of memory for the new array of nodes. */
-		skit_trie_node *cnode0 = &node->nodes[0];
+		skit_trie_node *cnode0 = &node->nodes.array[0];
 
-		node->nodes = skit_malloc(2 * sizeof(skit_trie_node));
-		skit_trie_node *node0 = &node->nodes[0];
-		skit_trie_node *node1 = &node->nodes[1];
+		node->nodes.array = skit_malloc(2 * sizeof(skit_trie_node));
+		skit_trie_node *node0 = &node->nodes.array[0];
+		skit_trie_node *node1 = &node->nodes.array[1];
 
 		/* Populate node0. */
 		const uint8_t *node0_str = (const uint8_t*)node->chars + 1;
@@ -781,11 +781,11 @@ static void skit_trie_split_linear_node(
 		node0->chars_len = copy_len;
 
 		/* Transfer the tail (cnode0 in the drawing) to the new node. */
-		node0->nodes = node->nodes;
+		node0->nodes.array = node->nodes.array;
 		node0->nodes_len = 1;
 
 		/* Transfer the new node (node0) to the original node. */
-		node->nodes = node0;
+		node->nodes.array = node0;
 		sASSERT(node->nodes_len == 1);
 		node->chars_len = coords.n_chars_into_node;
 
@@ -973,13 +973,13 @@ static int32_t skit_trie_count_leaves( const skit_trie_node *node )
 	if ( node->nodes_len <= SKIT__TRIE_NODE_PREALLOC )
 	{
 		for(; i < node->nodes_len; i++ )
-			result += skit_trie_count_leaves(&node->nodes[i]);
+			result += skit_trie_count_leaves(&node->nodes.array[i]);
 	}
 	else
 	{
 		for(; i < 256; i++ )
-			if ( node->node_table[i] != NULL )
-				result += skit_trie_count_leaves(node->node_table[i]);
+			if ( node->nodes.table[i] != NULL )
+				result += skit_trie_count_leaves(node->nodes.table[i]);
 	}
 
 	return result;
@@ -1175,7 +1175,7 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 		skit_trie_ndraw( dst, &cursor, delimiter, 1 );
 		skit_trie_draw( dst, &cursor, " " );
 		
-		skit_trie_draw_node( dst, &node->nodes[0], cursor.x, y1, y2 );
+		skit_trie_draw_node( dst, &node->nodes.array[0], cursor.x, y1, y2 );
 	}
 	else if ( node->nodes_len <= SKIT__TRIE_NODE_PREALLOC )
 	{
@@ -1202,7 +1202,7 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 			.                      `
 			. construct that will be filled in later. */
 			skit_trie_draw_horiz_branch(
-				dst, &node->nodes[i], node->chars[i], cursor.x+2, 
+				dst, &node->nodes.array[i], node->chars[i], cursor.x+2, 
 				&cy1, &cy2, &vert_branch_top, &vert_branch_bottom);
 		}
 		
@@ -1228,7 +1228,7 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 		
 		for( i = 0; i < 256; i++ )
 		{
-			if ( node->node_table[i] == NULL )
+			if ( node->nodes.table[i] == NULL )
 				continue;
 			
 			/* x+4 makes room for the vertical branch
@@ -1237,7 +1237,7 @@ static void skit_trie_draw_node( skit_trie_drawing *dst, const skit_trie_node *n
 			.                      `
 			. construct that will be filled in later. */
 			skit_trie_draw_horiz_branch(
-				dst, node->node_table[i], i, cursor.x+4,
+				dst, node->nodes.table[i], i, cursor.x+4,
 				&cy1, &cy2, &vert_branch_top, &vert_branch_bottom);
 		}
 		
@@ -1464,7 +1464,7 @@ skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, sk
 		/* Update coords to point to the next node. */
 		coords.pos += copy_len;
 		coords.n_chars_into_node = 0;
-		coords.node = &node->nodes[0];
+		coords.node = &node->nodes.array[0];
 	}
 	
 	skit_trie_iter_push( result, coords.node, coords.pos );
@@ -1563,7 +1563,7 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 		
 		/* Mark this node as exhausted and then push the child into focus. */
 		frame->current_char = 256;
-		skit_trie_iter_push(iter, &node->nodes[0], coords->pos + node->chars_len);
+		skit_trie_iter_push(iter, &node->nodes.array[0], coords->pos + node->chars_len);
 		skit_iter_accumulate_key(iter, coords->pos, node->chars, node->chars_len);
 		
 		/* Continue searching for a value. */
@@ -1606,7 +1606,7 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 			return skit_trie_iter_next(iter, key, value);
 		
 		/* Normal case: there is a node_index for us to descend into. */
-		skit_trie_iter_push(iter, &node->nodes[node_index], coords->pos + 1);
+		skit_trie_iter_push(iter, &node->nodes.array[node_index], coords->pos + 1);
 		skit_iter_accumulate_key(iter, coords->pos, &node->chars[node_index], 1);
 		
 		return skit_trie_iter_next(iter, key, value);
@@ -1622,7 +1622,7 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 		/* Scan for the next node that we can descend into. */
 		for ( i = node_index + 1; i < 256; i++ )
 		{
-			if ( node->node_table[i] != NULL )
+			if ( node->nodes.table[i] != NULL )
 			{
 				next_char = i;
 				break;
@@ -1640,11 +1640,11 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 		/*   We do this by calling ourselves and thus recalculating with */
 		/*   the new current_char set.  Iteration should proceed normally */
 		/*   after that. */
-		if ( node->node_table[node_index] == NULL )
+		if ( node->nodes.table[node_index] == NULL )
 			return skit_trie_iter_next(iter, key, value);
 		
 		/* Normal case: there is a node_index for us to descend into. */
-		skit_trie_iter_push(iter, node->node_table[node_index], coords->pos + 1);
+		skit_trie_iter_push(iter, node->nodes.table[node_index], coords->pos + 1);
 		
 		uint8_t c = node_index;
 		skit_iter_accumulate_key(iter, coords->pos, &c, 1);
