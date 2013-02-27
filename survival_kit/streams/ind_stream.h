@@ -33,7 +33,6 @@ union skit_ind_stream
 void skit_ind_stream_static_init();
 
 /**
-Constructor
 Allocates a new skit_ind_stream and calls skit_ind_stream_ctor(*) on it.
 If the caller wishes to stack-allocate the new instance, then they do not need
 to call this function.  They must instead call skit_ind_stream_ctor(*)

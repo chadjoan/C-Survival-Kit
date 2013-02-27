@@ -61,6 +61,15 @@ void skit_ind_stream_static_init()
 
 /* ------------------------------------------------------------------------- */
 
+skit_ind_stream *skit_ind_stream_new(skit_stream *backing)
+{
+	skit_ind_stream *result = (skit_ind_stream*)skit_malloc(sizeof(skit_ind_stream));
+	skit_ind_stream_ctor(result, backing);
+	return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing)
 {
 	skit_stream *stream = &istream->as_stream;
