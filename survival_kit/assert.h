@@ -38,7 +38,7 @@
 				"%s: at line %d in function %s: " check_name "(" #val ") failed.\n" \
 				"  Message: " SKIT_FIRST_VARG(__VA_ARGS__), \
 				__FILE__, __LINE__, __func__, \
-				__VA_ARGS__); \
+				SKIT_REST_VARGS(__VA_ARGS__)); \
 		} \
 	} while(0)
 

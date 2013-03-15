@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "survival_kit/macro.h"
 
@@ -37,6 +38,14 @@ void skit_macro_unittest()
 	#define MY_VARIADIC_FUNC(...) (SKIT_FIRST_VARG(__VA_ARGS__))
 	assert(MY_VARIADIC_FUNC(3,2,1) == 3);
 	printf("  SKIT_FIRST_VARG_test passed.\n");
+	
+	#define SNPRINTFLN(buf,sz,...) \
+		snprintf(buf,sz, SKIT_FIRST_VARG(__VA_ARGS__) "\n", \
+			SKIT_REST_VARGS(__VA_ARGS__))
+	char buf[64];
+	SNPRINTFLN(buf,64, "Test%d", 1);
+	assert( strcmp(buf,"Test1\n") == 0 );
+	printf("  SKIT_REST_VARGS_test passed.\n");
 	
 	printf("  skit_macro_unittest passed!\n");
 	printf("\n");

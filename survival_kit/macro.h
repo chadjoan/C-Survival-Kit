@@ -194,4 +194,16 @@ assert(MY_VARIADIC_FUNC(3,2,1) == 3);
 #define SKIT_FIRST_VARG(...) SKIT_FIRST_VARG_(__VA_ARGS__, throwaway)
 #define SKIT_FIRST_VARG_(first,...) first
 
+/**
+Returns all arguments passed to it, except for the first one.
+Example:
+#define SNPRINTFLN(buf,sz,...) \
+	snprintf(buf,sz, SKIT_FIRST_VARG(__VA_ARGS__) "\n", \
+		SKIT_REST_VARGS(__VA_ARGS__))
+char buf[64];
+SNPRINTFLN(buf,64, "Test%d", 1);
+assert( strcmp(buf,"Test1\n") == 0 );
+*/
+#define SKIT_REST_VARGS(first,...) __VA_ARGS__
+
 #endif
