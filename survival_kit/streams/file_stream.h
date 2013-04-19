@@ -9,6 +9,6 @@ union skit_file_stream
 	skit_stream          as_stream;
 };
 
-void skit_file_stream_static_init();
+void skit_file_stream_module_init();
 
 #endif

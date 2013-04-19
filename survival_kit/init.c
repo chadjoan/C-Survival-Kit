@@ -28,7 +28,7 @@ void skit_init()
 	skit_cstr_init();
 	skit_sig_init();
 	skit_trie_module_init();
-	skit_stream_static_init_all();
+	skit_stream_module_init_all();
 	pthread_key_create(&skit__thread_init_called, &skit_thread_dummy_dtor);
 	skit__init_called = 1;
 }

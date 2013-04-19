@@ -55,7 +55,7 @@ struct skit_custom_read_context
 #undef SKIT_VTABLE_T
 
 void skit_stream_vtable_init(skit_stream_vtable_t *table);
-void skit_stream_static_init();
+void skit_stream_module_init();
 
 /** 
 This initialization function is only for inheriting classes to call.

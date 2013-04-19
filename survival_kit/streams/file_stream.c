@@ -14,7 +14,7 @@ void skit_file_stream_vtable_init(skit_stream_vtable_t *table)
 	skit_stream_vtable_init(table);
 }
 
-void skit_file_stream_static_init()
+void skit_file_stream_module_init()
 {
 	if ( skit_file_stream_initialized )
 		return;

@@ -30,7 +30,7 @@ union skit_ind_stream
 	skit_ind_stream_internal   as_internal;
 };
 
-void skit_ind_stream_static_init();
+void skit_ind_stream_module_init();
 
 /**
 Allocates a new skit_ind_stream and calls skit_ind_stream_ctor(*) on it.

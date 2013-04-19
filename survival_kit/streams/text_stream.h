@@ -22,7 +22,7 @@ union skit_text_stream
 	skit_text_stream_internal  as_internal;
 };
 
-void skit_text_stream_static_init();
+void skit_text_stream_module_init();
 
 /**
 Constructor

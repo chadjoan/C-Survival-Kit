@@ -89,7 +89,7 @@ void skit_tcp_stream_vtable_init(skit_stream_vtable_t *arg_table)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_tcp_stream_static_init()
+void skit_tcp_stream_module_init()
 {
 	if ( skit_tcp_stream_initialized )
 		return;

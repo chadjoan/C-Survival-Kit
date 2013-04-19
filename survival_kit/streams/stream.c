@@ -132,7 +132,7 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->close         = &skit_file_stream_close_not_impl;
 }
 
-void skit_stream_static_init()
+void skit_stream_module_init()
 {
 	if ( skit_stream_initialized )
 		return;

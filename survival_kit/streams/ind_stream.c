@@ -50,7 +50,7 @@ static void skit_ind_stream_vtable_init(skit_stream_vtable_t *arg_table)
 
 /* ------------------------------------------------------------------------- */
 
-void skit_ind_stream_static_init()
+void skit_ind_stream_module_init()
 {
 	if ( skit_ind_stream_initialized )
 		return;

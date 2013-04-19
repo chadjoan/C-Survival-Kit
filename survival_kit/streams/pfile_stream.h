@@ -29,7 +29,7 @@ union skit_pfile_stream
 	skit_pfile_stream_internal as_internal;
 };
 
-void skit_pfile_stream_static_init();
+void skit_pfile_stream_module_init();
 
 /* Internal use stuff.  Macro backing. */
 extern skit_pfile_stream *skit__pfile_stdout_cache;

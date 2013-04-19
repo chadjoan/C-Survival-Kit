@@ -22,7 +22,7 @@ union skit_tcp_stream
 	skit_tcp_stream_internal   as_internal;
 };
 
-void skit_tcp_stream_static_init();
+void skit_tcp_stream_module_init();
 
 /**
 Constructor
