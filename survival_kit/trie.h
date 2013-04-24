@@ -205,13 +205,30 @@ writes the resulting text into the output stream.
 */
 void skit_trie_dump( const skit_trie *trie, skit_stream *output );
 
-/* TODO: iteration prefix subsets. */
-
 /**
 Creates an iterator that can iterate over all key/value pairs in the trie that
 have a key beginning with the given prefix.
 
-
+Example:
+	skit_trie *trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "123", (void*)1, sFLAGS("c")), sSLICE("123"));
+	sASSERT_EQS(skit_trie_setc(trie, "1234", (void*)2, sFLAGS("c")), sSLICE("1234"));
+	sASSERT_EQS(skit_trie_setc(trie, "124", (void*)3, sFLAGS("c")), sSLICE("124"));
+	
+	skit_slice key;
+	void *val;
+	skit_trie_iter* iter = skit_trie_iter_new(trie, sSLICE("123"), SKIT_FLAGS_NONE);
+	while ( skit_trie_iter_next(iter, &key, &val) )
+	{
+		if ( skit_slice_eqs(key, "123") )
+			sASSERT_EQ((size_t)val, 1);
+		if ( skit_slice_eqs(key, "1234") )
+			sASSERT_EQ((size_t)val, 2);
+		sASSERT_NE((size_t)val, 3); // {"124",3} should not be returned.
+	}
+	skit_trie_iter_free(iter);
+	
+	skit_trie_free(trie);
 */
 skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, skit_flags flags );
 skit_trie_iter *skit_trie_iter_free( skit_trie_iter *iter );

@@ -2073,10 +2073,36 @@ static void skit_trie_unittest_examples()
 	printf("  skit_trie_unittest_examples passed.\n");
 }
 
+static void skit_trie_test_iter_examples()
+{
+	skit_trie *trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "123", (void*)1, sFLAGS("c")), sSLICE("123"));
+	sASSERT_EQS(skit_trie_setc(trie, "1234", (void*)2, sFLAGS("c")), sSLICE("1234"));
+	sASSERT_EQS(skit_trie_setc(trie, "124", (void*)3, sFLAGS("c")), sSLICE("124"));
+	
+	skit_slice key;
+	void *val;
+	skit_trie_iter* iter = skit_trie_iter_new(trie, sSLICE("123"), SKIT_FLAGS_NONE);
+	while ( skit_trie_iter_next(iter, &key, &val) )
+	{
+		if ( skit_slice_eqs(key, sSLICE("123")) )
+			sASSERT_EQ((size_t)val, 1, "%d");
+		if ( skit_slice_eqs(key, sSLICE("1234")) )
+			sASSERT_EQ((size_t)val, 2, "%d");
+		sASSERT_NE((size_t)val, 3, "%d"); /* {"124",3} should not be returned. */
+	}
+	skit_trie_iter_free(iter);
+	
+	skit_trie_free(trie);
+	
+	printf("  skit_trie_test_iter_examples passed.\n");
+}
+
 void skit_trie_unittest()
 {
 	printf("skit_trie_unittest()\n");
 	skit_trie_unittest_examples();
+	skit_trie_test_iter_examples();
 	skit_trie_unittest_basics();
 	skit_trie_unittest_linear_nodes();
 	skit_trie_unittest_table_nodes();
