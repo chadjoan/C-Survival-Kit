@@ -2053,9 +2053,30 @@ static void skit_trie_unittest_table_nodes()
 	skit_free(tests);
 }
 
+static void skit_trie_unittest_examples()
+{
+	skit_trie *trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "abc", (void*)1, sFLAGS("c")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_setc(trie, "ABC", (void*)2, sFLAGS("io")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_setc(trie, "XYz", (void*)3, SKIT_FLAG_C), sSLICE("XYz"));
+
+	void *val;
+	sASSERT_EQS(skit_trie_getc(trie, "abc", &val, SKIT_FLAGS_NONE), sSLICE("abc"));
+	sASSERT_EQ((size_t)val, 2, "%d");
+	sASSERT_EQS(skit_trie_getc(trie, "xyz", &val, SKIT_FLAG_I), sSLICE("XYz"));
+	sASSERT_EQ((size_t)val, 3, "%d");
+	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
+	sASSERT_EQ(val, NULL, "%d");
+	
+	skit_trie_free(trie);
+	
+	printf("  skit_trie_unittest_examples passed.\n");
+}
+
 void skit_trie_unittest()
 {
 	printf("skit_trie_unittest()\n");
+	skit_trie_unittest_examples();
 	skit_trie_unittest_basics();
 	skit_trie_unittest_linear_nodes();
 	skit_trie_unittest_table_nodes();

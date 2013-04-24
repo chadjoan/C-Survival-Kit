@@ -100,6 +100,22 @@ case_sensitive determines whether or not case-sensitive matching is used when
 checking the key against possible matches.  It is possible for a 
 case-insensitive query to match multiple values.  In that case, implementation
 defined behavior will select one of the possibilities.
+
+Example:
+	skit_trie *trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "abc", (void*)1, sFLAGS("c")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_setc(trie, "ABC", (void*)2, sFLAGS("io")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_setc(trie, "XYz", (void*)3, SKIT_FLAG_C), sSLICE("XYz"));
+
+	void *val;
+	sASSERT_EQS(skit_trie_getc(trie, "abc", &val, SKIT_FLAGS_NONE), sSLICE("abc"));
+	sASSERT_EQ((size_t)val, 2, "%d");
+	sASSERT_EQS(skit_trie_getc(trie, "xyz", &val, SKIT_FLAG_I), sSLICE("XYz"));
+	sASSERT_EQ((size_t)val, 3, "%d");
+	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
+	sASSERT_EQ(val, NULL, "%d");
+	
+	skit_trie_free(trie);
 */
 skit_slice skit_trie_get( skit_trie *trie, const skit_slice key, void **value, skit_flags flags );
 skit_slice skit_trie_getc( skit_trie *trie, const char *key, void **value, skit_flags flags );
@@ -138,6 +154,22 @@ placed in it.
 
 Returns the /exact/ key acted on.  This returned slice may be modified by 
 any subsequent calls on the trie: copy it if you intend to use the value.
+
+Example:
+	skit_trie *trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "abc", (void*)1, sFLAGS("c")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_setc(trie, "ABC", (void*)2, sFLAGS("io")), sSLICE("abc"));
+	sASSERT_EQS(skit_trie_setc(trie, "XYz", (void*)3, SKIT_FLAG_C), sSLICE("XYz"));
+
+	void *val;
+	sASSERT_EQS(skit_trie_getc(trie, "abc", &val, SKIT_FLAGS_NONE), sSLICE("abc"));
+	sASSERT_EQ((size_t)val, 2, "%d");
+	sASSERT_EQS(skit_trie_getc(trie, "xyz", &val, SKIT_FLAG_I), sSLICE("XYz"));
+	sASSERT_EQ((size_t)val, 3, "%d");
+	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
+	sASSERT_EQ(val, NULL, "%d");
+	
+	skit_trie_free(trie);
 */
 skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *value, skit_flags flags );
 skit_slice skit_trie_setc( skit_trie *trie, const char *key, const void *value, skit_flags flags );
@@ -157,6 +189,8 @@ NULL into the flags parameter.
 
 Returns the /exact/ key acted on.  This returned slice may be modified by 
 any subsequent calls on the trie: copy it if you intend to use the value.
+
+BUG: This is currently not implemented.
 */
 skit_slice skit_trie_remove( skit_trie *trie, const skit_slice key, skit_flags flags );
 
