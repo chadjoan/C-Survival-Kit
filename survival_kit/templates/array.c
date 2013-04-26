@@ -128,6 +128,18 @@ SKIT_T(slice) *SKIT_T(slice_bfd_append)(
 		suffix.as_skit_slice);
 }
 
+SKIT_T_ELEM_TYPE *SKIT_T(slice_bfd_new_el)(
+	SKIT_T(loaf)  *buffer,
+	SKIT_T(slice) *buf_slice)
+{
+	size_t new_offset = sSLENGTH(*(skit_slice*)buf_slice);
+	skit_slice_buffered_resize(
+		(skit_loaf*)buffer,
+		(skit_slice*)buf_slice,
+		new_offset + sizeof(SKIT_T_ELEM_TYPE));
+	return (SKIT_T_ELEM_TYPE*)(sSPTR(*(skit_slice*)buf_slice) + new_offset);
+}
+
 SKIT_T(slice) *SKIT_T(slice_bfd_put)(
 	SKIT_T(loaf)     *buffer,
 	SKIT_T(slice)    *buf_slice,

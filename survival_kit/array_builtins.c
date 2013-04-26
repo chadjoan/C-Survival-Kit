@@ -29,6 +29,7 @@
 
 static void skit_slice_sanity_check()
 {
+	SKIT_USE_FEATURE_EMULATION;
 	
 	skit_loaf loaf = skit_loaf_alloc(4);
 	skit_utf8c *ptr = skit_loaf_ptr(loaf);
@@ -69,13 +70,44 @@ static void skit_slice_sanity_check()
 	sASSERT_EQ(ptr[2], 3, "%d");
 	sASSERT_EQ(ptr[3], 7, "%d");
 	sASSERT_EQ(ptr[4], 7, "%d");
+	
+	skit_loaf_free(&loaf);
+}
+
+void skit_array_bfd_new_el_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+	
+	skit_utest_int_loaf loaf = skit_utest_int_loaf_alloc(4);
+	skit_utest_int_slice slice = skit_utest_int_slice_of(loaf.as_slice,0,0);
+	sASSERT_EQ(skit_utest_int_slice_len(slice),0,"%d");
+	int *ptr = skit_utest_int_loaf_ptr(loaf);
+	int *new_elem = NULL;
+	
+	new_elem = skit_utest_int_slice_bfd_new_el(&loaf, &slice);
+	sASSERT_EQ(skit_utest_int_slice_len(slice),1,"%d");
+	*new_elem = 42;
+	sASSERT_EQ(*new_elem, ptr[0], "%d");
+	
+	new_elem = skit_utest_int_slice_bfd_new_el(&loaf, &slice);
+	sASSERT_EQ(skit_utest_int_slice_len(slice),2,"%d");
+	*new_elem = 9;
+	sASSERT_EQ(*new_elem, ptr[1], "%d");
+	
+	new_elem = skit_utest_int_slice_bfd_new_el(&loaf, &slice);
+	sASSERT_EQ(skit_utest_int_slice_len(slice),3,"%d");
+	*new_elem = -13;
+	sASSERT_EQ(*new_elem, ptr[2], "%d");
+	
+	skit_utest_int_loaf_free(&loaf);
 }
 
 void skit_array_unittest()
 {
+	SKIT_USE_FEATURE_EMULATION;
 	printf("skit_array_unittest()\n");
 	
-	skit_slice_sanity_check();
+	sTRACE(skit_slice_sanity_check());
 	
 	skit_utest_int_loaf loaf = skit_utest_int_loaf_alloc(4);
 	int *ptr = skit_utest_int_loaf_ptr(loaf);
@@ -138,6 +170,10 @@ void skit_array_unittest()
 	
 	int *elem = skit_utest_int_loaf_index(loaf, 6);
 	sASSERT_EQ(*elem, 8, "%d");
+	
+	skit_utest_int_loaf_free(&loaf);
+	
+	sTRACE(skit_array_bfd_new_el_test());
 	
 	printf("  skit_array_unittest passed!\n");
 	printf("\n");

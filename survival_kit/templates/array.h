@@ -313,6 +313,22 @@ SKIT_T(slice) *SKIT_T(slice_bfd_append)(
 	SKIT_T(slice) suffix);
 
 /**
+Array specific.
+Expands the given slice by 1 element within slice, using the growth semantics
+specified in skit_slice_buffered_resize and skit_slice_buffered_append.
+A pointer to the new element (uninitialized) is returned.
+This is useful for situations where you need to incrementally construct an
+array of packed large elements.  In other words, it must have a memory layout
+similar to a traditional C array specified by SKIT_T_ELEM_TYPE* or
+SKIT_T_ELEM_TYPE[n].  It is essentially similar to a buffered put, except that
+a copy operation is not required to place the element into the array, and the
+data is filled after the interaction with the array.
+*/
+SKIT_T_ELEM_TYPE *SKIT_T(slice_bfd_new_el)(
+	SKIT_T(loaf)  *buffer,
+	SKIT_T(slice) *buf_slice);
+
+/**
 This is similar to slice_bfd_append, except that it appends only a single
 element.
 */
