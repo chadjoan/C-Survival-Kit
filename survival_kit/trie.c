@@ -2118,3 +2118,12 @@ void skit_trie_unittest()
 		
 	}
 }
+
+/* Define skit_trie_loaf */
+#define SKIT_T_NAMESPACE skit
+#define SKIT_T_ELEM_TYPE skit_trie
+#define SKIT_T_NAME trie
+#include "survival_kit/templates/array.c"
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_NAME
+#undef SKIT_T_NAMESPACE

@@ -236,4 +236,13 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value );
 
 void skit_trie_unittest();
 
+/* Define skit_trie_loaf */
+#define SKIT_T_NAMESPACE skit
+#define SKIT_T_ELEM_TYPE skit_trie
+#define SKIT_T_NAME trie
+#include "survival_kit/templates/array.h"
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_NAME
+#undef SKIT_T_NAMESPACE
+
 #endif
