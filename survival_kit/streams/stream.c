@@ -243,7 +243,7 @@ void skit_stream_set_ind_str(skit_stream *stream, const char *c)
 	SKIT_STREAM_DISPATCH(stream, set_ind_str, c);
 }
 
-void skit_stream_delete(skit_stream *stream)
+void skit_stream_free(skit_stream *stream)
 {
 	skit_stream_dtor(stream);
 	skit_free(stream);

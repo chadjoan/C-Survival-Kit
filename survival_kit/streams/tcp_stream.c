@@ -623,7 +623,7 @@ static skit_tcp_stream *skit_start_tcp_test_client(int port)
 
 static void skit_stop_tcp_test_client(skit_tcp_stream *stream)
 {
-	skit_stream_delete(&stream->as_stream);
+	skit_stream_free(&stream->as_stream);
 }
 
 /* ------------------------------------------------------------------------- */

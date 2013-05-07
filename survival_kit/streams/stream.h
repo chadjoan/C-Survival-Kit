@@ -353,7 +353,7 @@ This does not free the data at the end of the *stream pointer itself; that
 Calling skit_stream_dtor on an already free'd stream is a safe do-nothing op.
 If the caller allocated a stream using skit_*_stream_new(), skit_malloc(), or
   a similar manner of dynamic allocation, then it is recommended to call
-  skit_stream_delete instead of skit_stream_dtor so that the memory used to
+  skit_stream_free instead of skit_stream_dtor so that the memory used to
   store the stream object itself may be freed.
 Be careful when stack-allocating polymorphic data structures like streams!
   Never pass streams by value as this will "slice" off the part of memory
@@ -401,7 +401,7 @@ This is intended for use with dynamically allocated stream objects, such as
   those created by calls to the skit_*_stream_new() methods defined with the
   derived classes.
 */
-void skit_stream_delete(skit_stream *stream);
+void skit_stream_free(skit_stream *stream);
 
 /* Streams can't be opened/closed in general, so those methods are absent. */
 
