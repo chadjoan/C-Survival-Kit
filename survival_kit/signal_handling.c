@@ -106,6 +106,7 @@ void skit_push_tracing_sig_handler()
 
 void skit_pop_tracing_sig_handler()
 {
+	struct sigaction new_action;
 	struct sigaction *old_action;
 	
 	old_action = pthread_getspecific(skit_signal_save_key);
@@ -115,6 +116,8 @@ void skit_pop_tracing_sig_handler()
 			"skit_pop_tracing_sig_handler() was called without a corresponding call to\n"
 			"  skit_push_tracing_sig_handler.\n");
 	}
+	
+	skit_sigaction(NULL_DEREF, old_action, &new_action);
 	
 	pthread_setspecific(skit_signal_save_key, NULL);
 }
