@@ -12,10 +12,12 @@
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/assert.h"
 
-#define SKIT_TRACE_INTERNAL(original_code, assignment, returned_expr) /* */ \
+#define SKIT_TRACE_INTERNAL(original_code, assignment, returned_expr, on_entry, on_exit) /* */ \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
+		\
+		on_entry, \
 		\
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx), \
 		\
@@ -54,6 +56,8 @@
 		\
 		SKIT_THREAD_CHECK_EXIT(skit_thread_ctx), \
 		\
+		on_exit, \
+		\
 		SKIT_FEATURE_TRACE("%s, %d.54: sTRACE.success\n", __FILE__, __LINE__), \
 		returned_expr \
 	)
@@ -71,6 +75,38 @@
 #define sETRACE_RETURN(expr) /* */ \
 	(*((__typeof__(expr)*)skit__sTRACE_return_value))
 
+/* ------------------------------------------------------------------------- */
+/* Stuff for sTRACE */
+
+#define sTRACE_HOOKED(statement, on_entry, on_exit) /* */ \
+	do { SKIT_TRACE_INTERNAL(statement, (statement), (void)skit__sTRACE_return_value, on_entry, on_exit); } while (0)
+
+
+#define sTRACE0_HOOKED(statement, on_entry, on_exit) sTRACE_HOOKED(statement, on_entry, on_exit)
+
+#if sTRACE_LEVEL >= 1
+#define sTRACE1_HOOKED(statement, on_entry, on_exit) sTRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sTRACE1_HOOKED(statement, on_entry, on_exit) statement
+#endif
+
+#if sTRACE_LEVEL >= 2
+#define sTRACE2_HOOKED(statement, on_entry, on_exit) sTRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sTRACE2_HOOKED(statement, on_entry, on_exit) statement
+#endif
+
+#if sTRACE_LEVEL >= 3
+#define sTRACE3_HOOKED(statement, on_entry, on_exit) sTRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sTRACE3_HOOKED(statement, on_entry, on_exit) statement
+#endif
+
+#if sTRACE_LEVEL >= 4
+#define sTRACE4_HOOKED(statement, on_entry, on_exit) sTRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sTRACE4_HOOKED(statement, on_entry, on_exit) statement
+#endif
 
 /** 
 Evaluates the given expression while creating a stack entry at this point
@@ -80,9 +116,58 @@ into other functions because the exception handling mechanism will still
 be able to return to the nearest enclosing sTRY-sCATCH.  Wrapping function
 calls in this macro is desirable though, because the calling file, line,
 and function name will be absent from stack traces if this is not used.
-*/	
-#define sTRACE(statement) /* */ \
-	do { SKIT_TRACE_INTERNAL(statement, (statement), (void)skit__sTRACE_return_value); } while (0)
+
+sTRACE statements may optionally have different levels that allow them to
+conditionally include traceback information.  This is useful in places that
+might be performance critical yet also require debugging.
+5 levels are available:
+sTRACE0(statement) -- same as sTRACE(statement), always inserts debug info.
+sTRACE1(statement) -- Inserts debug info if the macro define sTRACE_LEVEL is >= 1
+sTRACE2(statement) -- sTRACE_LEVEL >= 2
+sTRACE3(statement) -- sTRACE_LEVEL >= 3
+sTRACE4(statement) -- sTRACE_LEVEL >= 4
+It is often convenient to alter these using compile time flags:
+gcc myfile.c -I<skit_dir> -DsTRACE_LEVEL=5
+*/
+#define sTRACE(statement) sTRACE_HOOKED(statement, (0), (0))
+#define sTRACE0(statement) sTRACE0_HOOKED(statement, (0), (0))
+#define sTRACE1(statement) sTRACE1_HOOKED(statement, (0), (0))
+#define sTRACE2(statement) sTRACE2_HOOKED(statement, (0), (0))
+#define sTRACE3(statement) sTRACE3_HOOKED(statement, (0), (0))
+#define sTRACE4(statement) sTRACE4_HOOKED(statement, (0), (0))
+
+/* ------------------------------------------------------------------------- */
+/* Stuff for sETRACE */
+
+#define sETRACE_HOOKED(expr, on_entry, on_exit) /* */ \
+	SKIT_TRACE_INTERNAL(expr, sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr), on_entry, on_exit)
+
+
+#define sETRACE0_HOOKED(statement, on_entry, on_exit) sETRACE_HOOKED(statement, on_entry, on_exit)
+
+#if sTRACE_LEVEL >= 1
+#define sETRACE1_HOOKED(statement, on_entry, on_exit) sETRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sETRACE1_HOOKED(statement, on_entry, on_exit) statement
+#endif
+
+#if sTRACE_LEVEL >= 2
+#define sETRACE2_HOOKED(statement, on_entry, on_exit) sETRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sETRACE2_HOOKED(statement, on_entry, on_exit) statement
+#endif
+
+#if sTRACE_LEVEL >= 3
+#define sETRACE3_HOOKED(statement, on_entry, on_exit) sETRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sETRACE3_HOOKED(statement, on_entry, on_exit) statement
+#endif
+
+#if sTRACE_LEVEL >= 4
+#define sETRACE4_HOOKED(statement, on_entry, on_exit) sETRACE_HOOKED(statement, on_entry, on_exit)
+#else
+#define sETRACE4_HOOKED(statement, on_entry, on_exit) statement
+#endif
 
 /**
 This serves the same function as sTRACE, but with the advantage that it can
@@ -96,8 +181,15 @@ The disadvantage of sETRACE is that it cannot be used on void expressions:
   void bar() {}
   ...
   sETRACE(bar()); // Error!  Attempt to assign a void to a non-void.
+
+sETRACE0-sETRACE4 are available to complement sTRACE0-sTRACE4.  These are
+still affected by the sTRACE_LEVEL define.  
 */
-#define sETRACE(expr) /* */ \
-	SKIT_TRACE_INTERNAL(expr, sETRACE_ASSIGNMENT(expr), sETRACE_RETURN(expr))
+#define sETRACE(statement) sETRACE_HOOKED(statement, (0), (0))
+#define sETRACE0(statement) sETRACE0_HOOKED(statement, (0), (0))
+#define sETRACE1(statement) sETRACE1_HOOKED(statement, (0), (0))
+#define sETRACE2(statement) sETRACE2_HOOKED(statement, (0), (0))
+#define sETRACE3(statement) sETRACE3_HOOKED(statement, (0), (0))
+#define sETRACE4(statement) sETRACE4_HOOKED(statement, (0), (0))
 
 #endif
