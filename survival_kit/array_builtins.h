@@ -79,6 +79,13 @@
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_NAME
 
+/** Define skit_vptr_slice and skit_vptr_loaf  (SKIT_T_ELEM_TYPE==void*) */
+#define SKIT_T_ELEM_TYPE void*
+#define SKIT_T_NAME vptr
+#include SKIT_T_HEADER
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_NAME
+
 /** Define skit_slice_slice and skit_slice_loaf  (SKIT_T_ELEM_TYPE=slice) */
 #define SKIT_T_ELEM_TYPE skit_slice
 #define SKIT_T_NAME slice
