@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdio.h> /* printf */
 
+#include "survival_kit/misc.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/init.h"
 #include "survival_kit/feature_emulation/thread_context.h"
@@ -66,7 +67,7 @@ void skit_init_exceptions()
 }
 
 static skit_err_code *skit__exc_inheritance_table = NULL;
-static size_t skit__exc_table_size = 0;
+static ssize_t skit__exc_table_size = 0;
 
 void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg )
 {
@@ -88,24 +89,9 @@ void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent
 	assert(ecode_name != NULL);
 	assert(default_msg != NULL);
 	
-	*ecode = skit__exc_table_size;
+	skit_register_parent_child_rel(
+		&skit__exc_inheritance_table, &skit__exc_table_size, ecode, parent);
 	
-	if ( skit__exc_inheritance_table == NULL )
-	{
-		/* If this doesn't already exist, create the table and give it 1 element. */
-		skit__exc_inheritance_table = skit_malloc(sizeof(skit_err_code));
-		skit__exc_table_size = 1;
-	}
-	else
-	{
-		/* If this does exist, it will need to grow by one element. */
-		skit__exc_table_size += 1;
-		skit__exc_inheritance_table = skit_realloc(
-			skit__exc_inheritance_table,
-			sizeof(skit_err_code) * skit__exc_table_size);
-	}
-	
-	skit__exc_inheritance_table[*ecode] = *parent;
 	/* printf("Defined %s as %ld\n", ecode_name, *ecode); */
 	/* TODO: do something with the ecode_name and default_msg. */
 }
@@ -114,27 +100,8 @@ void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent
 
 int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {
-	skit_err_code child_code = ecode2;
-	skit_err_code parent_code = ecode1;
-	skit_err_code last_parent = 0;
-	while (1)
-	{
-		/* Invalid parent_codes. */
-		if ( parent_code >= skit__exc_table_size )
-			assert(0);
-		
-		/* Match found! */
-		if ( child_code == parent_code )
-			return 1;
-
-		/* We've hit a root-level exception type without establishing a parent-child relationship. No good. */
-		if ( last_parent == parent_code )
-			return 0;
-		
-		last_parent = parent_code;
-		parent_code = skit__exc_inheritance_table[parent_code];
-	}
-	assert(0);
+	return skit_is_a(
+		skit__exc_inheritance_table, skit__exc_table_size, ecode1, ecode2);
 }
 
 /* ------------------------------------------------------------------------- */
