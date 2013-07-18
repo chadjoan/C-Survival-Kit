@@ -60,6 +60,11 @@ Returns 0 otherwise.
 */
 int skit_is_a( skit_inheritance_table *table, ssize_t index1, ssize_t index2 );
 
+/**
+Returns the number of nodes in the inheritance table.
+*/
+size_t skit_inheritance_table_size( skit_inheritance_table *table );
+
 void skit_inheritance_table_unittest();
 
 #endif

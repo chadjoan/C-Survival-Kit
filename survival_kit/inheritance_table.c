@@ -255,6 +255,13 @@ static void skit_inheritance_table_test()
 
 /* ------------------------------------------------------------------------- */
 
+size_t skit_inheritance_table_size( skit_inheritance_table *table )
+{
+	return table->table_size;
+}
+
+/* ------------------------------------------------------------------------- */
+
 void skit_inheritance_table_unittest()
 {
 	printf("skit_inheritance_table_unittest\n");
