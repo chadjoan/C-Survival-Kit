@@ -19,6 +19,7 @@ OBJECT_FILES= \
 	obj/macro.o \
 	obj/memory.o \
 	obj/misc.o \
+	obj/inheritance_table.o \
 	obj/cstr.o \
 	obj/stack_builtins.o \
 	obj/fstack_builtins.o \

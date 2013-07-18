@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <stdio.h> /* printf */
 
-#include "survival_kit/misc.h"
+#include "survival_kit/inheritance_table.h"
 #include "survival_kit/memory.h"
 #include "survival_kit/init.h"
 #include "survival_kit/feature_emulation/thread_context.h"
@@ -38,6 +38,7 @@ skit_err_code SKIT_TCP_IO_EXCEPTION;
 skit_err_code SKIT_FILE_NOT_FOUND;
 skit_err_code SKIT_END_OF_FILE;
 
+static skit_inheritance_table skit__exc_inheritance_table;
 static int skit_exceptions_initialized = 0;
 
 void skit_init_exceptions()
@@ -66,10 +67,7 @@ void skit_init_exceptions()
 	skit_exceptions_initialized = 1;
 }
 
-static skit_err_code *skit__exc_inheritance_table = NULL;
-static ssize_t skit__exc_table_size = 0;
-
-void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg )
+void skit__register_exception( skit_err_code *ecode, skit_err_code *parent, const char *ecode_name, const char *default_msg )
 {
 	/* 
 	Note that parent is passed by reference and not value.
@@ -90,7 +88,7 @@ void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent
 	assert(default_msg != NULL);
 	
 	skit_register_parent_child_rel(
-		&skit__exc_inheritance_table, &skit__exc_table_size, ecode, parent);
+		&skit__exc_inheritance_table, ecode, parent);
 	
 	/* printf("Defined %s as %ld\n", ecode_name, *ecode); */
 	/* TODO: do something with the ecode_name and default_msg. */
@@ -101,7 +99,7 @@ void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent
 int skit_exception_is_a( skit_err_code ecode1, skit_err_code ecode2 )
 {
 	return skit_is_a(
-		skit__exc_inheritance_table, skit__exc_table_size, ecode1, ecode2);
+		&skit__exc_inheritance_table, ecode1, ecode2);
 }
 
 /* ------------------------------------------------------------------------- */

@@ -117,7 +117,7 @@ skit_init_exceptions()
 #define SKIT_REGISTER_EXCEPTION(ecode, parent, msg) (skit__register_exception(&(ecode), &(parent), #ecode, (msg)))
 
 /* Don't call this directly. */
-void skit__register_exception( skit_err_code *ecode, const skit_err_code *parent, const char *ecode_name, const char *default_msg );
+void skit__register_exception( skit_err_code *ecode, skit_err_code *parent, const char *ecode_name, const char *default_msg );
 
 void skit_init_exceptions();
 

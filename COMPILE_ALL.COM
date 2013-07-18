@@ -15,6 +15,7 @@ $!
 $ @'THIS_DIR'compile survival_kit/macro
 $ @'THIS_DIR'compile survival_kit/memory
 $ @'THIS_DIR'compile survival_kit/misc
+$ @'THIS_DIR'compile survival_kit/inheritance_table
 $ @'THIS_DIR'compile survival_kit/cstr
 $ @'THIS_DIR'compile survival_kit/stack_builtins
 $ @'THIS_DIR'compile survival_kit/fstack_builtins

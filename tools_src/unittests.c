@@ -1,7 +1,7 @@
 
 #include "survival_kit/init.h"
 #include "survival_kit/math.h"
-#include "survival_kit/misc.h"
+#include "survival_kit/inheritance_table.h"
 #include "survival_kit/stack_builtins.h"
 #include "survival_kit/fstack_builtins.h"
 #include "survival_kit/feature_emulation.h"
@@ -22,7 +22,6 @@ void skit_unittest_modules()
 	skit_macro_unittest();
 	skit_flags_unittest();
 	skit_math_unittest();
-	skit_misc_unittest();
 	skit_stack_unittest();
 	skit_fstack_unittest();
 	skit_string_unittest();
@@ -51,8 +50,9 @@ int main(int argc, char *argv[])
 	/*   feature to allocate its own and clean it up.  If one of them is */
 	/*   implemented wrong, then the balance will be off and we can catch */
 	/*   it. */
+	skit_inheritance_table_unittest(); /* Used by the features module, and init. */
 	skit_init();
-	skit_unittest_features(); 
+	skit_unittest_features();
 
 	/* Now we get to use a pre-initialized context for everything else. */
 	SKIT_USE_FEATURE_EMULATION;
