@@ -40,7 +40,59 @@ This will return NULL if the given stream isn't actually a skit_text_stream.
 skit_text_stream *skit_text_stream_downcast(const skit_stream *stream);
 
 void skit_text_stream_ctor(skit_text_stream *tstream);
+void skit_text_stream_ctor_n(skit_text_stream *tstream, size_t est_buffer_size);
 void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice);
+
+/**
+Removes all text currently stored in the existing text stream.
+The end result is an "empty" text stream.
+This is useful because the stream's internal buffers are not freed by the
+operation, so it is a fast and efficient way to repeatedly use the same
+stream as a write buffer (ex: when serializing the same data structures
+over and over).
+*/
+void skit_text_stream_clear(skit_text_stream *stream);
+
+/**
+Constructs a text stream that uses the given buffer as its internal buffer
+and a cursor_pos variable to indicate how much of the buffer is already
+filled and where to place newly appended contents.
+
+This is a way to efficiently integrate streams with the idiom of having
+a slice to a buffer and growing the slice using calls to
+skit_slice_buffered_append.  With this function, it becomes possible to
+accept such a buffer+slice pair and then pass a stream into other functions
+that require streams, and to do so with no unnecessary allocations.
+
+After the stream is done being manipulated, use skit_text_stream_slurp to
+recover the new slice, and then use skit_text_stream_dissociate to get the 
+text buffer back and prep the stream for destruction/freeing.
+
+Ex:
+	SKIT_LOAF_ON_STACK(buf, 32);
+	skit_slice result = skit_slice_of(buf.as_slice, 0, 0);
+	skit_slice_buffered_append(&buf, &result, sSLICE("Hello "));
+
+	skit_text_stream tstream;
+	skit_text_stream_subsume(&tstream, buf, sSLENGTH(result));
+	skit_text_stream_append(&tstream, sSLICE("world!"));
+	result = skit_text_stream_slurp(&tstream, NULL);
+	buf = skit_text_stream_dissociate(&tstream);
+	skit_text_stream_dtor(&tstream);
+
+	// 'buf' should still be valid at this point.
+	// The call to skit_text_stream_dissociate will cause the caller to 
+	//   once again own the buffer, which will prevent the buffer from 
+	//   being deallocated in the call to skit_text_stream_dtor(&tstream).
+
+	sASSERT_EQS(result, sSLICE("Hello world!"));
+
+	skit_loaf_free(&buf);
+	// /Now/ 'buf' is gone.
+*/
+void skit_text_stream_subsume(skit_text_stream *tstream, skit_loaf buffer, size_t cursor_pos);
+skit_loaf skit_text_stream_dissociate(skit_text_stream *tstream); /** ditto */
+
 skit_slice skit_text_stream_readln(skit_text_stream *stream, skit_loaf *buffer);
 skit_slice skit_text_stream_read(skit_text_stream *stream, skit_loaf *buffer, size_t nbytes);
 skit_slice skit_text_stream_read_fn(skit_text_stream *stream, skit_loaf *buffer, void *context, int (*accept_char)( skit_custom_read_context *ctx ));

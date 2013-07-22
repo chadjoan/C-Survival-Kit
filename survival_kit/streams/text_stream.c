@@ -72,13 +72,20 @@ skit_text_stream *skit_text_stream_downcast(const skit_stream *stream)
 
 void skit_text_stream_ctor(skit_text_stream *tstream)
 {
+	skit_text_stream_ctor_n(tstream, 16);
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_text_stream_ctor_n(skit_text_stream *tstream, size_t est_buffer_size)
+{
 	skit_stream *stream = &tstream->as_stream;
 	skit_stream_ctor(stream);
 	stream->meta.vtable_ptr = &skit_text_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_text_stream");
 	
 	skit_text_stream_internal *tstreami = &tstream->as_internal;
-	tstreami->buffer = skit_loaf_alloc(16);
+	tstreami->buffer = skit_loaf_alloc(est_buffer_size);
 	tstreami->text = skit_slice_of(tstreami->buffer.as_slice, 0, 0);
 	tstreami->cursor = 0;
 }
@@ -96,6 +103,71 @@ void skit_text_stream_init_str(skit_text_stream *tstream, skit_slice slice)
 	tstreami->buffer = skit_loaf_dup(slice);
 	tstreami->text = skit_slice_of(tstreami->buffer.as_slice, 0, sSLENGTH(slice));
 	tstreami->cursor = 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_text_stream_clear(skit_text_stream *stream)
+{
+	skit_text_stream_internal *tstreami = &(stream->as_internal);
+	tstreami->text = skit_slice_of(tstreami->buffer.as_slice, 0, 0);
+	tstreami->cursor = 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_text_stream_subsume(skit_text_stream *tstream, skit_loaf buffer, size_t cursor_pos)
+{
+	skit_stream *stream = &tstream->as_stream;
+	skit_stream_ctor(stream);
+	stream->meta.vtable_ptr = &skit_text_stream_vtable;
+	stream->meta.class_name = sSLICE("skit_text_stream");
+	
+	sASSERT_LE(cursor_pos, sLLENGTH(buffer), "%ld");
+	
+	skit_text_stream_internal *tstreami = &tstream->as_internal;
+	tstreami->buffer = buffer;
+	tstreami->text = skit_slice_of(buffer.as_slice, 0, cursor_pos);
+	tstreami->cursor = cursor_pos;
+}
+
+skit_loaf skit_text_stream_dissociate(skit_text_stream *tstream)
+{
+	skit_loaf result;
+	skit_text_stream_internal *tstreami = &tstream->as_internal;
+	result = tstreami->buffer;
+	
+	tstreami->buffer = skit_loaf_null();
+	tstreami->text = skit_slice_null();
+	tstreami->cursor = 0;
+	
+	return result;
+}
+
+static void skit_text_stream_subsume_test()
+{
+	SKIT_LOAF_ON_STACK(buf, 32);
+	skit_slice result = skit_slice_of(buf.as_slice, 0, 0);
+	skit_slice_buffered_append(&buf, &result, sSLICE("Hello "));
+
+	skit_text_stream tstream;
+	skit_text_stream_subsume(&tstream, buf, sSLENGTH(result));
+	skit_text_stream_append(&tstream, sSLICE("world!"));
+	result = skit_text_stream_slurp(&tstream, NULL);
+	buf = skit_text_stream_dissociate(&tstream);
+	skit_text_stream_dtor(&tstream);
+
+	// 'buf' should still be valid at this point.
+	// The call to skit_text_stream_dissociate will cause the caller to 
+	//   once again own the buffer, which will prevent the buffer from 
+	//   being deallocated in the call to skit_text_stream_dtor(&tstream).
+
+	sASSERT_EQS(result, sSLICE("Hello world!"));
+
+	skit_loaf_free(&buf);
+	// /Now/ 'buf' is gone.
+	
+	printf("  skit_text_stream_subsume_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -357,7 +429,8 @@ void skit_text_stream_dtor(skit_text_stream *stream)
 {
 	skit_text_stream_internal *tstreami = &(stream->as_internal);
 	
-	tstreami->buffer = skit_loaf_free(&tstreami->buffer);
+	if ( !skit_loaf_is_null(tstreami->buffer) )
+		tstreami->buffer = skit_loaf_free(&tstreami->buffer);
 	tstreami->text = skit_slice_null();
 }
 
@@ -402,6 +475,7 @@ void skit_text_stream_unittests()
 	skit_text_stream_run_utest(&skit_stream_append_xNN_unittest, sSLICE(SKIT_APPEND_XNN_UNITTEST_CONTENTS));
 	skit_text_stream_run_utest(&skit_stream_rewind_unittest,     sSLICE(SKIT_REWIND_UNITTEST_CONTENTS));
 	
+	skit_text_stream_subsume_test();
 	printf("  skit_text_stream_unittests passed!\n");
 	printf("\n");
 }
