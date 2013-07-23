@@ -896,6 +896,25 @@ int skit_slice_ilts(const skit_slice str1, const skit_slice str2);
 int skit_slice_ieqs(const skit_slice str1, const skit_slice str2);
 int skit_slice_ines(const skit_slice str1, const skit_slice str2);
 
+
+/** 
+Trims any character in 'char_class' from 'slice'.
+Always returns a slice. 
+Example:
+	skit_loaf loaf = skit_loaf_copy_cstr("xxfooabc");
+	skit_slice slice0 = loaf.as_slice;
+	skit_slice slice1 = skit_slice_ltrimx(slice0, sSLICE("x"));
+	skit_slice slice2 = skit_slice_rtrimx(slice0, sSLICE("c"));
+	skit_slice slice3 = skit_slice_trimx (slice0, sSLICE("xabc"));
+	sASSERT_EQS( slice1, sSLICE("fooabc") );
+	sASSERT_EQS( slice2, sSLICE("xxfooab") );
+	sASSERT_EQS( slice3, sSLICE("foo") );
+	skit_loaf_free(&loaf);
+*/
+skit_slice skit_slice_ltrimx(const skit_slice slice, const skit_slice char_class);
+skit_slice skit_slice_rtrimx(const skit_slice slice, const skit_slice char_class);
+skit_slice skit_slice_trimx(const skit_slice slice, const skit_slice char_class);
+
 /** 
 Trim whitespace from 'slice'.
 Always returns a slice. 

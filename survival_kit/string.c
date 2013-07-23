@@ -1386,6 +1386,80 @@ static void skit_slice_comparison_ops_test()
 	printf("  skit_slice_comparison_ops_test passed.\n");
 }
 
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_slice_ltrimx(const skit_slice slice, const skit_slice char_class)
+{
+	skit_utf8c *chars = sSPTR(slice);
+	skit_utf8c *match_set = sSPTR(char_class);
+	ssize_t set_len = sSLENGTH(char_class);
+	int found;
+	ssize_t i;
+	
+	ssize_t length = skit_slice_len(slice);
+	ssize_t lbound = 0;
+	while ( lbound < length )
+	{
+		skit_utf8c c = chars[lbound];
+		found = 0;
+		for ( i = 0; i < set_len; i++ )
+			if ( c == match_set[i] )
+				{found = 1; break;}
+		if ( !found )
+			break;
+		
+		lbound++;
+	}
+	
+	return skit_slice_of(slice, lbound, length);
+}
+
+skit_slice skit_slice_rtrimx(const skit_slice slice, const skit_slice char_class)
+{
+	skit_utf8c *chars = sSPTR(slice);
+	skit_utf8c *match_set = sSPTR(char_class);
+	ssize_t set_len = sSLENGTH(char_class);
+	int found;
+	ssize_t i;
+	
+	ssize_t length = skit_slice_len(slice);
+	ssize_t rbound = length;
+	while ( rbound > 0 )
+	{
+		char c = chars[rbound-1];
+		found = 0;
+		for ( i = 0; i < set_len; i++ )
+			if ( c == match_set[i] )
+				{found = 1; break;}
+		if ( !found )
+			break;
+		
+		rbound--;
+	}
+	
+	return skit_slice_of(slice, 0, rbound);
+}
+
+skit_slice skit_slice_trimx(const skit_slice slice, const skit_slice char_class)
+{
+	return skit_slice_ltrimx( skit_slice_rtrimx(slice, char_class), char_class );
+}
+
+static void skit_slice_trimx_test()
+{
+	skit_loaf loaf = skit_loaf_copy_cstr("xxfooabc");
+	skit_slice slice0 = loaf.as_slice;
+	skit_slice slice1 = skit_slice_ltrimx(slice0, sSLICE("x"));
+	skit_slice slice2 = skit_slice_rtrimx(slice0, sSLICE("c"));
+	skit_slice slice3 = skit_slice_trimx (slice0, sSLICE("xabc"));
+	sASSERT_EQS( slice1, sSLICE("fooabc") );
+	sASSERT_EQS( slice2, sSLICE("xxfooab") );
+	sASSERT_EQS( slice3, sSLICE("foo") );
+	skit_loaf_free(&loaf);
+	printf("  skit_slice_trimx_test passed.\n");
+}
+
 /* ------------------------------------------------------------------------- */
 
 skit_slice skit_slice_ltrim(const skit_slice slice)
@@ -1732,6 +1806,7 @@ void skit_string_unittest()
 	skit_slice_common_prefix_test();
 	skit_slice_ascii_cmp_test();
 	skit_slice_comparison_ops_test();
+	skit_slice_trimx_test();
 	skit_slice_trim_test();
 	skit_slice_truncate_test();
 	skit_slice_match_test();
