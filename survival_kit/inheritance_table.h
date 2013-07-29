@@ -1,4 +1,12 @@
 
+/**
+This module supports creating a tree-like structure out of densely sequenced
+(consecutive) integer values.
+It allows out-of-order initialization and reassignment of parents.
+TODO: the documentation and naming in this module could probably use improvement.
+        Although this has been used for establishing inheritance relationships
+        thus far, it is probably suited for other things too.
+*/
 #ifndef SKIT_INHERITANCE_TABLE_INCLUDED
 #define SKIT_INHERITANCE_TABLE_INCLUDED
 
@@ -37,7 +45,12 @@ The 'child' argument should be a pointer to a variable that will hold the
 ID/index assigned to that child in the table.  
 
 The 'parent' argument should be a pointer to a variable that was already
-populated as a child somewhere else using skit_register_parent_child_rel.
+populated as a child somewhere else using skit_register_parent_child_rel
+OR is ready to accept a new value if it isn't already in the table.
+
+If a child is set to inherit from a parent that isn't already registered
+in the table, then the parent will get it's own entry in the table and
+become a root.
 
 It is OK to make calls like
   skit_register_parent_child_rel(&table, &table_size, &x, &x);
