@@ -59,6 +59,15 @@ skit_text_stream *skit_text_stream_new()
 
 /* ------------------------------------------------------------------------- */
 
+skit_text_stream *skit_text_stream_new_n(size_t est_buffer_size)
+{
+	skit_text_stream *result = skit_malloc(sizeof(skit_text_stream));
+	skit_text_stream_ctor_n(result, est_buffer_size);
+	return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 skit_text_stream *skit_text_stream_downcast(const skit_stream *stream)
 {
 	sASSERT(stream != NULL);

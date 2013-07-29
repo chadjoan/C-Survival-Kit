@@ -32,6 +32,7 @@ to call this function.  They must instead call skit_text_stream_ctor(*)
 directly.
 */
 skit_text_stream *skit_text_stream_new();
+skit_text_stream *skit_text_stream_new_n(size_t est_buffer_size);
 
 /**
 Casts the given stream into a text stream.
