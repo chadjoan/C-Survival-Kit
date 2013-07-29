@@ -437,7 +437,7 @@ Example:
 	sASSERT_GE(skit_loaf_len(buffer), 6, "%d");
 	skit_loaf_free(&buffer);
 */
-skit_slice *skit_slice_buffered_append(
+skit_slice skit_slice_buffered_append(
 	skit_loaf  *buffer,
 	skit_slice *buf_slice,
 	skit_slice suffix);

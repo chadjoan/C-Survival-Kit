@@ -609,7 +609,7 @@ static void skit_slice_buffered_resize_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice *skit_slice_buffered_append(
+skit_slice skit_slice_buffered_append(
 	skit_loaf  *buffer,
 	skit_slice *buf_slice,
 	skit_slice suffix)
@@ -626,7 +626,7 @@ skit_slice *skit_slice_buffered_append(
 	skit_slice_buffered_resize(buffer, buf_slice, buf_slice_length + suffix_length);
 	memcpy((void*)(sSPTR(*buf_slice) + buf_slice_length), (void*)sSPTR(suffix), suffix_length);
 	
-	return buf_slice;
+	return *buf_slice;
 }
 
 static void skit_slice_buffered_append_test()

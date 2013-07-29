@@ -124,6 +124,26 @@ extern const int SKIT_T(loaf_stride);
 /**
 This is analogous to SKIT_LOAF_ON_STACK from "survival_kit/string.h".
 See that macro for specifics on usage and behavior.
+
+Ex:
+
+#include "survival_kit/array_builtins.h"
+
+// Declare a skit_loaf_vptr with 24 elements allocated on the stack.
+SKIT_ARRAY_ON_STACK(vptr, my_loaf, 24);
+
+// Take a slice out of the previous loaf.
+skit_vptr_slice my_slice = skit_vptr_slice_of(my_loaf.as_slice, 0, 2);
+
+// Grow the slice outside of the original buffer.
+// This will cause heap allocation (using skit_realloc), but the loaf will
+//   remain valid.
+skit_vptr_slice_bfd_resize(&my_loaf, &my_slice, 32);
+
+// It's wise to always do this, even with stack-allocated loaves.
+// It will only do the free if the loaf spilled into heap memory.
+skit_vptr_loaf_free(&my_loaf);
+
 */
 #define SKIT_ARRAY_ON_STACK(prefix, array_name, size) \
 	const char *SKIT__LOAF_##array_name [ \
@@ -307,7 +327,7 @@ SKIT_T(slice) *SKIT_T(slice_bfd_resize)(
 This is analogous to skit_slice_buffered_append in "survival_kit/string.h".
 See that function for specifics on usage and behavior.
 */
-SKIT_T(slice) *SKIT_T(slice_bfd_append)(
+SKIT_T(slice) SKIT_T(slice_bfd_append)(
 	SKIT_T(loaf)  *buffer,
 	SKIT_T(slice) *buf_slice,
 	SKIT_T(slice) suffix);
@@ -332,7 +352,7 @@ SKIT_T_ELEM_TYPE *SKIT_T(slice_bfd_new_el)(
 This is similar to slice_bfd_append, except that it appends only a single
 element.
 */
-SKIT_T(slice) *SKIT_T(slice_bfd_put)(
+SKIT_T(slice) SKIT_T(slice_bfd_put)(
 	SKIT_T(loaf)     *buffer,
 	SKIT_T(slice)    *buf_slice,
 	SKIT_T_ELEM_TYPE elem);
