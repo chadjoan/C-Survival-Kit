@@ -16,6 +16,13 @@
 #	define SKIT_CLEAN_ARRAY_BUILTINS 1
 #endif
 
+/** Define skit_u64_slice and skit_u64_loaf */
+#define SKIT_T_ELEM_TYPE uint64_t
+#define SKIT_T_NAME u64
+#include SKIT_T_HEADER
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_NAME
+
 /** Define skit_u32_slice and skit_u32_loaf */
 #define SKIT_T_ELEM_TYPE uint32_t
 #define SKIT_T_NAME u32
@@ -33,6 +40,13 @@
 /** Define skit_u8_slice and skit_u8_loaf */
 #define SKIT_T_ELEM_TYPE uint8_t
 #define SKIT_T_NAME u8
+#include SKIT_T_HEADER
+#undef SKIT_T_ELEM_TYPE
+#undef SKIT_T_NAME
+
+/** Define skit_i64_slice and skit_i64_loaf */
+#define SKIT_T_ELEM_TYPE int64_t
+#define SKIT_T_NAME i64
 #include SKIT_T_HEADER
 #undef SKIT_T_ELEM_TYPE
 #undef SKIT_T_NAME
