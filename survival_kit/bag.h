@@ -40,7 +40,7 @@ my_type *my_get_foo(skit_bag *bag)
 void my_set_foo(skit_bag *bag, my_type *foo)
 {
 	sASSERT(my_foo_bag_id >= 0);
-	SKIT_BAG_SET_FIELD(bag, my_foo_bag_id, foo);
+	SKIT_BAG_SET_FIELD(bag, my_foo_bag_id, my_type*, foo);
 }
 
 void my_x_module_init()
@@ -77,7 +77,7 @@ uint32_t my_get_bar(skit_bag *bag)
 void my_set_bar(skit_bag *bag, uint32_t bar)
 {
 	sASSERT(my_foo_bag_id >= 0);
-	SKIT_BAG_SET_FIELD(bag, my_bar_bag_id, bar);
+	SKIT_BAG_SET_FIELD(bag, my_bar_bag_id, uint32_t, bar);
 }
 
 void my_y_module_init()
