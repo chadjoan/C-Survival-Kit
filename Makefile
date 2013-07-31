@@ -31,6 +31,7 @@ OBJECT_FILES= \
 	obj/feature_emulation/stack_trace.o \
 	obj/feature_emulation/unittest.o \
 	obj/feature_emulation/init.o \
+	obj/bag.o \
 	obj/signal_handling.o \
 	obj/flags.o \
 	obj/math.o \

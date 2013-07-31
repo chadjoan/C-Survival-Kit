@@ -1,5 +1,6 @@
 
 #include "survival_kit/init.h"
+#include "survival_kit/bag.h"
 #include "survival_kit/math.h"
 #include "survival_kit/inheritance_table.h"
 #include "survival_kit/stack_builtins.h"
@@ -22,6 +23,7 @@ void skit_unittest_modules()
 	skit_macro_unittest();
 	skit_flags_unittest();
 	skit_math_unittest();
+	skit_bag_unittest();
 	skit_stack_unittest();
 	skit_fstack_unittest();
 	skit_string_unittest();
@@ -37,6 +39,9 @@ void skit_unittest_modules()
 
 int main(int argc, char *argv[])
 {
+	/* Set the signal handler to do traces, so we get stack traces on segfaults. */
+	skit_push_tracing_sig_handler();
+	
 	/* Features should be unittested twice under different conditions: */
 	/* Once without an initial thread context. */
 	/* And again with a thread context established here. */
@@ -67,5 +72,8 @@ int main(int argc, char *argv[])
 	/*   only benefit now is getting slightly better stack traces on */
 	/*   assertion fails. */
 	sTRACE(skit_unittest_modules());
+	
+	skit_pop_tracing_sig_handler();
+	
 	return 0;
 }

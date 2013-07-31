@@ -27,6 +27,7 @@ $ @'THIS_DIR'compile survival_kit/feature_emulation/frame_info
 $ @'THIS_DIR'compile survival_kit/feature_emulation/stack_trace
 $ @'THIS_DIR'compile survival_kit/feature_emulation/unittest
 $ @'THIS_DIR'compile survival_kit/feature_emulation/init
+$ @'THIS_DIR'compile survival_kit/bag
 $ @'THIS_DIR'compile survival_kit/signal_handling
 $ @'THIS_DIR'compile survival_kit/flags
 $ @'THIS_DIR'compile survival_kit/math
