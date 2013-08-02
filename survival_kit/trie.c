@@ -159,7 +159,7 @@ static skit_trie_coords skit_trie_continue_lookup(skit_trie_node *node, uint32_t
 
 static int skit_exact_match( skit_trie_coords coords, size_t key_len )
 {
-	return ( coords.pos == key_len && coords.node->have_value );
+	return ( coords.pos == key_len && coords.node != NULL && coords.node->have_value );
 }
 
 static int skit_prefix_match( skit_trie_coords coords, size_t key_len )
@@ -1788,6 +1788,7 @@ static void skit_trie_iter_test(
 
 static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, int harder )
 {
+	SKIT_USE_FEATURE_EMULATION;
 	size_t i;
 	skit_trie *trie = skit_trie_new();
 	
@@ -1803,7 +1804,7 @@ static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, in
 		*/
 
 		if ( harder )
-			skit_trie_exhaustive_get_test(trie, tests, i+1, n_tests, 1);
+			sTRACE4(skit_trie_exhaustive_get_test(trie, tests, i+1, n_tests, 1));
 	}
 	
 	#if 0
@@ -1815,7 +1816,7 @@ static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, in
 	#endif
 	
 	if ( !harder )
-		skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 1);
+		sTRACE0(skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 1));
 	
 	/* ----- Iteration test ----- */
 	qsort( tests, n_tests, sizeof(skit_trie_test), &skit_trie_cmp_test );
@@ -1825,7 +1826,7 @@ static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, in
 		recurse = 1;
 
 	ITER_DEBUG("\n\n-------- Iteration test begins. ---------\n\n\n");
-	skit_trie_iter_test( trie, tests, n_tests, 0, recurse );
+	sTRACE0(skit_trie_iter_test( trie, tests, n_tests, 0, recurse ));
 	
 	/* ----- Case sensitivity ----- */
 	/* It should be possible to do overwriting assignments into all of the
@@ -1849,15 +1850,18 @@ static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, in
 	}
 	
 	sASSERT_EQ( length_before, skit_trie_len(trie), "%d" );
-	skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 0);
+	sTRACE0(skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 0));
 	
-	skit_trie_free(trie);
+	sTRACE0(skit_trie_free(trie));
 }
 
 static void skit_trie_unittest_basics()
 {
+	SKIT_USE_FEATURE_EMULATION;
 	size_t n_tests = 10;
 	skit_trie_test *tests = skit_malloc(sizeof(skit_trie_test) * n_tests);
+	
+	/* Successively shorter keys.  Also special characters. */
 	skit_trie_test_ctor(&tests[0], sSLICE("abcde"        ), sSLICE("Abcde"        ), 1  );
 	skit_trie_test_ctor(&tests[1], sSLICE("abxyz"        ), sSLICE("abXYZ"        ), 2  );
 	skit_trie_test_ctor(&tests[2], sSLICE("a1234"        ), sSLICE("A1234"        ), 3  );
@@ -1866,21 +1870,34 @@ static void skit_trie_unittest_basics()
 	skit_trie_test_ctor(&tests[5], sSLICE("abc"          ), sSLICE("ABC"          ), 6  );
 	skit_trie_test_ctor(&tests[6], sSLICE("\0\xFF\0\xFF" ), sSLICE("\0\xFF\0\xFF" ), 7  );
 	skit_trie_test_ctor(&tests[7], sSLICE("\0\xFF\x7F"   ), sSLICE("\0\xFF\x7F"   ), 8  );
-	skit_trie_test_ctor(&tests[8], sSLICE("\0\x7F\x7F"   ), sSLICE("\0\x7F\x7F"   ), 9  );
+	skit_trie_test_ctor(&tests[8], sSLICE("\0\x7F\x7F"   ), sSLICE("\0\x7F\x7F"   ), 9 );
 	skit_trie_test_ctor(&tests[9], sSLICE(""             ), sSLICE(""             ), 10 );
 
-	skit_trie_exhaustive_test(tests, n_tests, 1);
+	sTRACE0(skit_trie_exhaustive_test(tests, n_tests, 1));
 	
+	void *val;
+	skit_trie *trie;
+
 	/* Test inserting successively longer keys. */
 	/* (The previous mix tests successively shorter keys.) */
-	void *val;
-	skit_trie *trie = skit_trie_new();
+	trie = skit_trie_new();
 	sASSERT_EQS(skit_trie_setc(trie, "abc", (void*)1, sFLAGS("c")), sSLICE("abc"));
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
 	sASSERT_EQ(val, NULL, "%d");
 	sASSERT_EQS(skit_trie_setc(trie, "abcde", (void*)1, sFLAGS("c")), sSLICE("abcde"));
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde"));
 	sASSERT_EQ((size_t)val, 1, "%d");
+	sTRACE0(skit_trie_free(trie));
+	
+	trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "", (void*)1, sFLAGS("c")), sSLICE(""));
+	sASSERT_EQS(skit_trie_getc(trie, "", &val, SKIT_FLAGS_NONE), sSLICE(""));
+	sTRACE0(skit_trie_free(trie));
+	
+	/* Bug found in the wild: retrieving from a zero-length string caused a segfault.  It should return a null-slice instead. */
+	trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_getc(trie, "", &val, SKIT_FLAGS_NONE), skit_slice_null());
+	sTRACE0(skit_trie_free(trie));
 	
 	skit_free(tests);
 	
@@ -1889,6 +1906,7 @@ static void skit_trie_unittest_basics()
 
 static void skit_trie_unittest_linear_nodes()
 {
+	SKIT_USE_FEATURE_EMULATION;
 	skit_trie_test *tests = skit_malloc(sizeof(skit_trie_test) * 3);
 	size_t i;
 	
@@ -1931,9 +1949,9 @@ static void skit_trie_unittest_linear_nodes()
 	tests[1].val = 2;
 	tests[2].val = 3;
 	
-	skit_trie_exhaustive_test(tests, 3, 1);
+	sTRACE0(skit_trie_exhaustive_test(tests, 3, 1));
 	
-	skit_free(tests);
+	sTRACE0(skit_free(tests));
 	
 	printf("  skit_trie_unittest_linear_nodes passed.\n");
 }
@@ -1998,6 +2016,7 @@ static void skit_trie_test_make_trigram(
 
 static void skit_trie_unittest_table_nodes()
 {
+	SKIT_USE_FEATURE_EMULATION;
 	size_t i, j;
 	size_t breadth = SKIT__TRIE_NODE_PREALLOC+1;
 	
@@ -2040,7 +2059,7 @@ static void skit_trie_unittest_table_nodes()
 		tests[i].val = i+1;
 	}
 	
-	skit_trie_exhaustive_test(tests, n_strings, 0);
+	sTRACE0(skit_trie_exhaustive_test(tests, n_strings, 0));
 	
 	for ( i = 0; i < n_strings; i++ )
 	{
@@ -2048,9 +2067,9 @@ static void skit_trie_unittest_table_nodes()
 		skit_loaf_free(&iloaves[i]);
 	}
 	
-	skit_free(loaves);
-	skit_free(iloaves);
-	skit_free(tests);
+	sTRACE0(skit_free(loaves));
+	sTRACE0(skit_free(iloaves));
+	sTRACE0(skit_free(tests));
 }
 
 static void skit_trie_unittest_examples()
