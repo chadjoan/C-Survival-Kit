@@ -17,7 +17,7 @@ simpler string API first, and then learn the array API by analogy. */
 #define SKIT_T_NAMESPACE_IS_DEFAULT 1
 #endif
 
-const int SKIT_T(loaf_stride) = sizeof(SKIT_T_ELEM_TYPE);
+/*const int SKIT_T(loaf_stride) = sizeof(SKIT_T_ELEM_TYPE);*/
 
 static SKIT_T(slice) SKIT_T(slice_templated)(skit_slice slice)
 {

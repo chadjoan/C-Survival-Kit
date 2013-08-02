@@ -108,7 +108,8 @@ SKIT_T_DIE_ON_ERROR (optional) -
 #error "SKIT_T_ELEM_TYPE is needed but was not defined."
 #endif
 
-extern const int SKIT_T(loaf_stride);
+enum SKIT_T(stride__enum) { SKIT_T(loaf_stride) = sizeof(SKIT_T_ELEM_TYPE) };
+/*static const int SKIT_T(loaf_stride) = sizeof(SKIT_T_ELEM_TYPE);*/
 
 #ifndef SKIT_TEMPLATES_ARRAY_COMMON_DEFINED
 #define SKIT_TEMPLATES_ARRAY_COMMON_DEFINED
@@ -146,9 +147,9 @@ skit_vptr_loaf_free(&my_loaf);
 
 */
 #define SKIT_ARRAY_ON_STACK(prefix, array_name, size) \
-	const char *SKIT__LOAF_##array_name [ \
+	char SKIT__LOAF_##array_name [ \
 		(size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD]; \
-	skit_##prefix##_loaf array_name = skit_loaf_emplace( \
+	skit_##prefix##_loaf array_name = (skit_##prefix##_loaf)skit_loaf_emplace( \
 		SKIT__LOAF_##array_name, (size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD);
 
 
