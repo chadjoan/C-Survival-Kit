@@ -122,10 +122,10 @@ SKIT_T(slice) SKIT_T(slice_bfd_append)(
 	SKIT_T(slice) *buf_slice,
 	SKIT_T(slice) suffix)
 {
-	return (SKIT_T(slice))skit_slice_buffered_append(
+	return SKIT_T(slice_templated)(skit_slice_buffered_append(
 		(skit_loaf*)buffer,
 		(skit_slice*)buf_slice,
-		suffix.as_skit_slice);
+		suffix.as_skit_slice));
 }
 
 SKIT_T_ELEM_TYPE *SKIT_T(slice_bfd_new_el)(
@@ -145,10 +145,10 @@ SKIT_T(slice) SKIT_T(slice_bfd_put)(
 	SKIT_T(slice)    *buf_slice,
 	SKIT_T_ELEM_TYPE elem)
 {
-	return (SKIT_T(slice))skit_slice_buffered_append(
+	return SKIT_T(slice_templated)(skit_slice_buffered_append(
 		(skit_loaf*)buffer,
 		(skit_slice*)buf_slice,
-		skit_slice_of_cstrn((char*)&elem, sizeof(elem)));
+		skit_slice_of_cstrn((char*)&elem, sizeof(elem))));
 }
 
 SKIT_T(loaf) SKIT_T(loaf_dup)(SKIT_T(slice) slice)
