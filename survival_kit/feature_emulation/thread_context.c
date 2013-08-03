@@ -39,6 +39,9 @@ static void skit_fstack_reconcile_warn( ssize_t expected, ssize_t got, char *nam
 	fprintf(stderr,"  sTRY-sCATCH block or sSCOPE guard with raw C primitives can lead to \n");
 	fprintf(stderr,"  very buggy, bizarre, and inconsistent runtime behavior.\n");
 	fprintf(stderr,"  Just don't do it.\n");
+	fprintf(stderr,"  This could also be caused by nesting sTRACE/sETRACE statements within\n");
+	fprintf(stderr,"  each other.  Although desirable, this feature is currently unsupported,\n");
+	fprintf(stderr,"  and will probably cause buggy behavior.\n");
 	/* TODO: there should be some non-primitive control constructs that should be mentioned here
 	 *   as a way of accomplishing desired logic in sTRY-sCATCH statements. */
 	/* TODO: Although we can probably fix any problems the user creates for themselves, dieing might be better than warning. */
