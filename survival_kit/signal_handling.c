@@ -47,6 +47,13 @@ static pthread_key_t skit_signal_save_key;
 
 void skit_sig_init()
 {
+	/*
+	This should be written in such a way as to not depend on other modules 
+	being initialized.  If that ever changes, then the unittesting harness'
+	entry point will need modification.  It calls skit_sig_init() before
+	anything else so that it can call skit_push_tracing_sig_handler() and
+	output better error messages when unittests fail.
+	*/
 	pthread_key_create(&skit_signal_save_key, &skit_cleanup_signal_save);
 	pthread_setspecific(skit_signal_save_key, NULL);
 }

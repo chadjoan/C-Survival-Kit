@@ -39,7 +39,21 @@ void skit_unittest_modules()
 
 int main(int argc, char *argv[])
 {
-	/* Set the signal handler to do traces, so we get stack traces on segfaults. */
+	/* 
+	Set the signal handler to do traces, so we get stack traces on segfaults.
+	segfaults are easily possible in code that hasn't been unittested yet, so
+	these calls are actually important for printing better error messages
+	during unittesting.
+	Calling skit_sig_init() is necessary before calling
+	skit_push_tracing_sig_handler.
+	We can call skit_sig_init() this early as long as it needs nothing from 
+	the other modules at init-time.
+	We don't want to initialize /everything/ with skit_init() yet, because
+	that might generate segfaults in untested code, and you wouldn't get stack
+	traces for those without doing this call to skit_push_tracing_sig_handler()
+	first.
+	*/
+	skit_sig_init();
 	skit_push_tracing_sig_handler();
 	
 	/* Features should be unittested twice under different conditions: */
