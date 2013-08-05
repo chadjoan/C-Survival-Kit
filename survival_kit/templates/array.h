@@ -149,8 +149,9 @@ skit_vptr_loaf_free(&my_loaf);
 #define SKIT_ARRAY_ON_STACK(prefix, array_name, size) \
 	char SKIT__LOAF_##array_name [ \
 		(size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD]; \
-	skit_##prefix##_loaf array_name = (skit_##prefix##_loaf)skit_loaf_emplace( \
-		SKIT__LOAF_##array_name, (size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD);
+	skit_loaf array_name ## __tmp = skit_loaf_emplace( \
+		SKIT__LOAF_##array_name, (size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD); \
+	skit_##prefix##_loaf array_name = *(skit_##prefix##_loaf*)&array_name ## __tmp;
 
 
 #endif
