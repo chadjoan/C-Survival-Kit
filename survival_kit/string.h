@@ -688,6 +688,20 @@ comparison if anything goes wrong, thus aiding in fast debugging.
 /* ------------------------- string misc functions ------------------------- */
 
 /**
+Converts a slice into a signed 64-bit integer.
+Currently the semantics are defined largely by the underlying strtol
+implementation, though that will probably change in the future.
+*/
+int64_t skit_slice_to_int(skit_slice int_str);
+
+/**
+Converts a slice into an unsigned 64-bit integer.
+Currently the semantics are defined largely by the underlying strtoul
+implementation, though that will probably change in the future.
+*/
+uint64_t skit_slice_to_uint(skit_slice uint_str);
+
+/**
 Returns true (nonzero) if the given character is alphabetic.
 BUG: this currently only covers ascii characters.  UTF-8 is currently unimplemented.
 */

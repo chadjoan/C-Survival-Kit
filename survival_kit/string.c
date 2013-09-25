@@ -909,6 +909,35 @@ static void skit_slice_get_printf_formatter_test()
 /* ========================================================================= */
 /* ------------------------- string misc functions ------------------------- */
 
+/* TODO: define semantics and do unittests for slice_to_(u)int functions. */
+#define SKIT_SLICE_TO_XINT(xint_str, T, strtoxl) \
+	char cstr_buffer[20]; /* 64-bit integers + \0 null terminator can't be longer than 20 bytes. */ \
+	memcpy(cstr_buffer, sSPTR(xint_str), sSLENGTH(xint_str)); \
+	cstr_buffer[sSLENGTH(xint_str)] = '\0'; \
+	\
+	char *end_ptr = &cstr_buffer[0]; \
+	T result = strtoxl(cstr_buffer, &end_ptr, 10); \
+	if ( end_ptr == &cstr_buffer[0] || result == (T)LONG_MIN || result == (T)LONG_MAX ) \
+	{ \
+		/* Errors. */ \
+		sASSERT_MSGF(0, "Could not parse integer '%.*s'", sSLENGTH(xint_str), sSPTR(xint_str)); \
+	} \
+	\
+	return result;
+
+int64_t skit_slice_to_int(skit_slice int_str)
+{
+	SKIT_SLICE_TO_XINT(int_str, int64_t, strtol);
+}
+
+uint64_t skit_slice_to_uint(skit_slice uint_str)
+{
+	SKIT_SLICE_TO_XINT(uint_str, uint64_t, strtoul);
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* skit_is_alpha_lower and such are implemented as macros.  See the .h for implementation. */
 static void skit_is_alpha_test()
 {
 	sASSERT_EQ( skit_is_alpha_lower('A') ? 1 : 0, 0, "%d" );
