@@ -691,13 +691,25 @@ static void skit_loaf_assign_cstr_test()
 	skit_loaf loaf = skit_loaf_alloc(8);
 	const char *smallish = "foo";
 	const char *largish  = "Hello world!";
+	
+	// Start off with a small string.
 	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	
+	// Enlarge.
 	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
 	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
 	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	
+	// Narrow.
+	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
+	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_assign_cstr_test passed.\n");
 }

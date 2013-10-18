@@ -315,7 +315,7 @@ skit_slice skit_slice_of_cstr(const char *cstr);
 /**
 This macro is shorthand for skit_slice_of_cstr, with the additional limitation
 that it can only handle string literals.  It may, as a form of optimization,
-invoke sizeof(cstr) to avoid computing strlen like skit_slice_cstr does.
+invoke sizeof(cstr) to avoid computing strlen like skit_slice_of_cstr does.
 It provides a concise way making C-style string literals compatible with
 skit_slices.
 Example:
@@ -469,13 +469,25 @@ Example:
 	skit_loaf loaf = skit_loaf_alloc(8);
 	const char *smallish = "foo";
 	const char *largish  = "Hello world!";
+	
+	// Start off with a small string.
 	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	
+	// Enlarge.
 	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
 	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
 	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	
+	// Narrow.
+	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
+	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
