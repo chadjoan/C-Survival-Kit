@@ -561,7 +561,6 @@ skit_slice *skit_slice_buffered_resize(
 	ssize_t    new_buf_slice_length)
 {
 	ssize_t buffer_length;
-	ssize_t buf_slice_length;
 	skit_utf8c *rbound;
 	skit_utf8c *lbound;
 	skit_utf8c *new_rbound;
@@ -573,7 +572,6 @@ skit_slice *skit_slice_buffered_resize(
 	sASSERT(buf_slice_chars != NULL);
 	
 	buffer_length    = skit_loaf_len(*buffer);
-	buf_slice_length = skit_slice_len(*buf_slice);
 	lbound = buffer_chars;
 	rbound = lbound + buffer_length;
 	sASSERT_MSG(lbound <= buf_slice_chars && buf_slice_chars <= rbound, 

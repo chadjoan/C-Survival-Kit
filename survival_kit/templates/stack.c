@@ -186,6 +186,7 @@ void SKIT_T(stack_walk)(
 		
 		cur_node = cur_node->next;
 	}
+	(void)end_node_reached;
 	/* TODO: THROW with OUT_OF_BOUNDS if things start/end nodes are non-NULL and aren't found. */
 }
 
