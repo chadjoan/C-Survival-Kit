@@ -131,7 +131,7 @@ Ex:
 #include "survival_kit/array_builtins.h"
 
 // Declare a skit_loaf_vptr with 24 elements allocated on the stack.
-SKIT_ARRAY_ON_STACK(vptr, my_loaf, 24);
+SKIT_ARRAY_ON_STACK(skit_vptr_loaf, my_loaf, 24);
 
 // Take a slice out of the previous loaf.
 skit_vptr_slice my_slice = skit_vptr_slice_of(my_loaf.as_slice, 0, 2);
@@ -146,12 +146,12 @@ skit_vptr_slice_bfd_resize(&my_loaf, &my_slice, 32);
 skit_vptr_loaf_free(&my_loaf);
 
 */
-#define SKIT_ARRAY_ON_STACK(prefix, array_name, size) \
+#define SKIT_ARRAY_ON_STACK(array_type, array_name, size) \
 	char SKIT__LOAF_##array_name [ \
-		(size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD]; \
+		(size  * array_type##_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD]; \
 	skit_loaf array_name ## __tmp = skit_loaf_emplace( \
-		SKIT__LOAF_##array_name, (size  * skit_##prefix##_loaf_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD); \
-	skit_##prefix##_loaf array_name = *(skit_##prefix##_loaf*)&array_name ## __tmp;
+		SKIT__LOAF_##array_name, (size  * array_type##_stride) + SKIT_ARRAY_EMPLACEMENT_OVERHEAD); \
+	array_type array_name = *(array_type*)&array_name ## __tmp;
 
 
 #endif
