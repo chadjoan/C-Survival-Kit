@@ -12,6 +12,8 @@
 #include "survival_kit/feature_emulation/throw.h"
 #include "survival_kit/assert.h"
 
+#include <inttypes.h>
+
 #define SKIT_TRACE_INTERNAL(original_code, assignment, returned_expr, on_entry, on_exit) /* */ \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
@@ -191,5 +193,34 @@ still affected by the sTRACE_LEVEL define.
 #define sETRACE2(statement) sETRACE2_HOOKED(statement, (0), (0))
 #define sETRACE3(statement) sETRACE3_HOOKED(statement, (0), (0))
 #define sETRACE4(statement) sETRACE4_HOOKED(statement, (0), (0))
+
+
+/**
+Trace calls to a traditional C function (one returning values that represent
+error conditions) and checks for error codes in the return value.
+
+This assumes that a return value of 0 means success, and everything else is
+an error code, so be sure that the C function's documentation agrees with this.
+(Remember that you can negate the call with the unary ! operator if the
+function returns 0 for errors.)
+
+If the C function returns an error, then an exception will be thrown that
+contains the errno meaning as a string (ex: what you'd get from calling perror).
+*/
+#define SKIT_CTRACE_INTERNAL(call_as_str, call) \
+	do { \
+		uintptr_t skit__errcode = (uintptr_t)(call); \
+		if ( skit__errcode ) \
+		{ \
+			char skit__errbuf[1024]; \
+			sTHROW(SKIT_EXCEPTION, "Error executing \"%s\": %s", (call_as_str), skit_errno_to_cstr(skit__errbuf, sizeof(skit__errbuf))); \
+		} \
+	} while(0)
+#define sCTRACE(call)  SKIT_CTRACE_INTERNAL(#call, call)
+#define sCTRACE0(call) SKIT_CTRACE_INTERNAL(#call, call)
+#define sCTRACE1(call) SKIT_CTRACE_INTERNAL(#call, call)
+#define sCTRACE2(call) SKIT_CTRACE_INTERNAL(#call, call)
+#define sCTRACE3(call) SKIT_CTRACE_INTERNAL(#call, call)
+#define sCTRACE4(call) SKIT_CTRACE_INTERNAL(#call, call)
 
 #endif
