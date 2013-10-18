@@ -38,6 +38,7 @@ OBJECT_FILES= \
 	obj/string.o \
 	obj/trie.o \
 	obj/regex.o \
+	obj/path.o \
 	obj/array_builtins.o \
 	obj/streams/stream.o \
 	obj/streams/text_stream.o \

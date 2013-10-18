@@ -3,6 +3,7 @@
 #include "survival_kit/bag.h"
 #include "survival_kit/math.h"
 #include "survival_kit/inheritance_table.h"
+#include "survival_kit/path.h"
 #include "survival_kit/stack_builtins.h"
 #include "survival_kit/fstack_builtins.h"
 #include "survival_kit/feature_emulation.h"
@@ -27,6 +28,7 @@ void skit_unittest_modules()
 	skit_stack_unittest();
 	skit_fstack_unittest();
 	skit_string_unittest();
+	skit_path_unittest();
 	skit_trie_unittest();
 	skit_regex_unittest();
 	skit_array_unittest();

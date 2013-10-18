@@ -5,6 +5,7 @@
 
 #include "survival_kit/init.h"
 #include "survival_kit/cstr.h"
+#include "survival_kit/path.h"
 #include "survival_kit/feature_emulation/init.h"
 #include "survival_kit/feature_emulation/exception.h"
 #include "survival_kit/signal_handling.h"
@@ -27,6 +28,7 @@ void skit_init()
 	skit_features_init();
 	skit_cstr_init();
 	skit_sig_init();
+	skit_path_module_init();
 	skit_trie_module_init();
 	skit_stream_module_init_all();
 	pthread_key_create(&skit__thread_init_called, &skit_thread_dummy_dtor);
@@ -44,6 +46,7 @@ void skit__thread_module_init()
 		return;
 
 	skit_cstr_thread_init();
+	skit_path_thread_init();
 	pthread_setspecific(skit__thread_init_called, (void*)1);
 }
 
