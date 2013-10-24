@@ -417,6 +417,32 @@ static void skit_slice_of_cstr_test()
 	printf("  skit_slice_of_cstr_test passed.\n");
 }
 
+static void skit_slice_sSLICE_test()
+{
+	skit_slice slice = sSLICE("foo");
+	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
+	
+	const char *cstr_ptr = "Hello world!";
+	slice = sSLICE(cstr_ptr);
+	sASSERT_EQ(skit_slice_len(slice), 12, "%d");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "Hello world!");
+	
+	// Arrays may behave strangely:
+	char array1[sizeof(void*)];
+	memset(array1, '\0', sizeof(void*));
+	slice = sSLICE(array1);
+	sASSERT_EQ(skit_slice_len(slice), 0, "%d");
+	
+	char array2[sizeof(void*)-1];
+	memset(array2, '\0', sizeof(void*)-1);
+	slice = sSLICE(array2);
+	sASSERT_EQ(skit_slice_len(slice), sizeof(array2)-1, "%d");
+	sASSERT_NE(skit_slice_len(slice), 0, "%d");
+
+	printf("  skit_slice_sSLICE_test passed.\n");
+}
+
 /* ------------------------------------------------------------------------- */
 
 skit_loaf *skit_loaf_resize(skit_loaf *loaf, size_t length)
@@ -1824,6 +1850,7 @@ void skit_string_unittest()
 	skit_slice_check_init_test();
 	skit_slice_of_cstrn_test();
 	skit_slice_of_cstr_test();
+	skit_slice_sSLICE_test();
 	skit_loaf_resize_test();
 	skit_loaf_append_test();
 	skit_slice_concat_test();

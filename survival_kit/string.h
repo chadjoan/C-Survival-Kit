@@ -313,17 +313,36 @@ Example:
 skit_slice skit_slice_of_cstr(const char *cstr);
 
 /**
-This macro is shorthand for skit_slice_of_cstr, with the additional limitation
-that it can only handle string literals.  It may, as a form of optimization,
-invoke sizeof(cstr) to avoid computing strlen like skit_slice_of_cstr does.
-It provides a concise way making C-style string literals compatible with
+This macro is shorthand for skit_slice_of_cstr and skit_slice_of_cstrn.
+It provides a concise way making C-style strings compatible with
 skit_slices.
+It may be used with either C-style string literals or null-terminated
+C-strings given as pointers.
+Take caution when using it with C stack-allocated arrays: behavior may be
+undefined in this case.
 Example:
 	skit_slice slice = sSLICE("foo");
 	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
+	
+	const char *cstr_ptr = "Hello world!";
+	slice = sSLICE(cstr_ptr);
+	sASSERT_EQ(skit_slice_len(slice), 12, "%d");
+	sASSERT_EQ_CSTR((char*)sSPTR(slice), "Hello world!");
+	
+	// Arrays may behave strangely:
+	char array1[sizeof(void*)];
+	memset(array1, '\0', sizeof(void*));
+	slice = sSLICE(array1);
+	sASSERT_EQ(skit_slice_len(slice), 0, "%d");
+	
+	char array2[sizeof(void*)-1];
+	memset(array2, '\0', sizeof(void*)-1);
+	slice = sSLICE(array2);
+	sASSERT_EQ(skit_slice_len(slice), sizeof(array2)-1, "%d");
+	sASSERT_NE(skit_slice_len(slice), 0, "%d");
 */
-#define sSLICE(cstr) (skit_slice_of_cstrn((cstr), sizeof((cstr))-1))
+#define sSLICE(cstr) (sizeof((cstr)) == sizeof(void*) ? skit_slice_of_cstr((cstr)) : skit_slice_of_cstrn((cstr), sizeof((cstr))-1))
 /* subtract 1 because sizeof(x) includes the nul byte. */
 
 /**
