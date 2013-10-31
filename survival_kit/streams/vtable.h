@@ -34,6 +34,7 @@ struct SKIT_VTABLE_T
 	void        (*incr_indent)  (SKIT_STREAM_T*);
 	void        (*decr_indent)  (SKIT_STREAM_T*);
 	short       (*get_ind_lvl)  (const SKIT_STREAM_T*);
+	short       (*get_peak)     (const SKIT_STREAM_T*);
 	const char* (*get_ind_str)  (const SKIT_STREAM_T*);
 	void        (*set_ind_str)  (SKIT_STREAM_T*, const char*);
 	

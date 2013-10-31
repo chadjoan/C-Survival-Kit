@@ -4,6 +4,7 @@
 #endif
 
 #include <stdarg.h>
+#include <inttypes.h>
 
 #include "survival_kit/feature_emulation.h"
 
@@ -78,7 +79,13 @@ void skit_stream_decr_indent_base(skit_stream *stream)
 	/* Do nothing. */
 }
 
-short skit_stream_get_ind_lvl_base(const skit_stream *stream)
+int16_t skit_stream_get_ind_lvl_base(const skit_stream *stream)
+{
+	/* Streams that don't implement indentation will always have an indentation level of 0. */
+	return 0;
+}
+
+int16_t skit_stream_get_peak_base(const skit_stream *stream)
 {
 	/* Streams that don't implement indentation will always have an indentation level of 0. */
 	return 0;
@@ -125,6 +132,7 @@ void skit_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->incr_indent   = &skit_stream_incr_indent_base;
 	table->decr_indent   = &skit_stream_decr_indent_base;
 	table->get_ind_lvl   = &skit_stream_get_ind_lvl_base;
+	table->get_peak      = &skit_stream_get_peak_base;
 	table->get_ind_str   = &skit_stream_get_ind_str_base;
 	table->set_ind_str   = &skit_stream_set_ind_str_base;
 	
@@ -228,9 +236,14 @@ void skit_stream_decr_indent(skit_stream *stream)
 	SKIT_STREAM_DISPATCH(stream, decr_indent);
 }
 
-short skit_stream_get_ind_lvl(const skit_stream *stream)
+int16_t skit_stream_get_ind_lvl(const skit_stream *stream)
 {
 	return SKIT_STREAM_DISPATCH(stream, get_ind_lvl);
+}
+
+int16_t skit_stream_get_peak(const skit_stream *stream)
+{
+	return SKIT_STREAM_DISPATCH(stream, get_peak);
 }
 
 const char *skit_stream_get_ind_str(const skit_stream *stream)
@@ -645,6 +658,7 @@ void skit_stream_indent_unittest(
 	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
+	sASSERT_EQ( skit_stream_get_peak(stream),    0, "%d" );
 	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("\t") );
 	SKIT_ASSERT_CONTENTS("");
 	skit_stream_appendf(stream, "foo\n");
@@ -652,12 +666,14 @@ void skit_stream_indent_unittest(
 	
 	skit_stream_incr_indent(stream);
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1, "%d" );
+	sASSERT_EQ( skit_stream_get_peak(stream),    1, "%d" );
 	skit_stream_append(stream, sSLICE("bar\nbaz"));
 	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz");
 	
 	skit_stream_incr_indent(stream);
 	skit_stream_set_ind_str(stream, "  ");
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 2, "%d" );
+	sASSERT_EQ( skit_stream_get_peak(stream),    2, "%d" );
 	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("  ") );
 	skit_stream_appendln(stream, sSLICE("\nqux"));
 	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz\n    qux\n");
@@ -665,8 +681,13 @@ void skit_stream_indent_unittest(
 	skit_stream_decr_indent(stream);
 	skit_stream_decr_indent(stream);
 	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
+	sASSERT_EQ( skit_stream_get_peak(stream),    2, "%d" );
 	skit_stream_append(stream, sSLICE("quux"));
 	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz\n    qux\nquux");
+	
+	skit_stream_incr_indent(stream);
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1, "%d" );
+	sASSERT_EQ( skit_stream_get_peak(stream),    1, "%d" );
 	
 	printf("  skit_stream_indent_unittest passed.\n");
 }

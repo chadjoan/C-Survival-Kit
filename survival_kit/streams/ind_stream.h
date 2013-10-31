@@ -11,6 +11,8 @@ at the time it is constructed.
 #include "survival_kit/string.h"
 #include "survival_kit/streams/stream.h"
 
+#include <inttypes.h>
+
 typedef struct skit_ind_stream_internal skit_ind_stream_internal;
 struct skit_ind_stream_internal
 {
@@ -18,7 +20,8 @@ struct skit_ind_stream_internal
 	skit_stream_common_fields common_fields;
 	skit_stream               *backing_stream;
 	const char                *indent_str;
-	short                     indent_level;
+	int16_t                   indent_level;
+	int16_t                   last_peak_level;
 	char                      last_write_was_newline;
 };
 
@@ -65,7 +68,8 @@ void skit_ind_stream_dump(const skit_ind_stream *stream, skit_stream *output);
 
 void skit_ind_stream_incr_indent(skit_ind_stream *stream);
 void skit_ind_stream_decr_indent(skit_ind_stream *stream);
-short skit_ind_stream_get_ind_lvl(const skit_ind_stream *stream);
+int16_t skit_ind_stream_get_ind_lvl(const skit_ind_stream *stream);
+int16_t skit_ind_stream_get_peak(const skit_ind_stream *stream);
 const char *skit_ind_stream_get_ind_str(const skit_ind_stream *stream);
 void skit_ind_stream_set_ind_str(skit_ind_stream *stream, const char *c);
 

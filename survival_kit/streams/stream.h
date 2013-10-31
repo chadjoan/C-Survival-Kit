@@ -3,6 +3,7 @@
 #define SKIT_STREAMS_STREAM_INCLUDED
 
 #include <stdarg.h>
+#include <inttypes.h>
 
 #include "survival_kit/feature_emulation.h"
 #include "survival_kit/streams/meta.h"
@@ -389,7 +390,8 @@ to another skit_stream while inserting indentation as necessary.
 */
 void skit_stream_incr_indent(skit_stream *stream);
 void skit_stream_decr_indent(skit_stream *stream); /** ditto */
-short skit_stream_get_ind_lvl(const skit_stream *stream); /** ditto */
+int16_t skit_stream_get_ind_lvl(const skit_stream *stream); /** ditto */
+int16_t skit_stream_get_peak(const skit_stream *stream); /** ditto */
 const char *skit_stream_get_ind_str(const skit_stream *stream); /** ditto */
 void skit_stream_set_ind_str(skit_stream *stream, const char *c); /** ditto */
 

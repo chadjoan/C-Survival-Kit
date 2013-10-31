@@ -3,8 +3,6 @@
 #pragma module skit_streams_ind_stream
 #endif
 
-#include <stdarg.h>
-#include <stdio.h>
 #include "survival_kit/assert.h"
 #include "survival_kit/string.h"
 #include "survival_kit/streams/stream.h"
@@ -16,6 +14,10 @@
 #include "survival_kit/streams/vtable.h"
 #undef SKIT_STREAM_T
 #undef SKIT_VTABLE_T
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <inttypes.h>
 
 /* ------------------------------------------------------------------------- */
 
@@ -44,6 +46,7 @@ static void skit_ind_stream_vtable_init(skit_stream_vtable_t *arg_table)
 	table->incr_indent   = &skit_ind_stream_incr_indent;
 	table->decr_indent   = &skit_ind_stream_decr_indent;
 	table->get_ind_lvl   = &skit_ind_stream_get_ind_lvl;
+	table->get_peak      = &skit_ind_stream_get_peak;
 	table->get_ind_str   = &skit_ind_stream_get_ind_str;
 	table->set_ind_str   = &skit_ind_stream_set_ind_str;
 }
@@ -383,23 +386,31 @@ void skit_ind_stream_incr_indent(skit_ind_stream *stream)
 	sASSERT(stream != NULL);
 	skit_ind_stream_internal *istreami = &(stream->as_internal);
 	(istreami->indent_level)++;
+	istreami->last_peak_level = istreami->indent_level;
 }
 
 void skit_ind_stream_decr_indent(skit_ind_stream *stream)
 {
 	sASSERT(stream != NULL);
 	skit_ind_stream_internal *istreami = &(stream->as_internal);
-	short ilevel = istreami->indent_level;
+	int16_t ilevel = istreami->indent_level;
 	if ( ilevel > 0 )
 		ilevel--;
 	istreami->indent_level = ilevel;
 }
 
-short skit_ind_stream_get_ind_lvl(const skit_ind_stream *stream)
+int16_t skit_ind_stream_get_ind_lvl(const skit_ind_stream *stream)
 {
 	sASSERT(stream != NULL);
 	const skit_ind_stream_internal *istreami = &(stream->as_internal);
 	return istreami->indent_level;
+}
+
+int16_t skit_ind_stream_get_peak(const skit_ind_stream *stream)
+{
+	sASSERT(stream != NULL);
+	const skit_ind_stream_internal *istreami = &(stream->as_internal);
+	return istreami->last_peak_level;
 }
 
 const char *skit_ind_stream_get_ind_str(const skit_ind_stream *stream)
