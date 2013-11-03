@@ -10,7 +10,7 @@ struct skit_tcp_stream_internal
 	skit_stream_metadata      meta;
 	skit_stream_common_fields common_fields;
 	skit_loaf                 read_buffer;
-	int socket_fd;
+	int listener_fd;
 	int connection_fd;
 };
 
@@ -80,6 +80,17 @@ as would be expected by Berkeley socket functions.  This is for convenience.
 */
 void skit_tcp_stream_connect(skit_tcp_stream *stream, skit_slice ip_addr, int port);
 
+/**
+Returns the underlying socket descriptor.
+
+This can be useful when implementing any functionality that hasn't been
+considered in the tcp stream interface (or the stream interface in general).
+
+It is expected that the caller will leave the socket open and avoid doing
+anything that would desync the stream's state and the socket's state.  In
+other words: consider access to the returned socket to be read-only.
+*/
+int skit_tcp_stream_get_socket_fd(skit_tcp_stream *stream);
 
 void skit_tcp_stream_close(skit_tcp_stream *stream);
 

@@ -130,7 +130,7 @@ void skit_tcp_stream_ctor(skit_tcp_stream *tstream)
 	skit_tcp_stream_internal *tstreami = &tstream->as_internal;
 	tstreami->read_buffer = skit_loaf_null();
 	tstreami->connection_fd = -1;
-	tstreami->socket_fd = -1;
+	tstreami->listener_fd = -1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -387,12 +387,12 @@ void skit_tcp_stream_dump(const skit_tcp_stream *stream, skit_stream *output)
 	
 	skit_stream_appendf(output, "Opened skit_tcp_stream with the following properties:\n");
 	
-	if ( tstreami->socket_fd > 0 )
-		skit_stream_appendln(output, sSLICE("Stream is operating in server mode. (socket_fd > 0)") );
+	if ( tstreami->listener_fd > 0 )
+		skit_stream_appendln(output, sSLICE("Stream is operating in server mode. (listener_fd > 0)") );
 	else
-		skit_stream_appendln(output, sSLICE("Stream is operating in client mode. (socket_fd == -1)") );
+		skit_stream_appendln(output, sSLICE("Stream is operating in client mode. (listener_fd == -1)") );
 	
-	skit_stream_appendf(output, "socket_fd:     %d\n", tstreami->socket_fd );
+	skit_stream_appendf(output, "socket_fd:     %d\n", tstreami->listener_fd );
 	skit_stream_appendf(output, "connection_fd: %d\n", tstreami->connection_fd );
 	
 	struct sockaddr_in addr_struct;
@@ -405,10 +405,10 @@ void skit_tcp_stream_dump(const skit_tcp_stream *stream, skit_stream *output)
 		skit_stream_appendf(output, "getpeername error: %s\n", skit_errno_to_cstr(errbuf, sizeof(errbuf)) );
 	}
 	
-	if ( tstreami->socket_fd > 0 )
+	if ( tstreami->listener_fd > 0 )
 	{
 		addr_len = sizeof(addr_struct);
-		if ( 0 == getsockname(tstreami->socket_fd, (struct sockaddr*)&addr_struct, &addr_len) )
+		if ( 0 == getsockname(tstreami->listener_fd, (struct sockaddr*)&addr_struct, &addr_len) )
 			skit_tcp_dump_addr( "Listen", &addr_struct, output );
 		else
 		{
@@ -443,7 +443,7 @@ void skit_tcp_stream_accept(skit_tcp_stream *stream, int socket_fd)
 		sTRACE(skit_stream_throw_exc(SKIT_TCP_IO_EXCEPTION, &stream->as_stream, "Accept failed."));
 	
 	tstreami->connection_fd = connection_fd;
-	tstreami->socket_fd = socket_fd;
+	tstreami->listener_fd = socket_fd;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -488,8 +488,18 @@ sSCOPE
 	/* Commit our newly obtained connection to the stream. */
 	skit_tcp_stream_internal *tstreami = &stream->as_internal;
 	tstreami->connection_fd = connection_fd;
-	tstreami->socket_fd = -1; /* Make sure we indicate that we are client-side. */
+	tstreami->listener_fd = -1; /* Make sure we indicate that we are client-side. */
 sEND_SCOPE
+
+/* ------------------------------------------------------------------------- */
+
+int skit_tcp_stream_get_socket_fd(skit_tcp_stream *stream)
+{
+	SKIT_USE_FEATURE_EMULATION;
+	skit_tcp_stream_internal *tstreami = &stream->as_internal;
+	
+	return tstreami->connection_fd;
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -507,7 +517,7 @@ void skit_tcp_stream_close(skit_tcp_stream *stream)
 	close( tstreami->connection_fd );
 	
 	tstreami->connection_fd = -1;
-	tstreami->socket_fd = -1;
+	tstreami->listener_fd = -1;
 }
 
 /* ------------------------------------------------------------------------- */
