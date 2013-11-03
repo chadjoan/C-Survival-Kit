@@ -650,71 +650,141 @@ Example:
 char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_size, int enquote );
 
 /* Internal use.  Please do not call directly. */
-#define SKIT__ENFORCE_SLICE( check_name, comparison, lhs, rhs ) \
+#define SKIT__CHECK_SLICE_CMP_ESC( cmp_op, check_name, lhs, rhs, lhs_evaluated, rhs_evaluated, RESPONSE ) \
 	do { \
-		if ( !(comparison) ) { \
-			skit_print_stack_trace(); \
-			SKIT_LOAF_ON_STACK(lhs_buf, 32); \
-			SKIT_LOAF_ON_STACK(rhs_buf, 32); \
-			skit_slice lhs_escape = skit_slice_escapify((lhs), &lhs_buf); \
-			skit_slice rhs_escape = skit_slice_escapify((rhs), &rhs_buf); \
-			skit_die ( \
-				"%s: at line %d in function %s: " check_name "(" #lhs "," #rhs ") failed.\n" \
-				"  lhs == \"%.*s\"\n" \
-				"  rhs == \"%.*s\"", \
-				__FILE__, __LINE__, __func__, \
-				sSLENGTH(lhs_escape), sSPTR(lhs_escape), \
-				sSLENGTH(rhs_escape), sSPTR(rhs_escape)); \
-		} \
+		skit_print_stack_trace(); \
+		SKIT_LOAF_ON_STACK(skit_assert__lhs_buf, 32); \
+		SKIT_LOAF_ON_STACK(skit_assert__rhs_buf, 32); \
+		skit_slice skit_assert__lhs_escape = skit_slice_escapify((lhs_evaluated), &skit_assert__lhs_buf); \
+		skit_slice skit_assert__rhs_escape = skit_slice_escapify((rhs_evaluated), &skit_assert__rhs_buf); \
+		\
+		/* TODO: Possible memory leak if either buffer grows past stack allocation */ \
+		/* TODO:   and the caller-supplied response doesn't exit the program. */ \
+		RESPONSE( cmp_op, check_name, lhs, rhs, \
+			sSPTR(skit_assert__lhs_escape),    sSPTR(skit_assert__rhs_escape), \
+			sSLENGTH(skit_assert__lhs_escape), sSLENGTH(skit_assert__rhs_escape)); \
 	} while(0)
 
 /* Internal use.  Please do not call directly. */
-#define SKIT__ENFORCE_EQS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_EQS", skit_slice_eqs((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_NES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_NES", skit_slice_nes((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_GES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_GES", skit_slice_ges((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_LES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_LES", skit_slice_les((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_GTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_GTS", skit_slice_gts((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_LTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_LTS", skit_slice_lts((lhs),(rhs)), (lhs), (rhs))
+#define SKIT__CHECK_SLICE_CMP_EVAL( cmp_op, case_sensitive, check_name, uc_suffix, lhs, rhs, RESPONSE ) \
+	do { \
+		skit_slice skit__check_lhs_evaluated = (lhs); \
+		skit_slice skit__check_rhs_evaluated = (rhs); \
+		\
+		if ( !(skit_slice_ascii_ccmp(skit__check_lhs_evaluated, skit__check_rhs_evaluated, case_sensitive) cmp_op 0) ) \
+			SKIT__CHECK_SLICE_CMP_ESC( cmp_op, check_name "_" #uc_suffix, lhs, rhs, \
+				skit__check_lhs_evaluated, skit__check_rhs_evaluated, RESPONSE ); \
+	} while(0)
 
-#define SKIT__ENFORCE_IEQS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_IEQS", skit_slice_ieqs((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_INES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_INES", skit_slice_ines((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_IGES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_IGES", skit_slice_iges((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_ILES(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_ILES", skit_slice_iles((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_IGTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_IGTS", skit_slice_igts((lhs),(rhs)), (lhs), (rhs))
-#define SKIT__ENFORCE_ILTS(check_name,lhs,rhs) SKIT__ENFORCE_SLICE(check_name "_ILTS", skit_slice_ilts((lhs),(rhs)), (lhs), (rhs))
+/* Internal use.  Please do not call directly. */
+#define SKIT__ENFORCE_SLICE_RE(cmp_op, case_sensitive, uc_suffix, lhs, rhs, RESPONSE) \
+	SKIT__CHECK_SLICE_CMP_EVAL(cmp_op, case_sensitive, "ENFORCE", uc_suffix, lhs, rhs, RESPONSE)
+
+#define SKIT__ASSERT_SLICE_RE(cmp_op, case_sensitive, uc_suffix, lhs, rhs, RESPONSE) \
+	SKIT__CHECK_SLICE_CMP_EVAL(cmp_op, case_sensitive, "ASSERT", uc_suffix, lhs, rhs, RESPONSE)
+
+/**
+Assertions/enforcement with caller-defined responses to test failure.
+
+This exists to allow other libraries or utility code to build their own
+assertions or enforcements ontop of the survival kit string.h asserts/enforces.
+
+Appropriate responses are a macro with a signature like so:
+#define RESPONSE(cmp_op, check_name, lhs, rhs, lhs_strptr, rhs_strptr, lhs_len, rhs_len)
+cmp_op:     Usually expands to one of ==, !=, >=, <=, >, or <.  This will be a raw C token (unquoted).
+check_name: Usually expands to "ASSERT_EQS", "ENFORCE_EQS", or similar, depending on origins.
+lhs:        The original left-hand-side expression.  It is provided for stringizing; do not evaluate it.
+rhs:        The original right-hand-side expression.  It is provided for stringizing; do not evaluate it.
+lhs_strptr: A pointer derived from a slice whose value is the result of evaluating the left-hand-side of the original assert/enforce.
+rhs_strptr: A pointer derived from a slice whose value is the result of evaluating the right-hand-side of the original assert/enforce.
+lhs_len:    The length of the string (in bytes) pointed to by lhs_strptr.
+rhs_len:    The length of the string (in bytes) pointed to by rhs_strptr.
+
+The RESPONSE macro should expand as a statement, so wrap it in a 'do {...} while(0)' as necessary.
+*/
+#define SKIT_ENFORCE_EQS_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(==, 1, EQS,lhs,rhs,RESPONSE)
+#define SKIT_ENFORCE_NES_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(!=, 1, NES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_GES_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(>=, 1, GES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_LES_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(<=, 1, LES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_GTS_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(>,  1, GTS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_LTS_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(<,  1, LTS,lhs,rhs,RESPONSE) /// Ditto.
+
+#define SKIT_ENFORCE_IEQS_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(==, 0, EQS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_INES_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(!=, 0, NES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_IGES_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(>=, 0, GES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_ILES_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(<=, 0, LES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_IGTS_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(>,  0, GTS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ENFORCE_ILTS_RE(lhs,rhs,RESPONSE) SKIT__ENFORCE_SLICE_RE(<,  0, LTS,lhs,rhs,RESPONSE) /// Ditto.
+
+#define SKIT_ASSERT_EQS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(==, 1, EQS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_NES_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(!=, 1, NES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_GES_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(>=, 1, GES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_LES_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(<=, 1, LES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_GTS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(>,  1, GTS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_LTS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(<,  1, LTS,lhs,rhs,RESPONSE) /// Ditto.
+
+#define SKIT_ASSERT_IEQS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(==, 0, EQS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_INES_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(!=, 0, NES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_IGES_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(>=, 0, GES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_ILES_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(<=, 0, LES,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_IGTS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(>,  0, GTS,lhs,rhs,RESPONSE) /// Ditto.
+#define SKIT_ASSERT_ILTS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(<,  0, LTS,lhs,rhs,RESPONSE) /// Ditto.
+
+/* Internal use.  Please do not call directly. */
+#define SKIT__ASSERT_SLICE_RESPONSE(cmp_op, check_name, lhs, rhs, lhs_strptr, rhs_strptr, lhs_len, rhs_len) \
+	do { \
+		skit_die ( \
+			"%s: at line %d in function %s: " check_name "(" #lhs #cmp_op #rhs ") failed.\n" \
+			"  lhs == \"%.*s\"\n" \
+			"  rhs == \"%.*s\"", \
+			__FILE__, __LINE__, __func__, \
+			lhs_len, lhs_strptr, \
+			rhs_len, rhs_strptr); \
+	} while(0)
+
+#define SKIT__ENFORCE_SLICE_RESPONSE(cmp_op, check_name, lhs, rhs, lhs_strptr, rhs_strptr, lhs_len, rhs_len) \
+	do { \
+		sTHROW( \
+			check_name "(" #lhs #cmp_op #rhs ") failed.\n" \
+			"  lhs == \"%.*s\"\n" \
+			"  rhs == \"%.*s\"", \
+			lhs_len, lhs_strptr, \
+			rhs_len, rhs_strptr); \
+	} while(0)
+
 
 /**
 Assertions/enforcement involving comparisons of slices.
 These are good to use because they will print the slices involved in the
 comparison if anything goes wrong, thus aiding in fast debugging.
 */
-#define sENFORCE_EQS(lhs,rhs) SKIT__ENFORCE_EQS("sENFORCE",lhs,rhs)
-#define sENFORCE_NES(lhs,rhs) SKIT__ENFORCE_NES("sENFORCE",lhs,rhs)
-#define sENFORCE_GES(lhs,rhs) SKIT__ENFORCE_GES("sENFORCE",lhs,rhs)
-#define sENFORCE_LES(lhs,rhs) SKIT__ENFORCE_LES("sENFORCE",lhs,rhs)
-#define sENFORCE_GTS(lhs,rhs) SKIT__ENFORCE_GTS("sENFORCE",lhs,rhs)
-#define sENFORCE_LTS(lhs,rhs) SKIT__ENFORCE_LTS("sENFORCE",lhs,rhs)
+#define sENFORCE_EQS(lhs,rhs) SKIT_ENFORCE_EQS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE)
+#define sENFORCE_NES(lhs,rhs) SKIT_ENFORCE_NES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_GES(lhs,rhs) SKIT_ENFORCE_GES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_LES(lhs,rhs) SKIT_ENFORCE_LES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_GTS(lhs,rhs) SKIT_ENFORCE_GTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_LTS(lhs,rhs) SKIT_ENFORCE_LTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
 
-#define sENFORCE_IEQS(lhs,rhs) SKIT__ENFORCE_IEQS("sENFORCE",lhs,rhs)
-#define sENFORCE_INES(lhs,rhs) SKIT__ENFORCE_INES("sENFORCE",lhs,rhs)
-#define sENFORCE_IGES(lhs,rhs) SKIT__ENFORCE_IGES("sENFORCE",lhs,rhs)
-#define sENFORCE_ILES(lhs,rhs) SKIT__ENFORCE_ILES("sENFORCE",lhs,rhs)
-#define sENFORCE_IGTS(lhs,rhs) SKIT__ENFORCE_IGTS("sENFORCE",lhs,rhs)
-#define sENFORCE_ILTS(lhs,rhs) SKIT__ENFORCE_ILTS("sENFORCE",lhs,rhs)
+#define sENFORCE_IEQS(lhs,rhs) SKIT_ENFORCE_IEQS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_INES(lhs,rhs) SKIT_ENFORCE_INES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_IGES(lhs,rhs) SKIT_ENFORCE_IGES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_ILES(lhs,rhs) SKIT_ENFORCE_ILES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_IGTS(lhs,rhs) SKIT_ENFORCE_IGTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_ILTS(lhs,rhs) SKIT_ENFORCE_ILTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
 
-#define sASSERT_EQS(lhs,rhs) SKIT__ENFORCE_EQS("sASSERT",lhs,rhs)
-#define sASSERT_NES(lhs,rhs) SKIT__ENFORCE_NES("sASSERT",lhs,rhs)
-#define sASSERT_GES(lhs,rhs) SKIT__ENFORCE_GES("sASSERT",lhs,rhs)
-#define sASSERT_LES(lhs,rhs) SKIT__ENFORCE_LES("sASSERT",lhs,rhs)
-#define sASSERT_GTS(lhs,rhs) SKIT__ENFORCE_GTS("sASSERT",lhs,rhs)
-#define sASSERT_LTS(lhs,rhs) SKIT__ENFORCE_LTS("sASSERT",lhs,rhs)
+#define sASSERT_EQS(lhs,rhs) SKIT_ENFORCE_EQS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_NES(lhs,rhs) SKIT_ENFORCE_NES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_GES(lhs,rhs) SKIT_ENFORCE_GES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_LES(lhs,rhs) SKIT_ENFORCE_LES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_GTS(lhs,rhs) SKIT_ENFORCE_GTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_LTS(lhs,rhs) SKIT_ENFORCE_LTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
 
-#define sASSERT_IEQS(lhs,rhs) SKIT__ENFORCE_IEQS("sASSERT",lhs,rhs)
-#define sASSERT_INES(lhs,rhs) SKIT__ENFORCE_INES("sASSERT",lhs,rhs)
-#define sASSERT_IGES(lhs,rhs) SKIT__ENFORCE_IGES("sASSERT",lhs,rhs)
-#define sASSERT_ILES(lhs,rhs) SKIT__ENFORCE_ILES("sASSERT",lhs,rhs)
-#define sASSERT_IGTS(lhs,rhs) SKIT__ENFORCE_IGTS("sASSERT",lhs,rhs)
-#define sASSERT_ILTS(lhs,rhs) SKIT__ENFORCE_ILTS("sASSERT",lhs,rhs)
+#define sASSERT_IEQS(lhs,rhs) SKIT_ENFORCE_IEQS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_INES(lhs,rhs) SKIT_ENFORCE_INES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_IGES(lhs,rhs) SKIT_ENFORCE_IGES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_ILES(lhs,rhs) SKIT_ENFORCE_ILES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_IGTS(lhs,rhs) SKIT_ENFORCE_IGTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_ILTS(lhs,rhs) SKIT_ENFORCE_ILTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
 
 /* ------------------------- string misc functions ------------------------- */
 
@@ -940,6 +1010,16 @@ int skit_slice_iles(const skit_slice str1, const skit_slice str2);
 int skit_slice_ilts(const skit_slice str1, const skit_slice str2);
 int skit_slice_ieqs(const skit_slice str1, const skit_slice str2);
 int skit_slice_ines(const skit_slice str1, const skit_slice str2);
+
+/**
+Versions of slice comparison with dynamically determined case sensitivity.
+*/
+int skit_slice_cges(const skit_slice str1, const skit_slice str2, int case_sensitive);
+int skit_slice_cgts(const skit_slice str1, const skit_slice str2, int case_sensitive);
+int skit_slice_cles(const skit_slice str1, const skit_slice str2, int case_sensitive);
+int skit_slice_clts(const skit_slice str1, const skit_slice str2, int case_sensitive);
+int skit_slice_ceqs(const skit_slice str1, const skit_slice str2, int case_sensitive);
+int skit_slice_cnes(const skit_slice str1, const skit_slice str2, int case_sensitive);
 
 
 /** 

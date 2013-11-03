@@ -1304,91 +1304,30 @@ static void skit_slice_ascii_cmp_test()
 /* ------------------------------------------------------------------------- */
 
 /* --- Case-sensitive --- */
-int skit_slice_ges(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_cmp(str1,str2) >= 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_gts(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_cmp(str1,str2) > 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_les(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_cmp(str1,str2) <= 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_lts(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_cmp(str1,str2) < 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_eqs(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_cmp(str1,str2) == 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_nes(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_cmp(str1,str2) != 0 )
-		return 1;
-	return 0;
-}
+int skit_slice_ges(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_cmp(str1,str2) >= 0 ); }
+int skit_slice_gts(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_cmp(str1,str2) >  0 ); }
+int skit_slice_les(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_cmp(str1,str2) <= 0 ); }
+int skit_slice_lts(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_cmp(str1,str2) <  0 ); }
+int skit_slice_eqs(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_cmp(str1,str2) == 0 ); }
+int skit_slice_nes(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_cmp(str1,str2) != 0 ); }
 
 /* ------------------------ */
 /* --- Case-INsensitive --- */
-int skit_slice_iges(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_icmp(str1,str2) >= 0 )
-		return 1;
-	return 0;
-}
+int skit_slice_iges(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_icmp(str1,str2) >= 0 ); }
+int skit_slice_igts(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_icmp(str1,str2) >  0 ); }
+int skit_slice_iles(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_icmp(str1,str2) <= 0 ); }
+int skit_slice_ilts(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_icmp(str1,str2) <  0 ); }
+int skit_slice_ieqs(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_icmp(str1,str2) == 0 ); }
+int skit_slice_ines(const skit_slice str1, const skit_slice str2) { return ( skit_slice_ascii_icmp(str1,str2) != 0 ); }
 
-int skit_slice_igts(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_icmp(str1,str2) > 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_iles(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_icmp(str1,str2) <= 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_ilts(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_icmp(str1,str2) < 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_ieqs(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_icmp(str1,str2) == 0 )
-		return 1;
-	return 0;
-}
-
-int skit_slice_ines(const skit_slice str1, const skit_slice str2)
-{
-	if ( skit_slice_ascii_icmp(str1,str2) != 0 )
-		return 1;
-	return 0;
-}
+/* ------------------------ */
+/* --- Case-??sensitive --- */
+int skit_slice_cges(const skit_slice str1, const skit_slice str2, int case_sensitive) { return ( skit_slice_ascii_ccmp(str1,str2,case_sensitive) >= 0 ); }
+int skit_slice_cgts(const skit_slice str1, const skit_slice str2, int case_sensitive) { return ( skit_slice_ascii_ccmp(str1,str2,case_sensitive) >  0 ); }
+int skit_slice_cles(const skit_slice str1, const skit_slice str2, int case_sensitive) { return ( skit_slice_ascii_ccmp(str1,str2,case_sensitive) <= 0 ); }
+int skit_slice_clts(const skit_slice str1, const skit_slice str2, int case_sensitive) { return ( skit_slice_ascii_ccmp(str1,str2,case_sensitive) <  0 ); }
+int skit_slice_ceqs(const skit_slice str1, const skit_slice str2, int case_sensitive) { return ( skit_slice_ascii_ccmp(str1,str2,case_sensitive) == 0 ); }
+int skit_slice_cnes(const skit_slice str1, const skit_slice str2, int case_sensitive) { return ( skit_slice_ascii_ccmp(str1,str2,case_sensitive) != 0 ); }
 
 /* ------------------------ */
 static void skit_slice_comparison_ops_test()
