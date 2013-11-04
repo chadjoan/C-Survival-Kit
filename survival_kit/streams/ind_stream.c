@@ -84,6 +84,7 @@ void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing)
 	istreami->backing_stream = backing;
 	istreami->indent_str = "\t";
 	istreami->indent_level = 0;
+	istreami->last_peak_level = 0;
 	istreami->last_write_was_newline = 0;
 }
 
