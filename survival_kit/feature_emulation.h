@@ -21,7 +21,7 @@
 #define SKIT_USE_FEATURE_EMULATION /* */ \
 	char SKIT_NO_HEADER_IN_CONDITIONAL_TXT; /* error if some does "if (x) SKIT_USE_FEATURE_EMULATION; */ \
 	(void)SKIT_NO_HEADER_IN_CONDITIONAL_TXT; \
-	if ( skit_init_was_called() ) \
+	if ( !skit_init_was_called() ) \
 		skit_init(); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_USE_FEATURES_IN_FUNC_BODY, 0); \
 	SKIT_COMPILE_TIME_CHECK(SKIT_RETURN_HAS_USE_TXT, 1); \
