@@ -40,36 +40,36 @@ static void skit_slice_sanity_check()
 	skit_loaf_resize(&loaf, 5);
 	ptr = skit_loaf_ptr(loaf);
 	ptr[4] = 3;
-	sASSERT_EQ(ptr[0], 1, "%d");
-	sASSERT_EQ(ptr[1], 3, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
-	sASSERT_EQ(ptr[3], 7, "%d");
-	sASSERT_EQ(ptr[4], 3, "%d");
+	sASSERT_EQ(ptr[0], 1);
+	sASSERT_EQ(ptr[1], 3);
+	sASSERT_EQ(ptr[2], 3);
+	sASSERT_EQ(ptr[3], 7);
+	sASSERT_EQ(ptr[4], 3);
 	
 	skit_slice slice = skit_slice_of(loaf.as_slice, 2, SKIT_EOT);
 	ptr = skit_slice_ptr(slice);
-	sASSERT_EQ(ptr[0], 3, "%d");
-	sASSERT_EQ(ptr[1], 7, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
+	sASSERT_EQ(ptr[0], 3);
+	sASSERT_EQ(ptr[1], 7);
+	sASSERT_EQ(ptr[2], 3);
 	
 	slice = skit_slice_of(loaf.as_slice, 2, 4);
 	ptr = skit_slice_ptr(slice);
-	sASSERT_EQ(sSLENGTH(slice), 2, "%ld");
-	sASSERT_EQ(ptr[0], 3, "%d");
-	sASSERT_EQ(ptr[1], 7, "%d");
+	sASSERT_EQ(sSLENGTH(slice), 2);
+	sASSERT_EQ(ptr[0], 3);
+	sASSERT_EQ(ptr[1], 7);
 	
 	skit_slice_buffered_append( &loaf, &slice, sSLICE("\x07") );
 	ptr = skit_slice_ptr(slice);
-	sASSERT_EQ(ptr[0], 3, "%d");
-	sASSERT_EQ(ptr[1], 7, "%d");
-	sASSERT_EQ(ptr[2], 7, "%d");
+	sASSERT_EQ(ptr[0], 3);
+	sASSERT_EQ(ptr[1], 7);
+	sASSERT_EQ(ptr[2], 7);
 	
 	ptr = skit_loaf_ptr(loaf);
-	sASSERT_EQ(ptr[0], 1, "%d");
-	sASSERT_EQ(ptr[1], 3, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
-	sASSERT_EQ(ptr[3], 7, "%d");
-	sASSERT_EQ(ptr[4], 7, "%d");
+	sASSERT_EQ(ptr[0], 1);
+	sASSERT_EQ(ptr[1], 3);
+	sASSERT_EQ(ptr[2], 3);
+	sASSERT_EQ(ptr[3], 7);
+	sASSERT_EQ(ptr[4], 7);
 	
 	skit_loaf_free(&loaf);
 }
@@ -80,24 +80,24 @@ void skit_array_bfd_new_el_test()
 	
 	skit_utest_int_loaf loaf = skit_utest_int_loaf_alloc(4);
 	skit_utest_int_slice slice = skit_utest_int_slice_of(loaf.as_slice,0,0);
-	sASSERT_EQ(skit_utest_int_slice_len(slice),0,"%d");
+	sASSERT_EQ(skit_utest_int_slice_len(slice),0);
 	int *ptr = skit_utest_int_loaf_ptr(loaf);
 	int *new_elem = NULL;
 	
 	new_elem = skit_utest_int_slice_bfd_new_el(&loaf, &slice);
-	sASSERT_EQ(skit_utest_int_slice_len(slice),1,"%d");
+	sASSERT_EQ(skit_utest_int_slice_len(slice),1);
 	*new_elem = 42;
-	sASSERT_EQ(*new_elem, ptr[0], "%d");
+	sASSERT_EQ(*new_elem, ptr[0]);
 	
 	new_elem = skit_utest_int_slice_bfd_new_el(&loaf, &slice);
-	sASSERT_EQ(skit_utest_int_slice_len(slice),2,"%d");
+	sASSERT_EQ(skit_utest_int_slice_len(slice),2);
 	*new_elem = 9;
-	sASSERT_EQ(*new_elem, ptr[1], "%d");
+	sASSERT_EQ(*new_elem, ptr[1]);
 	
 	new_elem = skit_utest_int_slice_bfd_new_el(&loaf, &slice);
-	sASSERT_EQ(skit_utest_int_slice_len(slice),3,"%d");
+	sASSERT_EQ(skit_utest_int_slice_len(slice),3);
 	*new_elem = -13;
-	sASSERT_EQ(*new_elem, ptr[2], "%d");
+	sASSERT_EQ(*new_elem, ptr[2]);
 	
 	skit_utest_int_loaf_free(&loaf);
 }
@@ -118,58 +118,58 @@ void skit_array_unittest()
 	skit_utest_int_loaf_resize(&loaf, 5);
 	ptr = skit_utest_int_loaf_ptr(loaf);
 	ptr[4] = 3;
-	sASSERT_EQ(ptr[0], 1, "%d");
-	sASSERT_EQ(ptr[1], 3, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
-	sASSERT_EQ(ptr[3], 7, "%d");
-	sASSERT_EQ(ptr[4], 3, "%d");
+	sASSERT_EQ(ptr[0], 1);
+	sASSERT_EQ(ptr[1], 3);
+	sASSERT_EQ(ptr[2], 3);
+	sASSERT_EQ(ptr[3], 7);
+	sASSERT_EQ(ptr[4], 3);
 	
 	skit_utest_int_slice slice = skit_utest_int_slice_of(loaf.as_slice, 2, SKIT_EOT);
 	ptr = skit_utest_int_slice_ptr(slice);
-	sASSERT_EQ(ptr[0], 3, "%d");
-	sASSERT_EQ(ptr[1], 7, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
+	sASSERT_EQ(ptr[0], 3);
+	sASSERT_EQ(ptr[1], 7);
+	sASSERT_EQ(ptr[2], 3);
 	
 	slice = skit_utest_int_slice_of(loaf.as_slice, 2, 4);
 	ptr = skit_utest_int_slice_ptr(slice);
-	sASSERT_EQ(skit_utest_int_slice_len(slice), 2, "%ld");
-	sASSERT_EQ(ptr[0], 3, "%d");
-	sASSERT_EQ(ptr[1], 7, "%d");
+	sASSERT_EQ(skit_utest_int_slice_len(slice), 2);
+	sASSERT_EQ(ptr[0], 3);
+	sASSERT_EQ(ptr[1], 7);
 	
 	skit_utest_int_slice_bfd_put( &loaf, &slice, 7 );
 	ptr = skit_utest_int_slice_ptr(slice);
-	sASSERT_EQ(ptr[0], 3, "%d");
-	sASSERT_EQ(ptr[1], 7, "%d");
-	sASSERT_EQ(ptr[2], 7, "%d");
+	sASSERT_EQ(ptr[0], 3);
+	sASSERT_EQ(ptr[1], 7);
+	sASSERT_EQ(ptr[2], 7);
 	
 	ptr = skit_utest_int_loaf_ptr(loaf);
-	sASSERT_EQ(ptr[0], 1, "%d");
-	sASSERT_EQ(ptr[1], 3, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
-	sASSERT_EQ(ptr[3], 7, "%d");
-	sASSERT_EQ(ptr[4], 7, "%d");
+	sASSERT_EQ(ptr[0], 1);
+	sASSERT_EQ(ptr[1], 3);
+	sASSERT_EQ(ptr[2], 3);
+	sASSERT_EQ(ptr[3], 7);
+	sASSERT_EQ(ptr[4], 7);
 	
 	skit_utest_int_loaf_put(&loaf, 0);
 	ptr = skit_utest_int_loaf_ptr(loaf);
-	sASSERT_EQ(ptr[0], 1, "%d");
-	sASSERT_EQ(ptr[1], 3, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
-	sASSERT_EQ(ptr[3], 7, "%d");
-	sASSERT_EQ(ptr[4], 7, "%d");
-	sASSERT_EQ(ptr[5], 0, "%d");
+	sASSERT_EQ(ptr[0], 1);
+	sASSERT_EQ(ptr[1], 3);
+	sASSERT_EQ(ptr[2], 3);
+	sASSERT_EQ(ptr[3], 7);
+	sASSERT_EQ(ptr[4], 7);
+	sASSERT_EQ(ptr[5], 0);
 	
 	skit_utest_int_loaf_put(&loaf, 8);
 	ptr = skit_utest_int_loaf_ptr(loaf);
-	sASSERT_EQ(ptr[0], 1, "%d");
-	sASSERT_EQ(ptr[1], 3, "%d");
-	sASSERT_EQ(ptr[2], 3, "%d");
-	sASSERT_EQ(ptr[3], 7, "%d");
-	sASSERT_EQ(ptr[4], 7, "%d");
-	sASSERT_EQ(ptr[5], 0, "%d");
-	sASSERT_EQ(ptr[6], 8, "%d");
+	sASSERT_EQ(ptr[0], 1);
+	sASSERT_EQ(ptr[1], 3);
+	sASSERT_EQ(ptr[2], 3);
+	sASSERT_EQ(ptr[3], 7);
+	sASSERT_EQ(ptr[4], 7);
+	sASSERT_EQ(ptr[5], 0);
+	sASSERT_EQ(ptr[6], 8);
 	
 	int *elem = skit_utest_int_loaf_index(loaf, 6);
-	sASSERT_EQ(*elem, 8, "%d");
+	sASSERT_EQ(*elem, 8);
 	
 	skit_utest_int_loaf_free(&loaf);
 	

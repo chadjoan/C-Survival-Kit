@@ -501,7 +501,7 @@ void skit_stream_read_xNN_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
-	sASSERT_EQ( skit_stream_read_i8(stream), 'X', "%c");
+	sASSERT_EQ_HEX( skit_stream_read_i8(stream), 'X');
 	
 	int16_t i16res = skit_stream_read_i16(stream);
 	skit_slice i16slice = skit_slice_of_cstrn( (char*)&i16res, 2 );
@@ -524,14 +524,14 @@ static int skit_stream_read_fn_accept1( skit_custom_read_context *ctx )
 	if ( *count == 0 )
 	{
 		(*count)++;
-		sASSERT_EQ(ctx->current_char, 'a', "%c");
+		sASSERT_EQ_HEX(ctx->current_char, 'a');
 		sASSERT_EQS(ctx->current_slice, sSLICE("a"));
 		return 1;
 	}
 	else if ( *count == 1 )
 	{
 		(*count)++;
-		sASSERT_EQ(ctx->current_char, 'b', "%c");
+		sASSERT_EQ_HEX(ctx->current_char, 'b');
 		sASSERT_EQS(ctx->current_slice, sSLICE("ab"));
 		return 0;
 	}
@@ -544,7 +544,7 @@ static int skit_stream_read_fn_accept1( skit_custom_read_context *ctx )
 
 static int skit_stream_read_fn_accept2( skit_custom_read_context *ctx )
 {
-	sASSERT_EQ(ctx->current_char, 'c', "%c");
+	sASSERT_EQ_HEX(ctx->current_char, 'c');
 	sASSERT_EQS(ctx->current_slice, sSLICE("c"));
 	return 1;
 }
@@ -657,37 +657,37 @@ void skit_stream_indent_unittest(
 	void *context,
 	skit_slice (*get_stream_contents)(void *context, int expected_size) )
 {
-	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
-	sASSERT_EQ( skit_stream_get_peak(stream),    0, "%d" );
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0 );
+	sASSERT_EQ( skit_stream_get_peak(stream),    0 );
 	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("\t") );
 	SKIT_ASSERT_CONTENTS("");
 	skit_stream_appendf(stream, "foo\n");
 	SKIT_ASSERT_CONTENTS("foo\n");
 	
 	skit_stream_incr_indent(stream);
-	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1, "%d" );
-	sASSERT_EQ( skit_stream_get_peak(stream),    1, "%d" );
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1 );
+	sASSERT_EQ( skit_stream_get_peak(stream),    1 );
 	skit_stream_append(stream, sSLICE("bar\nbaz"));
 	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz");
 	
 	skit_stream_incr_indent(stream);
 	skit_stream_set_ind_str(stream, "  ");
-	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 2, "%d" );
-	sASSERT_EQ( skit_stream_get_peak(stream),    2, "%d" );
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 2 );
+	sASSERT_EQ( skit_stream_get_peak(stream),    2 );
 	sASSERT_EQS( skit_slice_of_cstr(skit_stream_get_ind_str(stream)), sSLICE("  ") );
 	skit_stream_appendln(stream, sSLICE("\nqux"));
 	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz\n    qux\n");
 	
 	skit_stream_decr_indent(stream);
 	skit_stream_decr_indent(stream);
-	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0, "%d" );
-	sASSERT_EQ( skit_stream_get_peak(stream),    2, "%d" );
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 0 );
+	sASSERT_EQ( skit_stream_get_peak(stream),    2 );
 	skit_stream_append(stream, sSLICE("quux"));
 	SKIT_ASSERT_CONTENTS("foo\n\tbar\n\tbaz\n    qux\nquux");
 	
 	skit_stream_incr_indent(stream);
-	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1, "%d" );
-	sASSERT_EQ( skit_stream_get_peak(stream),    1, "%d" );
+	sASSERT_EQ( skit_stream_get_ind_lvl(stream), 1 );
+	sASSERT_EQ( skit_stream_get_peak(stream),    1 );
 	
 	printf("  skit_stream_indent_unittest passed.\n");
 }

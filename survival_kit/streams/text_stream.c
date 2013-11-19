@@ -132,7 +132,7 @@ void skit_text_stream_subsume(skit_text_stream *tstream, skit_loaf buffer, size_
 	stream->meta.vtable_ptr = &skit_text_stream_vtable;
 	stream->meta.class_name = sSLICE("skit_text_stream");
 	
-	sASSERT_LE(cursor_pos, sLLENGTH(buffer), "%ld");
+	sASSERT_LE(cursor_pos, sLLENGTH(buffer));
 	
 	skit_text_stream_internal *tstreami = &tstream->as_internal;
 	tstreami->buffer = buffer;

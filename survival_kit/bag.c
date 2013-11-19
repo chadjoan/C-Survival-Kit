@@ -97,11 +97,11 @@ void *skit_bag_get_field(skit_bag *ctx, ssize_t field_id)
 {
 	sASSERT(ctx != NULL);
 	sASSERT(ctx->layout != NULL);
-	sASSERT_GE(field_id, 0, "%ld");
+	sASSERT_GE(field_id, 0);
 	skit_bag_layout *layout = ctx->layout;
 	uint32_t *offsets = skit_u32_loaf_ptr(layout->field_offsets);
 	ssize_t n_offsets = skit_u32_loaf_len(layout->field_offsets);
-	sASSERT_LT(field_id, n_offsets, "%ld");
+	sASSERT_LT(field_id, n_offsets);
 	return &ctx->contents[offsets[field_id]];
 }
 
@@ -109,11 +109,11 @@ void skit_bag_set_field(skit_bag *ctx, ssize_t field_id, char *new_value, size_t
 {
 	sASSERT(ctx != NULL);
 	sASSERT(ctx->layout != NULL);
-	sASSERT_GE(field_id, 0, "%ld");
+	sASSERT_GE(field_id, 0);
 	skit_bag_layout *layout = ctx->layout;
 	uint32_t *offsets = skit_u32_loaf_ptr(layout->field_offsets);
 	ssize_t n_offsets = skit_u32_loaf_len(layout->field_offsets);
-	sASSERT_LT(field_id, n_offsets, "%ld");
+	sASSERT_LT(field_id, n_offsets);
 	memcpy( &ctx->contents[offsets[field_id]], new_value, size );
 }
 
@@ -140,8 +140,8 @@ void skit_bag_unittest()
 	SKIT_BAG_SET_FIELD(bag, skit_test_bag_inty, int32_t, 42);
 	SKIT_BAG_SET_FIELD(bag, skit_test_bag_cstr, char*, "Hi!");
 	
-	sASSERT_EQ(SKIT_BAG_GET_FIELD(bag, skit_test_bag_intx, int32_t), -9, "%d");
-	sASSERT_EQ(SKIT_BAG_GET_FIELD(bag, skit_test_bag_inty, int32_t), 42, "%d");
+	sASSERT_EQ(SKIT_BAG_GET_FIELD(bag, skit_test_bag_intx, int32_t), -9);
+	sASSERT_EQ(SKIT_BAG_GET_FIELD(bag, skit_test_bag_inty, int32_t), 42);
 	sASSERT_EQ_CSTR(SKIT_BAG_GET_FIELD(bag, skit_test_bag_cstr, char*), "Hi!");
 	
 	skit_bag_free(bag);

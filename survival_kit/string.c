@@ -250,7 +250,7 @@ static void skit_loaf_emplace_test()
 	char mem[128];
 	size_t mem_size = sizeof(mem);
 	skit_loaf loaf = skit_loaf_emplace(mem, mem_size);
-	sASSERT_EQ( mem_size, sLLENGTH(loaf) + SKIT_LOAF_EMPLACEMENT_OVERHEAD, "%d" );
+	sASSERT_EQ( mem_size, sLLENGTH(loaf) + SKIT_LOAF_EMPLACEMENT_OVERHEAD );
 	sASSERT( sLPTR(loaf) != NULL );
 	sASSERT( mem <= (char*)sLPTR(loaf) );
 	sASSERT( (char*)sLPTR(loaf) < mem+mem_size );
@@ -262,7 +262,7 @@ static void skit_loaf_on_stack_test()
 {
 	SKIT_LOAF_ON_STACK(loaf, 32);
 	sASSERT( sLPTR(loaf) != NULL );
-	sASSERT_EQ( sLLENGTH(loaf), 32, "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), 32 );
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_on_stack_test finished.\n");
 }
@@ -279,7 +279,7 @@ ssize_t skit_loaf_len (skit_loaf loaf)   { return skit_slice_len(loaf.as_slice);
 static void skit_slice_len_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
-	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
+	sASSERT_EQ(skit_loaf_len(loaf), 10);
 	printf("  skit_slice_len_test finished.\n");
 }
 
@@ -324,7 +324,7 @@ static void skit_slice_ptr_test()
 {
 	skit_loaf  loaf = skit_loaf_copy_cstr("foobarbaz");
 	skit_slice slice = skit_slice_of(loaf.as_slice, 3, 6);
-	sASSERT_EQ(sSPTR(slice) - sLPTR(loaf), 3, "%d");
+	sASSERT_EQ(sSPTR(slice) - sLPTR(loaf), 3);
 	sASSERT_EQS(slice, sSLICE("bar"));
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_ptr_test finished.\n");
@@ -354,10 +354,10 @@ static void skit_slice_is_null_test()
 	skit_slice nslice = skit_slice_null();
 	skit_loaf  loaf   = skit_loaf_copy_cstr("foo");
 	skit_slice slice  = skit_slice_of(loaf.as_slice, 0, 2);
-	sASSERT_EQ(skit_loaf_is_null(nloaf),   1, "%d");
-	sASSERT_EQ(skit_slice_is_null(nslice), 1, "%d");
-	sASSERT_EQ(skit_loaf_is_null(loaf),    0, "%d");
-	sASSERT_EQ(skit_slice_is_null(slice),  0, "%d");
+	sASSERT_EQ(skit_loaf_is_null(nloaf),   1);
+	sASSERT_EQ(skit_slice_is_null(nslice), 1);
+	sASSERT_EQ(skit_loaf_is_null(loaf),    0);
+	sASSERT_EQ(skit_slice_is_null(slice),  0);
 	skit_loaf_free(&loaf);
 	printf("  skit_slice_is_null_test passed.\n");
 }
@@ -397,7 +397,7 @@ skit_slice skit_slice_of_cstrn(const char *cstr, int length )
 static void skit_slice_of_cstrn_test()
 {
 	skit_slice slice = skit_slice_of_cstrn("foo",3);
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 3);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 	printf("  skit_slice_of_cstrn_test passed.\n");
 }
@@ -412,7 +412,7 @@ skit_slice skit_slice_of_cstr(const char *cstr)
 static void skit_slice_of_cstr_test()
 {
 	skit_slice slice = skit_slice_of_cstr("foo");
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 3);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 	printf("  skit_slice_of_cstr_test passed.\n");
 }
@@ -420,25 +420,25 @@ static void skit_slice_of_cstr_test()
 static void skit_slice_sSLICE_test()
 {
 	skit_slice slice = sSLICE("foo");
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 3);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 	
 	const char *cstr_ptr = "Hello world!";
 	slice = sSLICE(cstr_ptr);
-	sASSERT_EQ(skit_slice_len(slice), 12, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 12);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "Hello world!");
 	
 	// Arrays may behave strangely:
 	char array1[sizeof(void*)];
 	memset(array1, '\0', sizeof(void*));
 	slice = sSLICE(array1);
-	sASSERT_EQ(skit_slice_len(slice), 0, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 0);
 	
 	char array2[sizeof(void*)-1];
 	memset(array2, '\0', sizeof(void*)-1);
 	slice = sSLICE(array2);
-	sASSERT_EQ(skit_slice_len(slice), sizeof(array2)-1, "%d");
-	sASSERT_NE(skit_slice_len(slice), 0, "%d");
+	sASSERT_EQ(skit_slice_len(slice), sizeof(array2)-1);
+	sASSERT_NE(skit_slice_len(slice), 0);
 
 	printf("  skit_slice_sSLICE_test passed.\n");
 }
@@ -622,11 +622,11 @@ static void skit_slice_buffered_resize_test()
 {
 	skit_loaf buffer = skit_loaf_alloc(5);
 	skit_slice slice = skit_slice_of(buffer.as_slice, 2, 4);
-	sASSERT_EQ(skit_slice_len(slice), 2, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 2);
 	skit_slice_buffered_resize(&buffer, &slice, 5);
 	sASSERT(skit_loaf_len(buffer) >= 6);
-	sASSERT_EQ(skit_slice_len(slice), 5, "%d");
-	sASSERT_EQ(sSPTR(slice)[5], '\0', "%d");
+	sASSERT_EQ(skit_slice_len(slice), 5);
+	sASSERT_EQ(sSPTR(slice)[5], '\0');
 	skit_loaf_free(&buffer);
 	printf("  skit_slice_buffered_resize_test passed.\n");
 }
@@ -658,11 +658,11 @@ static void skit_slice_buffered_append_test()
 	skit_loaf  buffer = skit_loaf_alloc(5);
 	skit_slice accumulator = skit_slice_of(buffer.as_slice, 0, 0);
 	skit_slice_buffered_append(&buffer, &accumulator, sSLICE("foo"));
-	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
-	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
+	sASSERT_EQ(skit_loaf_len(buffer), 5);
+	sASSERT_EQ(skit_slice_len(accumulator), 3);
 	skit_slice_buffered_append(&buffer, &accumulator, sSLICE("bar"));
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(buffer), "foobar");
-	sASSERT_GE(skit_loaf_len(buffer), 6, "%d");
+	sASSERT_GE(skit_loaf_len(buffer), 6);
 	skit_loaf_free(&buffer);
 	printf("  skit_slice_buffered_append_test passed.\n");
 }
@@ -688,7 +688,7 @@ static void skit_loaf_dup_test()
 	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
 	skit_loaf bar = skit_loaf_dup(slice);
-	sASSERT_NE(sLPTR(foo), sLPTR(bar), "%p");
+	sASSERT(sLPTR(foo) != sLPTR(bar));
 	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(bar), "bar");
@@ -719,20 +719,20 @@ static void skit_loaf_assign_cstr_test()
 	// Start off with a small string.
 	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
-	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), 8 );
 	
 	// Enlarge.
 	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
 	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
 	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
-	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
 	
 	// Narrow.
 	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
 	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
 	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
-	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
 	
 	skit_loaf_free(&loaf);
 	printf("  skit_loaf_assign_cstr_test passed.\n");
@@ -761,11 +761,11 @@ static void skit_loaf_assign_slice_test()
 	skit_slice largish  = sSLICE("Hello world!");
 	skit_slice test1 = skit_loaf_assign_slice(&loaf, smallish);
 	sASSERT_EQS( test1, smallish );
-	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), 8 );
 	skit_slice test2 = skit_loaf_assign_slice(&loaf, largish);
 	sASSERT_EQS( test2, largish );
 	sASSERT_NES( test1, smallish );
-	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish), "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
 	skit_loaf_free(&loaf);
 	
 	loaf = skit_loaf_new();
@@ -891,27 +891,27 @@ static void skit_loaf_free_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(10);
 	sASSERT(sLPTR(loaf) != NULL);
-	sASSERT_EQ(sLLENGTH(loaf), 10, "%d");
+	sASSERT_EQ(sLLENGTH(loaf), 10);
 	skit_loaf_free(&loaf);
 	sASSERT(sLPTR(loaf) == NULL);
-	sASSERT_EQ(sLLENGTH(loaf), 0, "%d");
+	sASSERT_EQ(sLLENGTH(loaf), 0);
 	
 	SKIT_LOAF_ON_STACK(stack_loaf1, 32);
 	sASSERT(sLPTR(stack_loaf1) != NULL);
-	sASSERT_EQ(sLLENGTH(stack_loaf1), 32, "%d");
+	sASSERT_EQ(sLLENGTH(stack_loaf1), 32);
 	skit_loaf_free(&stack_loaf1);
 	sASSERT(sLPTR(stack_loaf1) == NULL);
-	sASSERT_EQ(sLLENGTH(stack_loaf1), 0, "%d");
+	sASSERT_EQ(sLLENGTH(stack_loaf1), 0);
 	
 	SKIT_LOAF_ON_STACK(stack_loaf2, 64);
 	sASSERT(sLPTR(stack_loaf2) != NULL);
-	sASSERT_EQ(sLLENGTH(stack_loaf2), 64, "%d");
+	sASSERT_EQ(sLLENGTH(stack_loaf2), 64);
 	skit_loaf_resize(&stack_loaf2, 128);
 	sASSERT(sLPTR(stack_loaf2) != NULL);
-	sASSERT_EQ(sLLENGTH(stack_loaf2), 128, "%d");
+	sASSERT_EQ(sLLENGTH(stack_loaf2), 128);
 	skit_loaf_free(&stack_loaf2);
 	sASSERT(sLPTR(stack_loaf2) == NULL);
-	sASSERT_EQ(sLLENGTH(stack_loaf2), 0, "%d");
+	sASSERT_EQ(sLLENGTH(stack_loaf2), 0);
 	
 	printf("  skit_loaf_free_test passed.\n");
 }
@@ -976,47 +976,47 @@ uint64_t skit_slice_to_uint(skit_slice uint_str)
 /* skit_is_alpha_lower and such are implemented as macros.  See the .h for implementation. */
 static void skit_is_alpha_test()
 {
-	sASSERT_EQ( skit_is_alpha_lower('A') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha_lower('C') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha_lower('Z') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha_lower('a') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha_lower('c') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha_lower('z') ? 1 : 0, 1, "%d" );
+	sASSERT_EQ( skit_is_alpha_lower('A') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha_lower('C') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha_lower('Z') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha_lower('a') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha_lower('c') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha_lower('z') ? 1 : 0, 1 );
 	
-	sASSERT_EQ( skit_is_alpha_upper('A') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha_upper('C') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha_upper('Z') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha_upper('a') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha_upper('c') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha_upper('z') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha_upper('A') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha_upper('C') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha_upper('Z') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha_upper('a') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha_upper('c') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha_upper('z') ? 1 : 0, 0 );
 	
-	sASSERT_EQ( skit_is_alpha('A') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha('C') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha('Z') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha('a') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha('c') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha('z') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_alpha(' ') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha('{') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_alpha('\0') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_alpha('A') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha('C') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha('Z') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha('a') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha('c') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha('z') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_alpha(' ') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha('{') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_alpha('\0') ? 1 : 0, 0 );
 	
 	printf("  skit_is_alpha_test passed.\n");
 }
 
 static void skit_is_digit_test()
 {
-	sASSERT_EQ( skit_is_digit('0') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_digit('1') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_digit('9') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_digit('a') ? 1 : 0, 0, "%d" );
-	sASSERT_EQ( skit_is_digit(' ') ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_digit('0') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_digit('1') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_digit('9') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_digit('a') ? 1 : 0, 0 );
+	sASSERT_EQ( skit_is_digit(' ') ? 1 : 0, 0 );
 }
 
 static void skit_is_whitespace_test()
 {
-	sASSERT_EQ( skit_is_whitespace(' ')  ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_whitespace('\v') ? 1 : 0, 1, "%d" );
-	sASSERT_EQ( skit_is_whitespace('a')  ? 1 : 0, 0, "%d" );
+	sASSERT_EQ( skit_is_whitespace(' ')  ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_whitespace('\v') ? 1 : 0, 1 );
+	sASSERT_EQ( skit_is_whitespace('a')  ? 1 : 0, 0 );
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1031,15 +1031,15 @@ skit_utf8c skit_char_ascii_to_lower(skit_utf8c c)
 
 static void skit_char_ascii_to_lower_test()
 {
-	sASSERT_EQ( skit_char_ascii_to_lower('a'), 'a', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('A'), 'a', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('b'), 'b', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('B'), 'b', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('z'), 'z', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('Z'), 'z', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('0'), '0', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower('-'), '-', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_lower(' '), ' ', "%c" );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('a'), 'a' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('A'), 'a' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('b'), 'b' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('B'), 'b' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('z'), 'z' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('Z'), 'z' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('0'), '0' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower('-'), '-' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_lower(' '), ' ' );
 	
 	printf("  skit_char_ascii_to_lower_test passed.\n");
 }
@@ -1056,15 +1056,15 @@ skit_utf8c skit_char_ascii_to_upper(skit_utf8c c)
 
 static void skit_char_ascii_to_upper_test()
 {
-	sASSERT_EQ( skit_char_ascii_to_upper('a'), 'A', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('A'), 'A', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('b'), 'B', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('B'), 'B', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('z'), 'Z', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('Z'), 'Z', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('0'), '0', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper('-'), '-', "%c" );
-	sASSERT_EQ( skit_char_ascii_to_upper(' '), ' ', "%c" );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('a'), 'A' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('A'), 'A' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('b'), 'B' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('B'), 'B' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('z'), 'Z' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('Z'), 'Z' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('0'), '0' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper('-'), '-' );
+	sASSERT_EQ_HEX( skit_char_ascii_to_upper(' '), ' ' );
 	
 	printf("  skit_char_ascii_to_upper_test passed.\n");
 }
@@ -1590,7 +1590,7 @@ int skit_slice_match(
 	ssize_t i;
 	sASSERT(haystack_chars != NULL);
 	sASSERT(needle_chars != NULL);
-	sASSERT_GE(pos,0,"%d"); 
+	sASSERT_GE(pos,0); 
 	
 	rbound = pos+needle_length;
 	if ( rbound > haystack_length )
@@ -1610,10 +1610,10 @@ static void skit_slice_match_test()
 {
 	skit_slice haystack = sSLICE("foobarbaz");
 	skit_slice needle = sSLICE("bar");
-	sASSERT_EQ(skit_slice_match(haystack,needle,0),0,"%d");
-	sASSERT_EQ(skit_slice_match(haystack,needle,3),1,"%d");
-	sASSERT_EQ(skit_slice_match(haystack,needle,6),0,"%d");
-	sASSERT_EQ(skit_slice_match(haystack,needle,8),0,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,0),0);
+	sASSERT_EQ(skit_slice_match(haystack,needle,3),1);
+	sASSERT_EQ(skit_slice_match(haystack,needle,6),0);
+	sASSERT_EQ(skit_slice_match(haystack,needle,8),0);
 	printf("  skit_slice_match_test passed.\n");
 }
 
@@ -1625,9 +1625,9 @@ int skit_slice_match_nl(
 {
 	skit_utf8c *text_chars = sSPTR(text);
 	sASSERT(text_chars != NULL);
-	sASSERT_GE(pos,0,"%d");
+	sASSERT_GE(pos,0);
 	ssize_t length = sSLENGTH(text);
-	sASSERT_LT(pos,length,"%d");
+	sASSERT_LT(pos,length);
 	if ( text_chars[pos] == '\r' )
 	{
 		if ( pos+1 < length && text_chars[pos+1] == '\n' )
@@ -1644,14 +1644,14 @@ int skit_slice_match_nl(
 static void skit_slice_match_test_nl()
 {
 	skit_slice haystack = sSLICE("foo\nbar\r\nbaz\rqux");
-	sASSERT_EQ(skit_slice_match_nl(haystack,3),1,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,7),2,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,8),1,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,12),1,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,0),0,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,2),0,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,4),0,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,13),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,3) ,1);
+	sASSERT_EQ(skit_slice_match_nl(haystack,7) ,2);
+	sASSERT_EQ(skit_slice_match_nl(haystack,8) ,1);
+	sASSERT_EQ(skit_slice_match_nl(haystack,12),1);
+	sASSERT_EQ(skit_slice_match_nl(haystack,0) ,0);
+	sASSERT_EQ(skit_slice_match_nl(haystack,2) ,0);
+	sASSERT_EQ(skit_slice_match_nl(haystack,4) ,0);
+	sASSERT_EQ(skit_slice_match_nl(haystack,13),0);
 	printf("  skit_slice_match_test_nl passed.\n");
 }
 
@@ -1750,15 +1750,15 @@ static void skit_slice_escapify_test()
 	skit_utf8c cFF[1];
 	cFF[0] = 255;
 	
-	sASSERT_EQ(skit_escape_table['\0'], '0', "%d");
-	sASSERT_EQ(skit_escape_table['\a'], 'a', "%d");
-	sASSERT_EQ(skit_escape_table['\b'], 'b', "%d");
-	sASSERT_EQ(skit_escape_table['\t'], 't', "%d");
-	sASSERT_EQ(skit_escape_table['\n'], 'n', "%d");
-	sASSERT_EQ(skit_escape_table['\t'], 't', "%d");
-	sASSERT_EQ(skit_escape_table['\f'], 'f', "%d");
-	sASSERT_EQ(skit_escape_table['0'],  ' ', "%d");
-	sASSERT_EQ(skit_escape_table[cFF[0]], ' ', "%d");
+	sASSERT_EQ(skit_escape_table['\0'], '0');
+	sASSERT_EQ(skit_escape_table['\a'], 'a');
+	sASSERT_EQ(skit_escape_table['\b'], 'b');
+	sASSERT_EQ(skit_escape_table['\t'], 't');
+	sASSERT_EQ(skit_escape_table['\n'], 'n');
+	sASSERT_EQ(skit_escape_table['\t'], 't');
+	sASSERT_EQ(skit_escape_table['\f'], 'f');
+	sASSERT_EQ(skit_escape_table['0'],  ' ');
+	sASSERT_EQ(skit_escape_table[cFF[0]], ' ');
 	
 	SKIT_LOAF_ON_STACK(buffer, 4);
 	/*

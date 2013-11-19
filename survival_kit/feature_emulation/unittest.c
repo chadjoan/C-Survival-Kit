@@ -187,7 +187,7 @@ static void unittest_exceptions()
 	sEND_TRY
 	
 	int etrace_test = sETRACE(42);
-	sASSERT_EQ(etrace_test, 42, "%d");
+	sASSERT_EQ(etrace_test, 42);
 	
 	printf("  exception_handling unittest passed!\n");
 }
@@ -350,45 +350,45 @@ static void unittest_scope()
 	printf("scope unittest.\n");
 	
 	unittest_scope_exit_normal(&val);
-	sASSERT_EQ(val,0,"%d");
+	sASSERT_EQ(val,0);
 	
 	unittest_scope_success_normal(&val);
-	sASSERT_EQ(val,0,"%d");
+	sASSERT_EQ(val,0);
 	
 	unittest_scope_failure_normal(&val);
-	sASSERT_EQ(val,0,"%d");
+	sASSERT_EQ(val,0);
 	
 	int ret = unittest_scope_exit_sRETURN(&val);
-	sASSERT_EQ(val,0,"%d");
-	sASSERT_EQ(ret,0,"%d");
+	sASSERT_EQ(val,0);
+	sASSERT_EQ(ret,0);
 	
 	sTRY
 		unittest_scope_exit_exceptional(&val);
 	sCATCH(SKIT_EXCEPTION,e)
-		sASSERT_EQ(val,0,"%d");
+		sASSERT_EQ(val,0);
 	sEND_TRY
 	
 	sTRY
 		unittest_scope_exit_exceptional_trace(&val);
 	sCATCH(SKIT_EXCEPTION,e)
-		sASSERT_EQ(val,0,"%d");
+		sASSERT_EQ(val,0);
 	sEND_TRY
 	
 	sTRY
 		unittest_scope_success_exceptional(&val);
 	sCATCH(SKIT_EXCEPTION,e)
-		sASSERT_EQ(val,0,"%d");
+		sASSERT_EQ(val,0);
 	sEND_TRY
 	
 	sTRY
 		unittest_scope_failure_exceptional(&val);
 	sCATCH(SKIT_EXCEPTION,e)
-		sASSERT_EQ(val,0,"%d");
+		sASSERT_EQ(val,0);
 	sEND_TRY
 	
 	sTRY
 		skit_scope_layered_try_test(&val);
-		sASSERT_EQ(val,0,"%d");
+		sASSERT_EQ(val,0);
 	sCATCH(SKIT_EXCEPTION,e)
 		sASSERT_MSG(0, "This should be unreachable.");
 	sEND_TRY
@@ -396,7 +396,7 @@ static void unittest_scope()
 	sTRY
 		skit_scope_layered_try_test2(&val);
 	sCATCH(SKIT_EXCEPTION,e)
-		sASSERT_EQ(val,0,"%d");
+		sASSERT_EQ(val,0);
 	sEND_TRY
 
 	printf("  scope unittest passed!\n");

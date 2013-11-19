@@ -14,16 +14,16 @@ static void skit_math_macro_test()
 	int foo = 5;
 	double bar;
 	bar = SKIT_MAX(foo, 6, foo+3.5, 1.2);
-	sASSERT_EQ(bar, 8.5, "%f");
+	sASSERT(bar == 8.5);
 	bar = SKIT_MIN(foo, 6, foo+3.5, 1.2);
-	sASSERT_EQ(bar, 1.2, "%f");
+	sASSERT(bar == 1.2);
 	printf("  skit_math_macro_test passed.\n");
 }
 
 int64_t skit_ipow(int64_t base, int exp)
 {
     int64_t result = 1;
-	sASSERT_GE(exp, 0, "%d"); // exponents <0 are untested.
+	sASSERT_GE(exp, 0); // exponents <0 are untested.
     while (exp)
     {
         if (exp & 1)
@@ -37,12 +37,12 @@ int64_t skit_ipow(int64_t base, int exp)
 
 static void skit_math_ipow_test()
 {
-	sASSERT_EQ( skit_ipow(2,0), 1, "%d" );
-	sASSERT_EQ( skit_ipow(2,2), 4, "%d" );
-	sASSERT_EQ( skit_ipow(3,2), 9, "%d" );
-	sASSERT_EQ( skit_ipow(3,3), 27, "%d" );
-	sASSERT_EQ( skit_ipow(-2,2), 4, "%d" );
-	sASSERT_EQ( skit_ipow(-2,0), 1, "%d" );
+	sASSERT_EQ( skit_ipow(2,0), 1 );
+	sASSERT_EQ( skit_ipow(2,2), 4 );
+	sASSERT_EQ( skit_ipow(3,2), 9 );
+	sASSERT_EQ( skit_ipow(3,3), 27 );
+	sASSERT_EQ( skit_ipow(-2,2), 4 );
+	sASSERT_EQ( skit_ipow(-2,0), 1 );
 	printf("  skit_math_ipow_test passed.\n");
 }
 

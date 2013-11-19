@@ -173,7 +173,7 @@ Example:
 	char mem[128];
 	size_t mem_size = sizeof(mem);
 	skit_loaf loaf = skit_loaf_emplace(mem, mem_size);
-	sASSERT_EQ( mem_size, sLLENGTH(loaf) + SKIT_LOAF_EMPLACEMENT_OVERHEAD, "%d" );
+	sASSERT_EQ( mem_size, sLLENGTH(loaf) + SKIT_LOAF_EMPLACEMENT_OVERHEAD );
 	sASSERT( sLPTR(loaf) != NULL );
 	sASSERT( mem <= (char*)sLPTR(loaf) );
 	sASSERT( (char*)sLPTR(loaf) < mem+mem_size );
@@ -191,7 +191,7 @@ and then call skit_loaf_emplace to turn the memory into a usable loaf.
 Example:
 	SKIT_LOAF_ON_STACK(loaf, 32);
 	sASSERT( sLPTR(loaf) != NULL );
-	sASSERT_EQ( sLLENGTH(loaf), 32, "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), 32 );
 	skit_loaf_free(&loaf);
 */
 #define SKIT_LOAF_ON_STACK( loaf_name, size ) \
@@ -207,7 +207,7 @@ high-performance code should probably cache string lengths whenever it is
 safe to do so.
 Example:
 	skit_loaf loaf = skit_loaf_alloc(10);
-	sASSERT_EQ(skit_loaf_len(loaf), 10, "%d");
+	sASSERT_EQ(skit_loaf_len(loaf), 10);
 */
 ssize_t skit_loaf_len (skit_loaf loaf);
 ssize_t skit_slice_len(skit_slice slice); /** ditto */
@@ -236,7 +236,7 @@ called.
 Example:
 	skit_loaf  loaf = skit_loaf_copy_cstr("foobarbaz");
 	skit_slice slice = skit_slice_of(loaf.as_slice, 3, 6);
-	sASSERT_EQ(sSPTR(slice) - sLPTR(loaf), 3, "%d");
+	sASSERT_EQ(sSPTR(slice) - sLPTR(loaf), 3);
 	sASSERT_EQS(slice, sSLICE("bar"));
 	skit_loaf_free(&loaf);
 */
@@ -265,10 +265,10 @@ Example:
 	skit_slice nslice = skit_slice_null();
 	skit_loaf  loaf   = skit_loaf_copy_cstr("foo");
 	skit_slice slice  = skit_slice_of(loaf.as_slice, 0, 2);
-	sASSERT_EQ(skit_loaf_is_null(nloaf),  1, "%d");
-	sASSERT_EQ(skit_slice_is_null(nloaf), 1, "%d");
-	sASSERT_EQ(skit_loaf_is_null(loaf),   0, "%d");
-	sASSERT_EQ(skit_slice_is_null(loaf),  0, "%d");
+	sASSERT_EQ(skit_loaf_is_null(nloaf),  1);
+	sASSERT_EQ(skit_slice_is_null(nloaf), 1);
+	sASSERT_EQ(skit_loaf_is_null(loaf),   0);
+	sASSERT_EQ(skit_slice_is_null(loaf),  0);
 	skit_loaf_free(&loaf);
 */
 int skit_loaf_is_null(skit_loaf loaf);
@@ -298,7 +298,7 @@ This can avoid an O(n) string scan if the caller already knows the desired
 length of the given C string.
 Example:
 	skit_slice slice = skit_slice_of_cstrn("foo",3);
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 3);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 */
 skit_slice skit_slice_of_cstrn(const char *cstr, int length );
@@ -307,7 +307,7 @@ skit_slice skit_slice_of_cstrn(const char *cstr, int length );
 Creates a slice of the given nul-terminated C string.
 Example:
 	skit_slice slice = skit_slice_of_cstr("foo");
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 3);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 */
 skit_slice skit_slice_of_cstr(const char *cstr);
@@ -322,25 +322,25 @@ Take caution when using it with C stack-allocated arrays: behavior may be
 undefined in this case.
 Example:
 	skit_slice slice = sSLICE("foo");
-	sASSERT_EQ(skit_slice_len(slice), 3, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 3);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "foo");
 	
 	const char *cstr_ptr = "Hello world!";
 	slice = sSLICE(cstr_ptr);
-	sASSERT_EQ(skit_slice_len(slice), 12, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 12);
 	sASSERT_EQ_CSTR((char*)sSPTR(slice), "Hello world!");
 	
 	// Arrays may behave strangely:
 	char array1[sizeof(void*)];
 	memset(array1, '\0', sizeof(void*));
 	slice = sSLICE(array1);
-	sASSERT_EQ(skit_slice_len(slice), 0, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 0);
 	
 	char array2[sizeof(void*)-1];
 	memset(array2, '\0', sizeof(void*)-1);
 	slice = sSLICE(array2);
-	sASSERT_EQ(skit_slice_len(slice), sizeof(array2)-1, "%d");
-	sASSERT_NE(skit_slice_len(slice), 0, "%d");
+	sASSERT_EQ(skit_slice_len(slice), sizeof(array2)-1);
+	sASSERT_NE(skit_slice_len(slice), 0);
 */
 #define sSLICE(cstr) (sizeof((cstr)) == sizeof(void*) ? skit_slice_of_cstr((cstr)) : skit_slice_of_cstrn((cstr), sizeof((cstr))-1))
 /* subtract 1 because sizeof(x) includes the nul byte. */
@@ -418,11 +418,11 @@ in addition to the usual nul character after the end of the loaf.
 Example:
 	skit_loaf buffer = skit_loaf_alloc(5);
 	skit_slice slice = skit_slice_of(buffer.as_slice, 2, 4);
-	sASSERT_EQ(skit_slice_len(slice), 2, "%d");
+	sASSERT_EQ(skit_slice_len(slice), 2);
 	skit_slice_buffered_resize(&buffer, &slice, 5);
 	sASSERT(skit_loaf_len(buffer) >= 6);
-	sASSERT_EQ(skit_slice_len(slice), 5, "%d");
-	sASSERT_EQ(sSPTR(slice)[5], '\0', "%d");
+	sASSERT_EQ(skit_slice_len(slice), 5);
+	sASSERT_EQ(sSPTR(slice)[5], '\0');
 	skit_loaf_free(&buffer);
 */
 skit_slice *skit_slice_buffered_resize(
@@ -449,11 +449,11 @@ Example:
 	skit_loaf  buffer = skit_loaf_alloc(5);
 	skit_slice accumulator = skit_slice_of(buffer.as_slice, 0, 0);
 	skit_slice_buffered_append(&buffer, &accumulator, sSLICE("foo"));
-	sASSERT_EQ(skit_loaf_len(buffer), 5, "%d");
-	sASSERT_EQ(skit_slice_len(accumulator), 3, "%d");
+	sASSERT_EQ(skit_loaf_len(buffer), 5);
+	sASSERT_EQ(skit_slice_len(accumulator), 3);
 	skit_slice_buffered_append(&buffer, &accumulator, sSLICE("bar"));
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(buffer), "foobar");
-	sASSERT_GE(skit_loaf_len(buffer), 6, "%d");
+	sASSERT_GE(skit_loaf_len(buffer), 6);
 	skit_loaf_free(&buffer);
 */
 skit_slice skit_slice_buffered_append(
@@ -469,7 +469,7 @@ Example:
 	skit_loaf foo = skit_loaf_copy_cstr("foo");
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
 	skit_loaf bar = skit_loaf_dup(slice);
-	sASSERT_NE(sLPTR(foo), sLPTR(bar), "%p");
+	sASSERT(sLPTR(foo) != sLPTR(bar));
 	skit_loaf_assign_cstr(&bar, "bar");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(bar), "bar");
@@ -492,20 +492,20 @@ Example:
 	// Start off with a small string.
 	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
-	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), 8 );
 	
 	// Enlarge.
 	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
 	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
 	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
-	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
 	
 	// Narrow.
 	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
 	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
 	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
-	sASSERT_EQ( sLLENGTH(loaf), strlen(largish), "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
 	
 	skit_loaf_free(&loaf);
 */
@@ -523,11 +523,11 @@ Example:
 	skit_slice largish  = sSLICE("Hello world!");
 	skit_slice test1 = skit_loaf_assign_slice(&loaf, smallish);
 	sASSERT_EQS( test1, smallish );
-	sASSERT_EQ( sLLENGTH(loaf), 8, "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), 8 );
 	skit_slice test2 = skit_loaf_assign_slice(&loaf, largish);
 	sASSERT_EQS( test2, largish );
 	sASSERT_NES( test1, smallish );
-	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish), "%d" );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice);
@@ -652,7 +652,6 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 /* Internal use.  Please do not call directly. */
 #define SKIT__CHECK_SLICE_CMP_ESC( cmp_op, check_name, lhs, rhs, lhs_evaluated, rhs_evaluated, RESPONSE ) \
 	do { \
-		skit_print_stack_trace(); \
 		SKIT_LOAF_ON_STACK(skit_assert__lhs_buf, 32); \
 		SKIT_LOAF_ON_STACK(skit_assert__rhs_buf, 32); \
 		skit_slice skit_assert__lhs_escape = skit_slice_escapify((lhs_evaluated), &skit_assert__lhs_buf); \
@@ -666,22 +665,22 @@ char *skit_slice_get_printf_formatter( skit_slice slice, char *buffer, int buf_s
 	} while(0)
 
 /* Internal use.  Please do not call directly. */
-#define SKIT__CHECK_SLICE_CMP_EVAL( cmp_op, case_sensitive, check_name, uc_suffix, lhs, rhs, RESPONSE ) \
+#define SKIT__CHECK_SLICE_CMP_EVAL( cmp_op, case_sensitive, check_name, upcased_suffix, lhs, rhs, RESPONSE ) \
 	do { \
 		skit_slice skit__check_lhs_evaluated = (lhs); \
 		skit_slice skit__check_rhs_evaluated = (rhs); \
 		\
 		if ( !(skit_slice_ascii_ccmp(skit__check_lhs_evaluated, skit__check_rhs_evaluated, case_sensitive) cmp_op 0) ) \
-			SKIT__CHECK_SLICE_CMP_ESC( cmp_op, check_name "_" #uc_suffix, lhs, rhs, \
+			SKIT__CHECK_SLICE_CMP_ESC( cmp_op, check_name "_" #upcased_suffix, lhs, rhs, \
 				skit__check_lhs_evaluated, skit__check_rhs_evaluated, RESPONSE ); \
 	} while(0)
 
 /* Internal use.  Please do not call directly. */
-#define SKIT__ENFORCE_SLICE_RE(cmp_op, case_sensitive, uc_suffix, lhs, rhs, RESPONSE) \
-	SKIT__CHECK_SLICE_CMP_EVAL(cmp_op, case_sensitive, "ENFORCE", uc_suffix, lhs, rhs, RESPONSE)
+#define SKIT__ENFORCE_SLICE_RE(cmp_op, case_sensitive, upcased_suffix, lhs, rhs, RESPONSE) \
+	SKIT__CHECK_SLICE_CMP_EVAL(cmp_op, case_sensitive, "ENFORCE", upcased_suffix, lhs, rhs, RESPONSE)
 
-#define SKIT__ASSERT_SLICE_RE(cmp_op, case_sensitive, uc_suffix, lhs, rhs, RESPONSE) \
-	SKIT__CHECK_SLICE_CMP_EVAL(cmp_op, case_sensitive, "ASSERT", uc_suffix, lhs, rhs, RESPONSE)
+#define SKIT__ASSERT_SLICE_RE(cmp_op, case_sensitive, upcased_suffix, lhs, rhs, RESPONSE) \
+	SKIT__CHECK_SLICE_CMP_EVAL(cmp_op, case_sensitive, "ASSERT", upcased_suffix, lhs, rhs, RESPONSE)
 
 /**
 Assertions/enforcement with caller-defined responses to test failure.
@@ -730,61 +729,38 @@ The RESPONSE macro should expand as a statement, so wrap it in a 'do {...} while
 #define SKIT_ASSERT_IGTS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(>,  0, GTS,lhs,rhs,RESPONSE) /// Ditto.
 #define SKIT_ASSERT_ILTS_RE(lhs,rhs,RESPONSE) SKIT__ASSERT_SLICE_RE(<,  0, LTS,lhs,rhs,RESPONSE) /// Ditto.
 
-/* Internal use.  Please do not call directly. */
-#define SKIT__ASSERT_SLICE_RESPONSE(cmp_op, check_name, lhs, rhs, lhs_strptr, rhs_strptr, lhs_len, rhs_len) \
-	do { \
-		skit_die ( \
-			"%s: at line %d in function %s: " check_name "(" #lhs #cmp_op #rhs ") failed.\n" \
-			"  lhs == \"%.*s\"\n" \
-			"  rhs == \"%.*s\"", \
-			__FILE__, __LINE__, __func__, \
-			lhs_len, lhs_strptr, \
-			rhs_len, rhs_strptr); \
-	} while(0)
-
-#define SKIT__ENFORCE_SLICE_RESPONSE(cmp_op, check_name, lhs, rhs, lhs_strptr, rhs_strptr, lhs_len, rhs_len) \
-	do { \
-		sTHROW( \
-			check_name "(" #lhs #cmp_op #rhs ") failed.\n" \
-			"  lhs == \"%.*s\"\n" \
-			"  rhs == \"%.*s\"", \
-			lhs_len, lhs_strptr, \
-			rhs_len, rhs_strptr); \
-	} while(0)
-
-
 /**
 Assertions/enforcement involving comparisons of slices.
 These are good to use because they will print the slices involved in the
 comparison if anything goes wrong, thus aiding in fast debugging.
 */
-#define sENFORCE_EQS(lhs,rhs) SKIT_ENFORCE_EQS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE)
-#define sENFORCE_NES(lhs,rhs) SKIT_ENFORCE_NES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_GES(lhs,rhs) SKIT_ENFORCE_GES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_LES(lhs,rhs) SKIT_ENFORCE_LES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_GTS(lhs,rhs) SKIT_ENFORCE_GTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_LTS(lhs,rhs) SKIT_ENFORCE_LTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_EQS(lhs,rhs) SKIT_ENFORCE_EQS_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE)
+#define sENFORCE_NES(lhs,rhs) SKIT_ENFORCE_NES_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_GES(lhs,rhs) SKIT_ENFORCE_GES_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_LES(lhs,rhs) SKIT_ENFORCE_LES_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_GTS(lhs,rhs) SKIT_ENFORCE_GTS_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_LTS(lhs,rhs) SKIT_ENFORCE_LTS_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
 
-#define sENFORCE_IEQS(lhs,rhs) SKIT_ENFORCE_IEQS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_INES(lhs,rhs) SKIT_ENFORCE_INES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_IGES(lhs,rhs) SKIT_ENFORCE_IGES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_ILES(lhs,rhs) SKIT_ENFORCE_ILES_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_IGTS(lhs,rhs) SKIT_ENFORCE_IGTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
-#define sENFORCE_ILTS(lhs,rhs) SKIT_ENFORCE_ILTS_RE(lhs,rhs,SKIT__ENFORCE_SLICE_RESPONSE) /// Ditto.
+#define sENFORCE_IEQS(lhs,rhs) SKIT_ENFORCE_IEQS_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_INES(lhs,rhs) SKIT_ENFORCE_INES_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_IGES(lhs,rhs) SKIT_ENFORCE_IGES_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_ILES(lhs,rhs) SKIT_ENFORCE_ILES_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_IGTS(lhs,rhs) SKIT_ENFORCE_IGTS_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
+#define sENFORCE_ILTS(lhs,rhs) SKIT_ENFORCE_ILTS_RE(lhs,rhs,SKIT__ENFORCE_CMP_RESPONSE) /// Ditto.
 
-#define sASSERT_EQS(lhs,rhs) SKIT_ENFORCE_EQS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_NES(lhs,rhs) SKIT_ENFORCE_NES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_GES(lhs,rhs) SKIT_ENFORCE_GES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_LES(lhs,rhs) SKIT_ENFORCE_LES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_GTS(lhs,rhs) SKIT_ENFORCE_GTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_LTS(lhs,rhs) SKIT_ENFORCE_LTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_EQS(lhs,rhs) SKIT_ENFORCE_EQS_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_NES(lhs,rhs) SKIT_ENFORCE_NES_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_GES(lhs,rhs) SKIT_ENFORCE_GES_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_LES(lhs,rhs) SKIT_ENFORCE_LES_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_GTS(lhs,rhs) SKIT_ENFORCE_GTS_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_LTS(lhs,rhs) SKIT_ENFORCE_LTS_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
 
-#define sASSERT_IEQS(lhs,rhs) SKIT_ENFORCE_IEQS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_INES(lhs,rhs) SKIT_ENFORCE_INES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_IGES(lhs,rhs) SKIT_ENFORCE_IGES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_ILES(lhs,rhs) SKIT_ENFORCE_ILES_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_IGTS(lhs,rhs) SKIT_ENFORCE_IGTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
-#define sASSERT_ILTS(lhs,rhs) SKIT_ENFORCE_ILTS_RE(lhs,rhs,SKIT__ASSERT_SLICE_RESPONSE) /// Ditto.
+#define sASSERT_IEQS(lhs,rhs) SKIT_ENFORCE_IEQS_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_INES(lhs,rhs) SKIT_ENFORCE_INES_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_IGES(lhs,rhs) SKIT_ENFORCE_IGES_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_ILES(lhs,rhs) SKIT_ENFORCE_ILES_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_IGTS(lhs,rhs) SKIT_ENFORCE_IGTS_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
+#define sASSERT_ILTS(lhs,rhs) SKIT_ENFORCE_ILTS_RE(lhs,rhs,SKIT__ASSERT_CMP_RESPONSE) /// Ditto.
 
 /* ------------------------- string misc functions ------------------------- */
 
@@ -1090,10 +1066,10 @@ not point to a location in the haystack slice.
 Example:
 	skit_slice haystack = sSLICE("foobarbaz");
 	skit_slice needle = sSLICE("bar");
-	sASSERT_EQ(skit_slice_match(haystack,needle,0),0,"%d");
-	sASSERT_EQ(skit_slice_match(haystack,needle,3),1,"%d");
-	sASSERT_EQ(skit_slice_match(haystack,needle,6),0,"%d");
-	sASSERT_EQ(skit_slice_match(haystack,needle,8),0,"%d");
+	sASSERT_EQ(skit_slice_match(haystack,needle,0),0);
+	sASSERT_EQ(skit_slice_match(haystack,needle,3),1);
+	sASSERT_EQ(skit_slice_match(haystack,needle,6),0);
+	sASSERT_EQ(skit_slice_match(haystack,needle,8),0);
 */
 int skit_slice_match(
 	const skit_slice haystack,
@@ -1113,14 +1089,14 @@ Returns 1 if "\n" or "\r" matches.
 Returns 0 if not.
 Example:
 	skit_slice haystack = sSLICE("foo\nbar\r\nbaz\rqux");
-	sASSERT_EQ(skit_slice_match_nl(haystack,3),1,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,7),2,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,8),1,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,12),1,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,0),0,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,2),0,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,4),0,"%d");
-	sASSERT_EQ(skit_slice_match_nl(haystack,13),0,"%d");
+	sASSERT_EQ(skit_slice_match_nl(haystack,3) ,1);
+	sASSERT_EQ(skit_slice_match_nl(haystack,7) ,2);
+	sASSERT_EQ(skit_slice_match_nl(haystack,8) ,1);
+	sASSERT_EQ(skit_slice_match_nl(haystack,12),1);
+	sASSERT_EQ(skit_slice_match_nl(haystack,0) ,0);
+	sASSERT_EQ(skit_slice_match_nl(haystack,2) ,0);
+	sASSERT_EQ(skit_slice_match_nl(haystack,4) ,0);
+	sASSERT_EQ(skit_slice_match_nl(haystack,13),0);
 */
 int skit_slice_match_nl(
 	const skit_slice text,

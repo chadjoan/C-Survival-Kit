@@ -82,10 +82,10 @@ void skit_regex_unittest()
 	skit_regex_engine e;
 	skit_regex_init(&e);
 	skit_regex_compile(&e, sSLICE(".*\0"));
-	sASSERT_EQ(skit_regex_feed(&e, 'a'), 1, "%d");
-	sASSERT_EQ(skit_regex_feed(&e, 'a'), 1, "%d");
-	sASSERT_EQ(skit_regex_feed(&e, '\0'), 0, "%d");
-	sASSERT_EQ(skit_regex_feed(&e, 'a'), 0, "%d");
+	sASSERT_EQ(skit_regex_feed(&e, 'a'), 1);
+	sASSERT_EQ(skit_regex_feed(&e, 'a'), 1);
+	sASSERT_EQ(skit_regex_feed(&e, '\0'), 0);
+	sASSERT_EQ(skit_regex_feed(&e, 'a'), 0);
 	skit_regex_match *match = skit_regex_get_matches(&e);
 	sASSERT_EQS(skit_regex_match_n(original_text, match, 0), sSLICE("aa\0"));
 	skit_regex_dtor(&e);

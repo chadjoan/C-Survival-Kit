@@ -46,7 +46,7 @@ int skit_stack_walk_unittest(void *context, const skit_utest_int_stnode *node )
 {
 	skit_stack_unittest_context *ctx = context;
 	
-	sASSERT_EQ( node->val, ctx->expected_vals[ctx->count], "%d" );
+	sASSERT_EQ( node->val, ctx->expected_vals[ctx->count] );
 	
 	(ctx->count)++;
 	
@@ -88,33 +88,33 @@ void skit_stack_unittest()
 	
 	skit_utest_int_stack_push(&list,&node3);
 	assert(list.length == 2);
-	sASSERT_EQ(list.front->val, 1337, "%d");
-	sASSERT_EQ(list.back->val, 9, "%d");
+	sASSERT_EQ(list.front->val, 1337);
+	sASSERT_EQ(list.back->val, 9);
 	
 	ctx.count = 0;
 	ctx.expected_vals[0] = 1337;
 	ctx.expected_vals[1] = 9;
 	
 	skit_utest_int_stack_walk( &list, &skit_stack_walk_unittest, &ctx, NULL, NULL);
-	sASSERT_EQ(ctx.count, 2, "%d");
+	sASSERT_EQ(ctx.count, 2);
 	
 	skit_utest_int_stack *the_copy = skit_utest_int_stack_dup( &list );
 	
 	ctx.count = 0;
 	skit_utest_int_stack_walk( the_copy, &skit_stack_walk_unittest, &ctx, NULL, NULL);
-	sASSERT_EQ(ctx.count, 2, "%d");
+	sASSERT_EQ(ctx.count, 2);
 	
 	
 	copy_node = skit_utest_int_stack_pop(the_copy);
-	sASSERT_EQ(the_copy->length, 1, "%d");
-	sASSERT_EQ(copy_node->val, 1337, "%d");
+	sASSERT_EQ(the_copy->length, 1);
+	sASSERT_EQ(copy_node->val, 1337);
 	skit_free(copy_node);
 	
 	copy_node = skit_utest_int_stack_pop(the_copy);
-	sASSERT_EQ(the_copy->length, 0, "%d");
+	sASSERT_EQ(the_copy->length, 0);
 	sASSERT(the_copy->front == NULL);
 	sASSERT(the_copy->back == NULL);
-	sASSERT_EQ(copy_node->val, 9, "%d");
+	sASSERT_EQ(copy_node->val, 9);
 	skit_free(copy_node);
 	
 	skit_free(the_copy);
@@ -125,7 +125,7 @@ void skit_stack_unittest()
 	ctx.expected_vals[0] = 9;
 	ctx.expected_vals[1] = 1337;
 	skit_utest_int_stack_walk( the_copy, &skit_stack_walk_unittest, &ctx, NULL, NULL);
-	sASSERT_EQ(ctx.count, 2, "%d");
+	sASSERT_EQ(ctx.count, 2);
 	
 	skit_utest_int_stack_reverse( the_copy );
 	
@@ -133,23 +133,23 @@ void skit_stack_unittest()
 	ctx.expected_vals[0] = 1337;
 	ctx.expected_vals[1] = 9;
 	skit_utest_int_stack_walk( the_copy, &skit_stack_walk_unittest, &ctx, NULL, NULL);
-	sASSERT_EQ(ctx.count, 2, "%d");
+	sASSERT_EQ(ctx.count, 2);
 	
 	copy_node = skit_utest_int_stack_pop(the_copy);
-	sASSERT_EQ(the_copy->length, 1, "%d");
-	sASSERT_EQ(copy_node->val, 1337, "%d");
+	sASSERT_EQ(the_copy->length, 1);
+	sASSERT_EQ(copy_node->val, 1337);
 	skit_free(copy_node);
 	
 	copy_node = skit_utest_int_stack_pop(the_copy);
-	sASSERT_EQ(the_copy->length, 0, "%d");
+	sASSERT_EQ(the_copy->length, 0);
 	sASSERT(the_copy->front == NULL);
 	sASSERT(the_copy->back == NULL);
-	sASSERT_EQ(copy_node->val, 9, "%d");
+	sASSERT_EQ(copy_node->val, 9);
 	skit_free(copy_node);
 	
 	
-	sASSERT_EQ(list.front->val, 1337, "%d");
-	sASSERT_EQ(list.back->val, 9, "%d");
+	sASSERT_EQ(list.front->val, 1337);
+	sASSERT_EQ(list.back->val, 9);
 	
 	node_res = *skit_utest_int_stack_pop(&list);
 	assert(list.length == 1);

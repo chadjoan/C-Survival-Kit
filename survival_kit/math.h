@@ -15,7 +15,7 @@ Limitation: currently only supports up to 8 arguments.
 Example:
 	int foo = 5;
 	double bar = SKIT_MAX(foo, 6, foo+3.5, 1.2);
-	sASSERT_EQ(bar, 8.5);
+	sASSERT(bar == 8.5);
 */
 #define SKIT_MAX(...) SKIT_MACRO_DISPATCHER(SKIT_MAX, __VA_ARGS__)(__VA_ARGS__)
 #define SKIT_MAX1(a) a
@@ -36,7 +36,7 @@ Limitation: currently only supports up to 8 arguments.
 Example:
 	int foo = 5;
 	double bar = SKIT_MIN(foo, 6, foo+3.5, 1.2);
-	sASSERT_EQ(bar, 1.2);
+	sASSERT(bar == 1.2);
 */
 #define SKIT_MIN(...) SKIT_MACRO_DISPATCHER(SKIT_MIN, __VA_ARGS__)(__VA_ARGS__)
 #define SKIT_MIN1(a) a

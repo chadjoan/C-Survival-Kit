@@ -109,11 +109,11 @@ Example:
 
 	void *val;
 	sASSERT_EQS(skit_trie_getc(trie, "abc", &val, SKIT_FLAGS_NONE), sSLICE("abc"));
-	sASSERT_EQ((size_t)val, 2, "%d");
+	sASSERT_EQ((size_t)val, 2);
 	sASSERT_EQS(skit_trie_getc(trie, "xyz", &val, SKIT_FLAG_I), sSLICE("XYz"));
-	sASSERT_EQ((size_t)val, 3, "%d");
+	sASSERT_EQ((size_t)val, 3);
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
-	sASSERT_EQ(val, NULL, "%d");
+	sASSERT_EQ(val, NULL);
 	
 	skit_trie_free(trie);
 */
@@ -163,11 +163,11 @@ Example:
 
 	void *val;
 	sASSERT_EQS(skit_trie_getc(trie, "abc", &val, SKIT_FLAGS_NONE), sSLICE("abc"));
-	sASSERT_EQ((size_t)val, 2, "%d");
+	sASSERT_EQ((size_t)val, 2);
 	sASSERT_EQS(skit_trie_getc(trie, "xyz", &val, SKIT_FLAG_I), sSLICE("XYz"));
-	sASSERT_EQ((size_t)val, 3, "%d");
+	sASSERT_EQ((size_t)val, 3);
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
-	sASSERT_EQ(val, NULL, "%d");
+	sASSERT_EQ(val, NULL);
 	
 	skit_trie_free(trie);
 */

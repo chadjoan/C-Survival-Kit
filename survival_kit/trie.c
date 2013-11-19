@@ -1011,7 +1011,7 @@ static void skit_trie_ndraw( skit_trie_drawing *dst, skit_trie_draw_cursor *curs
 	if ( rclip > dst->width )
 		str_len -= (dst->width - rclip);
 	
-	sASSERT_GE(cursor->x, 0, "%d");
+	sASSERT_GE(cursor->x, 0);
 	
 	memcpy(skit_trie_cell_addr(dst, cursor->x, cursor->y), str_ptr, str_len);
 	(cursor->x) += str_len;
@@ -1452,8 +1452,8 @@ skit_trie_iter *skit_trie_iter_new( skit_trie *trie, const skit_slice prefix, sk
 	if ( coords.n_chars_into_node > 0 )
 	{
 		skit_trie_node *node = coords.node;
-		sASSERT_EQ(node->nodes_len, 1, "%d");
-		sASSERT_GT(node->chars_len, 1, "%d"); /* chars_len > 1 */
+		sASSERT_EQ(node->nodes_len, 1);
+		sASSERT_GT(node->chars_len, 1); /* chars_len > 1 */
 
 		/* Copy the rest of the node into the key_buffer. */
 		void *dst_start = result->key_buffer + coords.pos;
@@ -1576,7 +1576,7 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 		size_t i;
 		ssize_t node_index = -1;
 		uint16_t next_char = 256;
-		sASSERT_EQ(node->nodes_len, node->chars_len, "%d");
+		sASSERT_EQ(node->nodes_len, node->chars_len);
 
 		/* Find the index of the node that corresponds to current_char */
 		/*   and also find the character that comes after it, alphabetically. */
@@ -1663,16 +1663,16 @@ int skit_trie_iter_next( skit_trie_iter *iter, skit_slice *key, void **value )
 typedef struct skit_trie_test skit_trie_test;
 struct skit_trie_test
 {
-	skit_slice slice;
-	skit_slice islice;
-	size_t val;
+	skit_slice      slice;
+	skit_slice      islice;
+	skit_uintptr_t  val;
 };
 
 static void skit_trie_test_ctor(
-	skit_trie_test *test,
-	skit_slice slice,
-	skit_slice islice,
-	size_t val)
+	skit_trie_test  *test,
+	skit_slice      slice,
+	skit_slice      islice,
+	skit_uintptr_t  val)
 {
 	test->slice = slice;
 	test->islice = islice;
@@ -1691,24 +1691,24 @@ static void skit_trie_exhaustive_get_test(
 	void *val;
 	size_t i;
 	
-	sASSERT_EQ(skit_trie_len(trie), trie_size, "%d");
+	sASSERT_EQ(skit_trie_len(trie), trie_size);
 	
 	/* Test for false negatives. */
 	for ( i = 0; i < trie_size; i++ )
 	{
 		sASSERT_EQS(skit_trie_get(trie, tests[i].slice, &val, SKIT_FLAGS_NONE), tests[i].slice);
 		if ( test_vals )
-			sASSERT_EQ((size_t)val, tests[i].val, "%d");
+			sASSERT_EQ((skit_uintptr_t)val, tests[i].val);
 		
 		sASSERT_IEQS(skit_trie_get(trie, tests[i].islice, &val, SKIT_FLAG_I), tests[i].slice );
-		/* sASSERT_EQ((size_t)val, tests[i].val, "%d"); */
+		/* sASSERT_EQ((skit_uintptr_t)val, tests[i].val, "%d"); */
 	}
 	
 	/* Test against false positives. */
 	for ( i = trie_size; i < n_slices; i++ )
 	{
 		sASSERT_EQS(skit_trie_get(trie, tests[i].slice, &val, SKIT_FLAGS_NONE), skit_slice_null());
-		sASSERT_EQ(val, NULL, "%d");
+		sASSERT(val == NULL);
 	}
 }
 
@@ -1742,14 +1742,14 @@ static void skit_trie_iter_test(
 		ITER_DEBUG("%s, %d: calling skit_trie_iter_next(iter, \"%.*s\", %ld); i == %d; expect %ld\n",
 			__func__, __LINE__,
 			sSLENGTH(key), sSPTR(key),
-			(size_t)val, i, tests[i].val);
+			(skit_uintptr_t)val, i, tests[i].val);
 		
 		sASSERT_EQS( tests[i].slice, key );
-		sASSERT_EQ ( tests[i].val, (size_t)val, "%d" );
+		sASSERT_EQ ( tests[i].val, (size_t)val );
 		i++;
 	}
 	
-	sASSERT_EQ( i, n_tests, "%d" );
+	sASSERT_EQ( i, n_tests );
 	
 	skit_trie_iter_free(iter);
 	
@@ -1849,7 +1849,7 @@ static void skit_trie_exhaustive_test( skit_trie_test* tests, size_t n_tests, in
 		*/
 	}
 	
-	sASSERT_EQ( length_before, skit_trie_len(trie), "%d" );
+	sASSERT_EQ( length_before, skit_trie_len(trie) );
 	sTRACE0(skit_trie_exhaustive_get_test(trie, tests, n_tests, n_tests, 0));
 	
 	sTRACE0(skit_trie_free(trie));
@@ -1883,10 +1883,10 @@ static void skit_trie_unittest_basics()
 	trie = skit_trie_new();
 	sASSERT_EQS(skit_trie_setc(trie, "abc", (void*)1, sFLAGS("c")), sSLICE("abc"));
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
-	sASSERT_EQ(val, NULL, "%d");
+	sASSERT(val == NULL);
 	sASSERT_EQS(skit_trie_setc(trie, "abcde", (void*)1, sFLAGS("c")), sSLICE("abcde"));
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), sSLICE("abcde"));
-	sASSERT_EQ((size_t)val, 1, "%d");
+	sASSERT_EQ((skit_uintptr_t)val, 1);
 	sTRACE0(skit_trie_free(trie));
 	
 	trie = skit_trie_new();
@@ -1918,7 +1918,7 @@ static void skit_trie_unittest_linear_nodes()
 	/* It mostly affects the choice of teststr_mid1 and teststr_mid2, */
 	/*   which were chosen to leave at least 2 characters between the */
 	/*   splitting that they cause. */
-	sASSERT_GE(SKIT__TRIE_NODE_PREALLOC, 6, "%d");
+	sASSERT_GE(SKIT__TRIE_NODE_PREALLOC, 6);
 	
 	/* "abcdefghijklmnopqrstuvwxyzabcdefg..." */
 	char teststr0[teststr_len+1];
@@ -1978,7 +1978,7 @@ static void skit_trie_test_make_trigram(
 	printf("%s, %d: skit_trigram(%p, %ld, %ld, \"%.*s\", %d, %d)\n", __func__, __LINE__,
 		loaf, *loaf_index, max_index, (int)sSLENGTH(parent), sSPTR(parent), breadth, depth);
 	*/
-	sASSERT_LE( *loaf_index, max_index, "%d" );
+	sASSERT_LE( *loaf_index, max_index );
 	
 	if ( depth > 3 )
 		return;
@@ -2081,11 +2081,11 @@ static void skit_trie_unittest_examples()
 
 	void *val;
 	sASSERT_EQS(skit_trie_getc(trie, "abc", &val, SKIT_FLAGS_NONE), sSLICE("abc"));
-	sASSERT_EQ((size_t)val, 2, "%d");
+	sASSERT_EQ((skit_uintptr_t)val, 2);
 	sASSERT_EQS(skit_trie_getc(trie, "xyz", &val, SKIT_FLAG_I), sSLICE("XYz"));
-	sASSERT_EQ((size_t)val, 3, "%d");
+	sASSERT_EQ((skit_uintptr_t)val, 3);
 	sASSERT_EQS(skit_trie_getc(trie, "abcde", &val, SKIT_FLAGS_NONE), skit_slice_null());
-	sASSERT_EQ(val, NULL, "%d");
+	sASSERT(val == NULL);
 	
 	skit_trie_free(trie);
 	
@@ -2105,10 +2105,10 @@ static void skit_trie_test_iter_examples()
 	while ( skit_trie_iter_next(iter, &key, &val) )
 	{
 		if ( skit_slice_eqs(key, sSLICE("123")) )
-			sASSERT_EQ((size_t)val, 1, "%d");
+			sASSERT_EQ((skit_uintptr_t)val, 1);
 		if ( skit_slice_eqs(key, sSLICE("1234")) )
-			sASSERT_EQ((size_t)val, 2, "%d");
-		sASSERT_NE((size_t)val, 3, "%d"); /* {"124",3} should not be returned. */
+			sASSERT_EQ((skit_uintptr_t)val, 2);
+		sASSERT_NE((skit_uintptr_t)val, 3); /* {"124",3} should not be returned. */
 	}
 	skit_trie_iter_free(iter);
 	

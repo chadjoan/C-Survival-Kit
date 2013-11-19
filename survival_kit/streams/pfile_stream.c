@@ -222,7 +222,7 @@ static void skit_try_fgets(
 	if ( *(ptr+1) == '\0' )
 	{
 		/* Termination due to end-of-line. */
-		sASSERT_EQ( *ptr, '\n', "%02x" );
+		sASSERT_EQ_HEX( *ptr, '\n' );
 		*done = 1;
 		
 		/* Don't return the last '\n'. */
@@ -244,7 +244,7 @@ static void skit_try_fgets(
 		/* The '\0' isn't from the file, so we don't return it.  */
 		/* Because we aren't return the '\n' from the memset or the '\0' from fgets, */
 		/*   we'll subtract 1 from our final pointer. */
-		sASSERT_EQ( *(ptr-1), '\0', "%02x" );
+		sASSERT_EQ_HEX( *(ptr-1), '\0' );
 		*nbytes_read = ptr - buf - 1;
 	}
 	

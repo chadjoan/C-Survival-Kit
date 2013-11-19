@@ -50,16 +50,16 @@ static void skit_str_to_flags_unittest()
 	SKIT_USE_FEATURE_EMULATION;
 	
 	/* sFLAGS example. */
-	sASSERT_EQ(sFLAGS("agz"), SKIT_FLAG_A | SKIT_FLAG_G | SKIT_FLAG_Z, "%x");
-	sASSERT_EQ(sFLAGS("zga"), SKIT_FLAG_A | SKIT_FLAG_G | SKIT_FLAG_Z, "%x");
-	sASSERT_EQ(sFLAGS(""), SKIT_FLAGS_NONE, "%x");
+	sASSERT_EQ_HEX(sFLAGS("agz"), SKIT_FLAG_A | SKIT_FLAG_G | SKIT_FLAG_Z);
+	sASSERT_EQ_HEX(sFLAGS("zga"), SKIT_FLAG_A | SKIT_FLAG_G | SKIT_FLAG_Z);
+	sASSERT_EQ_HEX(sFLAGS(""), SKIT_FLAGS_NONE);
 	
 	/* Overview example. */
 	skit_flags flags = sFLAGS("agz") | SKIT_FLAG_C;
 	skit_flags moreflags = sFLAGS("l") | flags;
 	if ( moreflags & SKIT_FLAG_A )
 		moreflags |= SKIT_FLAG_Q;
-	sASSERT_EQ(moreflags & SKIT_FLAG_Q, SKIT_FLAG_Q, "%x");
+	sASSERT_EQ_HEX(moreflags & SKIT_FLAG_Q, SKIT_FLAG_Q);
 	
 	/* Exception cases. */
 	int exception_triggered;
@@ -112,9 +112,9 @@ static void skit_flags_to_str_unittest()
 {
 	char buf[SKIT_FLAGS_BUF_SIZE];
 	skit_flags_to_str( SKIT_FLAG_A | SKIT_FLAG_G | SKIT_FLAG_Z, buf );
-	sASSERT_EQ( strcmp( buf, "agz" ), 0, "%d" );
+	sASSERT_EQ( strcmp( buf, "agz" ), 0 );
 	skit_flags_to_str( SKIT_FLAGS_NONE, buf );
-	sASSERT_EQ( strcmp( buf, "" ), 0, "%d" );
+	sASSERT_EQ( strcmp( buf, "" ), 0 );
 	
 	printf("  skit_flags_to_str_unittest passed.\n");
 }
