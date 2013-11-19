@@ -164,7 +164,7 @@ The RESPONSE macro should expand as a statement, so wrap it in a 'do {...} while
 	do { \
 		skit_print_stack_trace(); \
 		skit_die ( \
-			"%s: at line %d in function %s: " check_name "(" #lhs #cmp_op #rhs ") failed.\n" \
+			"%s: at line %d in function %s: " check_name "(" #lhs " " #cmp_op " " #rhs ") failed.\n" \
 			"  lhs == \"%.*s\"\n" \
 			"  rhs == \"%.*s\"", \
 			__FILE__, __LINE__, __func__, \
@@ -175,7 +175,7 @@ The RESPONSE macro should expand as a statement, so wrap it in a 'do {...} while
 #define SKIT__ENFORCE_CMP_RESPONSE(cmp_op, check_name, lhs, rhs, lhs_strptr, rhs_strptr, lhs_len, rhs_len) \
 	do { \
 		sTHROW( \
-			check_name "(" #lhs #cmp_op #rhs ") failed.\n" \
+			check_name "(" #lhs " " #cmp_op " " #rhs ") failed.\n" \
 			"  lhs == \"%.*s\"\n" \
 			"  rhs == \"%.*s\"", \
 			lhs_len, lhs_strptr, \
