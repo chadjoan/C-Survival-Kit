@@ -73,13 +73,31 @@ for execution to fall to the bottom of a given block in the sTRY-sCATCH
 statement.  The "dangerous" was are by using local jumping constructs like
 "break" and "continue" to leave a sTRY-sCATCH statement.  
 */
-#define SKIT__TRY_SAFE_EXIT         INT_MIN+1
+#define SKIT__TRY_SAFE_EXIT           INT_MIN
 
 /* SKIT__TRY_EXCEPTION_CLEANUP is an implementation detail.
-It is jumped to at the end of sCATCH blocks as a way of cleaning up the
-exception allocated in the code that threw the exception.
+It is jumped to whenever an sTRY or sCATCH block handled an exception
+that was thrown inside of it.
 */
-#define SKIT__TRY_EXCEPTION_CLEANUP INT_MIN
+#define SKIT__TRY_EXCEPTION_CLEANUP   INT_MIN+1
+
+/* SKIT__TRY_UNHANDLED_EXCEPTION is an implementation detail.
+It is jumped to whenever an sTRY or sCATCH block couldn't handle an exception
+that was thrown inside of it.
+*/
+#define SKIT__TRY_UNHANDLED_EXCEPTION INT_MIN+2
+
+/* SKIT__TRY__END_OF_CATCH is an implementation detail.
+It is used to indicate that the code being executed is the tail-end of an
+sCATCH block.
+*/
+#define SKIT__TRY__END_OF_CATCH       INT_MIN+4
+
+/* SKIT__TRY__END_OF_TRY is an implementation detail.
+It is used to indicate that the code being executed is the tail-end of an
+sTRY block.
+*/
+#define SKIT__TRY__END_OF_TRY         INT_MIN+5
 
 /* TODO: Maybe we should use different macro names since OpenVMS DECC already has a kind of TRY-CATCH structure. */
 #if defined(__DECC) && !defined(SKIT_ALLOW_OTHER_TRY_CATCH)
@@ -91,12 +109,16 @@ exception allocated in the code that threw the exception.
 #define SKIT_USE_TRY_CATCH_EMULATION \
 	int skit__try_catch_nesting_level = 0; \
 	(void)skit__try_catch_nesting_level; \
+	int skit__try_block_end_type = 0; \
+	(void)skit__try_block_end_type; \
+	skit_exception *skit__try_caught_exception = NULL; \
+	(void)skit__try_caught_exception; \
 	do {} while(0)
 
 /** */
 #define sTRY /* */ \
 	{ \
-	SKIT_FEATURE_TRACE("%s, %d.91: sTRY.start\n", __FILE__, __LINE__); \
+	SKIT_FEATURE_TRACE("%s, %d.121: sTRY.start\n", __FILE__, __LINE__); \
 	SKIT_FEATURE_TRACE("type_jmp_stack_alloc\n"); \
 	SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 	(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
@@ -104,94 +126,35 @@ exception allocated in the code that threw the exception.
 	if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->try_jmp_stack,&skit_malloc)) != SKIT__TRY_SAFE_EXIT ) { \
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_BUILTIN_RETURN_FROM_TRY_PTR,0); \
 		SKIT_COMPILE_TIME_CHECK(SKIT_NO_GOTO_FROM_TRY_PTR,0); \
-		SKIT_FEATURE_TRACE("%s, %d.98: sTRY.if\n", __FILE__, __LINE__); \
-		int skit__prev_exception_stack_size = 0; \
+		SKIT_FEATURE_TRACE("%s, %d.129: sTRY.if\n", __FILE__, __LINE__); \
 		skit__try_catch_nesting_level++; \
 		do { \
-			SKIT_FEATURE_TRACE("%s, %d.100: sTRY.do\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.132: sTRY.do\n", __FILE__, __LINE__); \
 			SKIT_FEATURE_TRACE("exc_jmp_stack_alloc\n"); \
 			SKIT_FEATURE_TRACE("sTRY: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
-			switch( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)) ) \
+			\
+			/* NOTE: There is currently no logic that saves the value of skit__try_setjmp_code */ \
+			/*   when execution passes into the caller's part of the block. */ \
+			/*   As a consequence, do not use skit__try_setjmp_code outside of the sTRY macro. */ \
+			int skit__try_setjmp_code = setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)); \
+			SKIT_FEATURE_TRACE("%s, %d.140: sTRY: switch( skit__try_setjmp_code )\n", __FILE__, __LINE__); \
+			switch( skit__try_setjmp_code ) \
 			{ \
-			case SKIT__TRY_EXCEPTION_CLEANUP: \
-			{ \
-				/* Exception cleanup case. */ \
-				/* Note that this case is ALWAYS reached because sCATCH and sEND_TRY macros  */ \
-				/*   may follow either the successful block or an exceptional one, so    */ \
-				/*   there is no way to know from within this macro which one should be  */ \
-				/*   jumped to.  The best strategy then is to always jump to the cleanup */ \
-				/*   case after leaving any part of the sTRY-sCATCH-sEND_TRY and only free   */ \
-				/*   exceptions if there actually are any.                               */ \
-				SKIT_FEATURE_TRACE("%s, %d.113: sTRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
-				/* Cleanup any exceptions thrown during ONLY THIS sTRY-sCATCH. */ \
-				while (skit_thread_ctx->exc_instance_stack.used.length > skit__prev_exception_stack_size) \
+				case SKIT__TRY_EXCEPTION_CLEANUP: \
 				{ \
-					skit_exception *exc = skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
-					skit_exception_dtor(skit_thread_ctx, exc); \
+					/* Exception cleanup case. */ \
+					SKIT_FEATURE_TRACE("%s, %d.145: sTRY: case CLEANUP: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("sTRY: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
+					SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
+					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+					SKIT_FEATURE_TRACE("try_jmp_stack_pop\n"); \
+					longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack), SKIT__TRY_SAFE_EXIT); \
 				} \
-				SKIT_FEATURE_TRACE("sTRY: exc_jmp_stack.size == %ld\n", skit_thread_ctx->exc_jmp_stack.used.length); \
-				SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
-				skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
-				SKIT_FEATURE_TRACE("try_jmp_stack_pop\n"); \
-				longjmp(*skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack), SKIT__TRY_SAFE_EXIT); \
-			} \
-			default: \
-			{ \
-				/* This is going to look a bit Duffy. ;)                           */ \
-				/* It is fairly important, however, that we nest the 'case 0:'     */ \
-				/* statement inside of an if statement that is otherwise never     */ \
-				/* evaluated.  This strange configuration is driven by the need to */ \
-				/* have the code at the end of each block (after macro expansion)  */ \
-				/* look identical but do slightly different things.  The if(0)     */ \
-				/* ensures that each end-of-block can assume that the previous     */ \
-				/* block started as some form of if-statement.  The 0 in the       */ \
-				/* if(0) makes sure that it never gets re-evaluated when           */ \
-				/* exceptions are thrown: it must only be evaluated once when      */ \
-				/* the sTRY block is entered, and that causes setjmp to select      */ \
-				/* the 0th case. Either way, the end-of-blocks will cleanup        */ \
-				/* thrown exceptions /if they exist/ and otherwise exit cleanly.   */ \
-				/* An early approach was to place everything inside a switch-case  */ \
-				/* statement and never use if-else.  That configuration was        */ \
-				/* incapable of handling exception inheritance because the cases   */ \
-				/* in a switch-case can't be computed expressions.                 */ \
-				if ( 0 ) \
-				{ \
-				case 0: \
-					/* Normal/successful case. */ \
-					SKIT_FEATURE_TRACE("%s, %d.146: sTRY: case 0:\n", __FILE__, __LINE__); \
-					skit__prev_exception_stack_size = skit_thread_ctx->exc_instance_stack.used.length;
-
-/** */
-#define sCATCH(skit__error_code, exc_name) /* */ \
-					/* This end-of-block may be either the end of the normal/success case */ \
-					/*   OR the end of a catch block.  It must be able to do the correct */ \
-					/*   thing regardless of where it comes from. */ \
-					SKIT_FEATURE_TRACE("%s, %d.153: sTRY: case 0: longjmp\n", __FILE__, __LINE__); \
-					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, SKIT__TRY_EXCEPTION_CLEANUP); \
-				} \
-				else if ( skit_exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, skit__error_code) ) \
-				{ \
-					/* sCATCH block. */ \
-					SKIT_FEATURE_TRACE("%s, %d.159: sTRY: case %d:\n", __FILE__, __LINE__, skit__error_code); \
-					skit_exception *exc_name = &skit_thread_ctx->exc_instance_stack.used.front->val; \
-					/* The caller may not want to actually use the named exception. */ \
-					/* They might just want to prevent its propogation and do different logic. */ \
-					/* Thus we'll write (void)(exc_name) to prevent "warning: unused variable" messages. */ \
-					(void)(exc_name);
-					
-
-/** */
-#define sEND_TRY /* */ \
-					/* This end-of-block may be either the end of the normal/success case */ \
-					/*   OR the end of a sCATCH block.  It must be able to do the correct */ \
-					/*   thing regardless of where it comes from. */ \
-					SKIT_FEATURE_TRACE("%s, %d.172: sTRY: case ??: longjmp\n", __FILE__, __LINE__); \
-					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, SKIT__TRY_EXCEPTION_CLEANUP); \
-				} \
-				else \
+				\
+				case SKIT__TRY_UNHANDLED_EXCEPTION: \
 				{ \
 					/* An exception was thrown and we can't handle it. */ \
-					SKIT_FEATURE_TRACE("%s, %d.178: sTRY: default: longjmp\n", __FILE__, __LINE__); \
+					SKIT_FEATURE_TRACE("%s, %d.156: sTRY: SKIT__TRY_UNHANDLED_EXCEPTION: longjmp\n", __FILE__, __LINE__); \
 					skit__try_catch_nesting_level--; \
 					SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 					skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
@@ -199,14 +162,92 @@ exception allocated in the code that threw the exception.
 					skit_jmp_fstack_pop(&skit_thread_ctx->try_jmp_stack); \
 					SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 				} \
+				\
+				default: \
+				\
+				SKIT_FEATURE_TRACE("%s, %d.167: sTRY: default:\n", __FILE__, __LINE__); \
+				if ( skit_thread_ctx->exc_instance_stack.used.length > 0 ) \
+					SKIT_FEATURE_TRACE("%s, %d.170: sTRY: error code: %d\n", __FILE__, __LINE__, skit_thread_ctx->exc_instance_stack.used.front->val.error_code ); \
+				if (skit__try_setjmp_code == 0) /* First time through: descend into the sTRY portion. */ \
+				{ \
+					skit__try_block_end_type = SKIT__TRY__END_OF_TRY; \
+					if (1) \
+					{ \
+						/* Prevent the caller from clobbering the try_block_end_type */ \
+						/* and skit__try_caught_exception variables when they do things */ \
+						/* like nesting sTRY-sCATCH statements. */ \
+						SKIT_FEATURE_TRACE("%s, %d.175: sTRY: case\n", __FILE__, __LINE__); \
+						int skit__try_block_end_type = 0; \
+						(void)skit__try_block_end_type; \
+						skit_exception *skit__try_caught_exception = NULL; \
+						(void)skit__try_caught_exception;
+
+#define SKIT__TRY_END_OF_BLOCK_WRAPUP \
+					else \
+					{ \
+						/* This path is reached due to thrown exceptions within sCATCH blocks. */ \
+						SKIT_FEATURE_TRACE("%s, %d.190: sTRY: case\n", __FILE__, __LINE__); \
+						SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
+						skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+						longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, SKIT__TRY_UNHANDLED_EXCEPTION); \
+					} \
+					\
+					if ( skit__try_block_end_type == SKIT__TRY__END_OF_CATCH ) \
+					{ \
+						SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
+						skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
+						skit_exception_dtor(skit_thread_ctx, skit__try_caught_exception); \
+					} \
+					SKIT_FEATURE_TRACE("%s, %d.202: sTRY: end of block: longjmp\n", __FILE__, __LINE__); \
+					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, SKIT__TRY_EXCEPTION_CLEANUP); \
+
+/** */
+#define sCATCH(skit__error_code, exc_name) /* */ \
+						SKIT_FEATURE_TRACE("%s, %d.207: sTRY: entering end of block\n", __FILE__, __LINE__); \
+					} \
+					SKIT__TRY_END_OF_BLOCK_WRAPUP \
+				} \
+				else if ( skit_exception_is_a( skit_thread_ctx->exc_instance_stack.used.front->val.error_code, skit__error_code) ) \
+				{ \
+					/* sCATCH block. */ \
+					SKIT_FEATURE_TRACE("%s, %d.213: sTRY: case %d:\n", __FILE__, __LINE__, skit__error_code); \
+					skit__try_caught_exception = skit_exc_fstack_pop(&skit_thread_ctx->exc_instance_stack); \
+					skit_exception *exc_name = skit__try_caught_exception; \
+					/* The caller may not want to actually use the named exception. */ \
+					/* They might just want to prevent its propogation and do different logic. */ \
+					/* Thus we'll write (void)(exc_name) to prevent "warning: unused variable" messages. */ \
+					(void)(exc_name); \
+					skit__try_block_end_type = SKIT__TRY__END_OF_CATCH; \
+					SKIT_FEATURE_TRACE("exc_jmp_stack_alloc\n"); \
+					if ( setjmp(*skit_jmp_fstack_alloc(&skit_thread_ctx->exc_jmp_stack,&skit_malloc)) == 0 ) \
+					{ \
+						/* Prevent the caller from clobbering the try_block_end_type */ \
+						/* and skit__try_caught_exception variables when they do things */ \
+						/* like nesting sTRY-sCATCH statements. */ \
+						SKIT_FEATURE_TRACE("%s, %d.227: sTRY: case %d:\n", __FILE__, __LINE__, skit__error_code); \
+						int skit__try_block_end_type = 0; \
+						(void)skit__try_block_end_type; \
+						skit_exception *skit__try_caught_exception = NULL; \
+						(void)skit__try_caught_exception;
+
+/** */
+#define sEND_TRY /* */ \
+						SKIT_FEATURE_TRACE("%s, %d.235: sTRY: entering end of block\n", __FILE__, __LINE__); \
+					} \
+					SKIT__TRY_END_OF_BLOCK_WRAPUP \
+				} \
+				else \
+				{ \
+					SKIT_FEATURE_TRACE("%s, %d.241: sTRY: Unhandled exception: longjmp\n", __FILE__, __LINE__); \
+					longjmp( skit_thread_ctx->exc_jmp_stack.used.front->val, SKIT__TRY_UNHANDLED_EXCEPTION); \
+				} \
 				sASSERT(0); /* This should never be reached. The if-else chain above should handle all remaining cases. */ \
-			} /* default: { } */ \
-			} /* switch(setjmp(*skit_jmp_fstack_alloc(...))) */ \
+			} /* switch( skit__try_setjmp_code ) */ \
 			/* If execution makes it here, then the caller */ \
 			/* used a "break" statement and is trying to */ \
 			/* corrupt the debug stack.  Don't let them do it! */ \
 			/* Instead, throw another exception. */ \
-			SKIT_FEATURE_TRACE("%s, %d.192: sTRY: break found!\n", __FILE__, __LINE__); \
+			SKIT_FEATURE_TRACE("%s, %d.250: sTRY: break found!\n", __FILE__, __LINE__); \
 			SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 			skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 			SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
@@ -226,7 +267,7 @@ exception allocated in the code that threw the exception.
 		/* used a "continue" statement and is trying to */ \
 		/* corrupt the debug stack.  Don't let them do it! */ \
 		/* Instead, throw another exception. */ \
-		SKIT_FEATURE_TRACE("%s, %d.206: sTRY: continue found!\n", __FILE__, __LINE__); \
+		SKIT_FEATURE_TRACE("%s, %d.270: sTRY: continue found!\n", __FILE__, __LINE__); \
 		SKIT_FEATURE_TRACE("exc_jmp_stack_pop\n"); \
 		skit_jmp_fstack_pop(&skit_thread_ctx->exc_jmp_stack); \
 		SKIT_FEATURE_TRACE("exc_try_stack_pop\n"); \
@@ -245,7 +286,7 @@ exception allocated in the code that threw the exception.
 	skit__try_catch_nesting_level--; \
 	SKIT_THREAD_CHECK_EXIT(skit_thread_ctx); \
 	\
-	SKIT_FEATURE_TRACE("%s, %d.216: sTRY: done.\n", __FILE__, __LINE__); \
+	SKIT_FEATURE_TRACE("%s, %d.289: sTRY: done.\n", __FILE__, __LINE__); \
 	}
 
 #define sENDTRY \

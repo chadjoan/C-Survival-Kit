@@ -189,6 +189,31 @@ static void unittest_exceptions()
 	int etrace_test = sETRACE(42);
 	sASSERT_EQ(etrace_test, 42);
 	
+	printf("------\n");
+	printf("Testing exception rethrow:\n");
+	
+	int rethrow_test = 0;
+	int catch_count = 0;
+	sTRY
+		sTRY
+			sTHROW(SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST");
+		sCATCH( SKIT_EXCEPTION, e )
+			catch_count++;
+			if ( catch_count > 1 )
+				assert(0); // Infinite looping == BAD.
+			SKIT_THROW_EXCEPTION(e);
+			assert(0);
+		sEND_TRY
+		assert(0);
+	sCATCH( SKIT_EXCEPTION, e )
+		rethrow_test = 1;
+	sEND_TRY
+	
+	assert(rethrow_test == 1);
+
+	printf("Passed.\n\n");
+	printf("------\n");
+	
 	printf("  exception_handling unittest passed!\n");
 }
 

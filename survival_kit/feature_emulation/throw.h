@@ -123,8 +123,14 @@ Example usage:
 		/* skit_free is necessary instead. */ \
 		/* skit_push_exception_obj now has a shallow copy. */ \
 		/* The catch statement that will be encountered later will handle the rest of the resource cleanup. */ \
-		skit_free(exc); \
+		/* TODO: BUG: Ignoring this free can cause memory leakage. */ \
+		/* TODO: BUG: If you free, however, then you might be freeing exceptions that are reused from the exception stack. */ \
+		/* TODO: BUG: That happens in the common-case of rethrowing exceptions caught with an sCATCH statement. */ \
+		/* WORKAROUND: For now, it is the caller's responsibility to free the exception. */ \
+		/*   Use sSCOPE statements to accomplish this if the exception's memory is held locally. */ \
+		/* skit_free(exc); */ \
 		skit_print_stack_trace_func(__LINE__, __FILE__, __func__, " <- thrown from here."); \
+		SKIT_FEATURE_TRACE("%s, %d.131: SKIT_THROW_EXCEPTION: error code: %d\n", __FILE__, __LINE__, skit_thread_ctx->exc_instance_stack.used.front->val.error_code ); \
 		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while (0)
 
