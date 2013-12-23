@@ -39,6 +39,7 @@ OBJECT_FILES= \
 	obj/trie.o \
 	obj/regex.o \
 	obj/path.o \
+	obj/parsing/peg.o \
 	obj/array_builtins.o \
 	obj/streams/stream.o \
 	obj/streams/text_stream.o \
@@ -72,7 +73,7 @@ lib:
 	mkdir -p lib
 
 $(OBJECT_DIRS):
-	mkdir -p obj/feature_emulation/setjmp && mkdir -p obj/feature_emulation && mkdir -p obj/streams
+	mkdir -p obj/feature_emulation/setjmp && mkdir -p obj/feature_emulation && mkdir -p obj/streams && mkdir -p obj/parsing
 
 clean:
 	rm -rf lib && rm -rf obj && rm -rf bin

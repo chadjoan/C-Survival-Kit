@@ -35,6 +35,7 @@ $ @'THIS_DIR'compile survival_kit/string
 $ @'THIS_DIR'compile survival_kit/trie
 $ @'THIS_DIR'compile survival_kit/regex
 $ @'THIS_DIR'compile survival_kit/path
+$ @'THIS_DIR'compile survival_kit/parsing/peg
 $ @'THIS_DIR'compile survival_kit/array_builtins
 $ @'THIS_DIR'compile survival_kit/streams/stream
 $ @'THIS_DIR'compile survival_kit/streams/text_stream

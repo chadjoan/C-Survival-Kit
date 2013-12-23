@@ -1,0 +1,24 @@
+#ifndef SKIT_PARSING_PEG_SHORTAND_INCLUDED
+#define SKIT_PARSING_PEG_SHORTAND_INCLUDED
+
+#include "survival_kit/parsing/peg_macros.h"
+
+#define DEFINE_RULE(...)   SKIT_PEG_DEFINE_RULE(__VA_ARGS__)
+#define END_RULE           SKIT_PEG_END_RULE
+
+#define SEQ(...)           SKIT_PEG_SEQ(__VA_ARGS__)
+#define ZERO_OR_MORE(...)  SKIT_PEG_ZERO_OR_MORE(__VA_ARGS__)
+#define ONE_OR_MORE(...)   SKIT_PEG_ONE_OR_MORE(__VA_ARGS__)
+#define CHOOSE(...)        SKIT_PEG_CHOOSE(__VA_ARGS__)
+#define OPTIONAL(...)      SKIT_PEG_OPTIONAL(__VA_ARGS__)
+#define ACTION(...)        SKIT_PEG_ACTION(__VA_ARGS__)
+#define RULE(...)          SKIT_PEG_RULE(__VA_ARGS__)
+#define NEG_LOOKAHEAD(...) SKIT_PEG_NEG_LOOKAHEAD(__VA_ARGS__)
+
+#define PARSING_INITIAL_VARS(parser) SKIT_PEG_PARSING_INITIAL_VARS(parser)
+
+#define sASSERT_PARSE_PASS(...) SKIT_PEG_ASSERT_PARSE_PASS(__VA_ARGS__)
+#define sASSERT_PARSE_FAIL(...) SKIT_PEG_ASSERT_PARSE_FAIL(__VA_ARGS__)
+#define sASSERT_PARSE_PART(...) SKIT_PEG_ASSERT_PARSE_PART(__VA_ARGS__)
+
+#endif

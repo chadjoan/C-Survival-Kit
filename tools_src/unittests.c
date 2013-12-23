@@ -12,6 +12,7 @@
 #include "survival_kit/trie.h"
 #include "survival_kit/regex.h"
 #include "survival_kit/array_builtins.h"
+#include "survival_kit/parsing/peg.h"
 #include "survival_kit/streams/text_stream.h"
 #include "survival_kit/streams/pfile_stream.h"
 #include "survival_kit/streams/tcp_stream.h"
@@ -32,6 +33,7 @@ void skit_unittest_modules()
 	skit_trie_unittest();
 	skit_regex_unittest();
 	skit_array_unittest();
+	skit_peg_unittests();
 	skit_text_stream_unittests();
 	skit_pfile_stream_unittests();
 	skit_tcp_stream_unittests();
