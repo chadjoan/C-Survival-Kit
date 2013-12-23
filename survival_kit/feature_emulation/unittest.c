@@ -205,11 +205,33 @@ static void unittest_exceptions()
 			assert(0);
 		sEND_TRY
 		assert(0);
-	sCATCH( SKIT_EXCEPTION, e )
+	sCATCH( SKIT_EXCEPTION_UTEST, e )
 		rethrow_test = 1;
 	sEND_TRY
 	
 	assert(rethrow_test == 1);
+	
+	printf("------\n");
+	printf("Testing sTHROW from within sCATCH:\n");
+	
+	int throw_in_catch_test = 0;
+	catch_count = 0;
+	sTRY
+		sTRY
+			sTHROW(SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST");
+		sCATCH( SKIT_EXCEPTION, e )
+			catch_count++;
+			if ( catch_count > 1 )
+				assert(0); // Infinite looping == BAD.
+			sTHROW(SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST (sTHROW in sCATCH)");
+			assert(0);
+		sEND_TRY
+		assert(0);
+	sCATCH( SKIT_EXCEPTION_UTEST, e )
+		throw_in_catch_test = 1;
+	sEND_TRY
+	
+	assert(throw_in_catch_test == 1);
 
 	printf("Passed.\n\n");
 	printf("------\n");
