@@ -3,6 +3,8 @@
 #pragma module skit_streams_pfile_stream
 #endif
 
+#include "survival_kit/streams/pfile_stream.h"
+
 #include <stdarg.h>
 #include <stdio.h>
 #include "survival_kit/assert.h"
@@ -11,7 +13,7 @@
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/streams/text_stream.h"
 #include "survival_kit/streams/file_stream.h"
-#include "survival_kit/streams/pfile_stream.h"
+#include "survival_kit/streams/ind_stream.h"
 
 #define SKIT_STREAM_T skit_pfile_stream
 #define SKIT_VTABLE_T skit_stream_vtable_pfile
@@ -144,6 +146,18 @@ skit_pfile_stream *skit__pfile_stream_cached( FILE *file_handle, skit_pfile_stre
 {
 	if ( *cached_stream == NULL )
 		*cached_stream = skit_pfile_stream_from_handle(file_handle, name);
+	
+	return *cached_stream;
+}
+
+skit_ind_stream *skit__ind_stdout_cache = NULL;
+skit_ind_stream *skit__ind_stdin_cache  = NULL;
+skit_ind_stream *skit__ind_stderr_cache = NULL;
+
+skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream )
+{
+	if ( *cached_stream == NULL )
+		*cached_stream = skit_ind_stream_new(src);
 	
 	return *cached_stream;
 }

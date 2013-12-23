@@ -6,6 +6,7 @@
 
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/streams/file_stream.h"
+#include "survival_kit/streams/ind_stream.h"
 
 typedef struct skit_pfile_stream_internal skit_pfile_stream_internal;
 struct skit_pfile_stream_internal
@@ -37,6 +38,11 @@ extern skit_pfile_stream *skit__pfile_stdin_cache;
 extern skit_pfile_stream *skit__pfile_stderr_cache;
 skit_pfile_stream *skit__pfile_stream_cached( FILE *file_handle, skit_pfile_stream **cached_stream, skit_slice name );
 
+extern skit_ind_stream *skit__ind_stdout_cache;
+extern skit_ind_stream *skit__ind_stdin_cache;
+extern skit_ind_stream *skit__ind_stderr_cache;
+skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream );
+
 /** 
 These expose the standard stdout, stdin, and stderr file streams as pointers
 to skit_pfile_stream objects.  They are statically allocated on an as-needed
@@ -47,9 +53,13 @@ any way.
 #define skit_pfile_stream_stdin  (skit__pfile_stream_cached(stdin,  &skit__pfile_stdin_cache,  sSLICE("stdin")))
 #define skit_pfile_stream_stderr (skit__pfile_stream_cached(stderr, &skit__pfile_stderr_cache, sSLICE("stderr")))
 
-#define skit_stream_stdout (&skit_pfile_stream_stdout->as_stream)
-#define skit_stream_stdin  (&skit_pfile_stream_stdin->as_stream)
-#define skit_stream_stderr (&skit_pfile_stream_stderr->as_stream)
+#define skit_ind_stream_stdout (skit__ind_stream_cached(&skit_pfile_stream_stdout->as_stream, &skit__ind_stdout_cache ))
+#define skit_ind_stream_stdin  (skit__ind_stream_cached(&skit_pfile_stream_stdin->as_stream , &skit__ind_stdin_cache  ))
+#define skit_ind_stream_stderr (skit__ind_stream_cached(&skit_pfile_stream_stderr->as_stream, &skit__ind_stderr_cache ))
+
+#define skit_stream_stdout (&skit_ind_stream_stdout->as_stream)
+#define skit_stream_stdin  (&skit_ind_stream_stdin->as_stream)
+#define skit_stream_stderr (&skit_ind_stream_stderr->as_stream)
 
 /**
 Allocates a new skit_pfile_stream and calls skit_pfile_stream_ctor(*) on it.
