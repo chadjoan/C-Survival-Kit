@@ -299,6 +299,8 @@ sSCOPE
 			fmtbuf[j++] = fmtstr[i++];
 	}
 	
+	fmtbuf[j] = '\0';
+
 	skit_stream_appendf_va(istreami->backing_stream, fmtbuf, vl);
 sEND_SCOPE
 
