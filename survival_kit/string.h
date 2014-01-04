@@ -482,8 +482,17 @@ skit_loaf skit_loaf_dup(skit_slice slice);
 Replaces the contents of the given loaf with a copy of the text in the given
 nul-terminated C string.  It will use skit_loaf_resize to handle an necessary 
 enlarging of the loaf.  
+
 The loaf will never be shrunk.  Instead, the returned value is a slice of the 
 loaf corresponding to the text actually written.
+
+If the referenced loaf is null (ex: skit_loaf_is_null(*loaf) == 0), then the
+loaf will be allocated using skit_loaf_alloc().
+
+Assigning a NULL string to a non-null loaf will cause the loaf to be freed.
+
+Assigning a NULL string to a null loaf will do nothing.
+
 Example:
 	skit_loaf loaf = skit_loaf_alloc(8);
 	const char *smallish = "foo";
@@ -508,6 +517,18 @@ Example:
 	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
 	
 	skit_loaf_free(&loaf);
+	
+	// Allocate when null:
+	loaf = skit_loaf_null();
+	skit_slice test4 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test4, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	
+	// Free when assigned NULL.
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_assign_cstr(&loaf, NULL);
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( skit_loaf_is_null(loaf) );
 */
 skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
 
@@ -515,8 +536,17 @@ skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
 Replaces the contents of the given loaf with a copy of the text in the given
 slice.  It will use skit_loaf_resize to handle an necessary enlarging of the
 loaf.  
+
 The loaf will never be shrunk.  Instead, the returned value is a slice of the 
 loaf corresponding to the text actually written.
+
+If the referenced loaf is null (ex: skit_loaf_is_null(*loaf) == 0), then the
+loaf will be allocated using skit_loaf_alloc().
+
+Assigning a null slice to a non-null loaf will cause the loaf to be freed.
+
+Assigning a null slice to a null loaf will do nothing.
+
 Example:
 	skit_loaf loaf = skit_loaf_alloc(8);
 	skit_slice smallish = sSLICE("foo");
@@ -529,6 +559,22 @@ Example:
 	sASSERT_NES( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
 	skit_loaf_free(&loaf);
+	
+	loaf = skit_loaf_new();
+	skit_slice nullified = sSLICE("\0a");
+	skit_slice test3 = skit_loaf_assign_slice(&loaf, nullified);
+	sASSERT_EQS( test3, nullified );
+	skit_loaf_free(&loaf);
+	
+	loaf = skit_loaf_null();
+	skit_slice test4 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test4, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_assign_slice(&loaf, skit_slice_null());
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( skit_loaf_is_null(loaf) );
 */
 skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice);
 
