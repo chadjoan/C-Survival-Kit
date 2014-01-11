@@ -183,13 +183,15 @@ static void skit_peg_whitespace_test()
 
 /* ------------------------------------------------------------------------- */
 
-SKIT_PEG_DEFINE_RULE(success, void *q)
-	match = skit_peg_match_success(parser, cursor, cursor);
-SKIT_PEG_END_RULE
+skit_peg_parse_match SKIT_PEG_success( skit_peg_parser *parser, ssize_t cursor, ssize_t ubound )
+{
+	return skit_peg_match_success(parser, cursor, ubound);
+}
 
-SKIT_PEG_DEFINE_RULE(failure, void *q)
-	match = skit_peg_match_failure(parser, 0, "This parsing rule always fails.");
-SKIT_PEG_END_RULE
+skit_peg_parse_match SKIT_PEG_failure( skit_peg_parser *parser, ssize_t cursor, ssize_t ubound )
+{
+	return skit_peg_match_failure(parser, cursor, "Could not parse.");
+}
 
 static void skit_peg_macros_test()
 {
@@ -197,18 +199,18 @@ static void skit_peg_macros_test()
 	skit_peg_parser *parser = skit_peg_parser_mock_new(sSLICE("a"));
 	SKIT_PEG_PARSING_INITIAL_VARS(parser);
 	
-	RULE(success,NULL);
+	RULE(success);
 	sASSERT_EQ(match.successful, 1);
-	RULE(failure,NULL);
+	RULE(failure);
 	sASSERT_EQ(match.successful, 0);
 
-	SEQ( RULE(success,NULL), RULE(success,NULL) );
+	SEQ( RULE(success), RULE(success) );
 	sASSERT_EQ(match.successful, 1);
-	SEQ( RULE(success,NULL), RULE(failure,NULL) );
+	SEQ( RULE(success), RULE(failure) );
 	sASSERT_EQ(match.successful, 0);
-	SEQ( RULE(failure,NULL), RULE(success,NULL) );
+	SEQ( RULE(failure), RULE(success) );
 	sASSERT_EQ(match.successful, 0);
-	SEQ( RULE(failure,NULL), RULE(failure,NULL) );
+	SEQ( RULE(failure), RULE(failure) );
 	sASSERT_EQ(match.successful, 0);
 	
 	skit_peg_parser_mock_free(parser);
@@ -470,7 +472,7 @@ static void skit_peg_any_word_test()
 DEFINE_RULE(lookup_test, skit_trie *trie, int *result)
 	SKIT_USE_FEATURE_EMULATION;
 
-	#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE) \
+	#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE, SUFFIX) \
 		TRIE_TO_USE(trie) \
 		CHOICE(x,       ACTION( (*result) = 1; )) \
 		CHOICE(foobar,  ACTION( (*result) = 2; )) \
@@ -481,36 +483,72 @@ DEFINE_RULE(lookup_test, skit_trie *trie, int *result)
 
 END_RULE
 
+DEFINE_RULE(suffix_test, skit_trie *trie, int *result)
+	SKIT_USE_FEATURE_EMULATION;
+	
+	#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE, SUFFIX) \
+		TRIE_TO_USE(trie) \
+		SUFFIX(bar,     RULE(keyword, "bar")) \
+		CHOICE(x,       ACTION( (*result) = 1; )) \
+		CHOICE(foobar,  ACTION( (*result) = 2; )) \
+		SUFFIX(baz,     RULE(keyword, "baz")) \
+		CHOICE(foo,     ACTION( (*result) = 3; )) \
+		CHOICE(FOO,     ACTION( (*result) = 4; ))
+	#include "survival_kit/parsing/peg_lookup.h"
+	#undef LOOKUP_CHOICE	
+END_RULE
+
 static void skit_peg_lookup_test()
 {
 	SKIT_USE_FEATURE_EMULATION;
 	skit_peg_parser *parser = skit_peg_parser_mock_new(skit_slice_null());
 	SKIT_PEG_PARSING_INITIAL_VARS(parser);
 	
-	skit_trie *trie = skit_trie_new();
-	int result = 0;
+	int result;
 	
-	parser->input = sSLICE("x");
-	match = SKIT_PEG_lookup_test(parser, 0, sSLENGTH(parser->input), trie, &result);
+	// --------- Normal, non-SUFFIX test. ---------
+	skit_trie *trie = skit_trie_new();
+	
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "x", lookup_test, trie, &result);
 	sASSERT_EQ(result, 1);
 
-	parser->input = sSLICE("foobar");
-	new_cursor = 0;
-	match = SKIT_PEG_lookup_test(parser, 0, sSLENGTH(parser->input), trie, &result);
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "foobar", lookup_test, trie, &result);
 	sASSERT_EQ(result, 2);
 
-	parser->input = sSLICE("foo");
-	new_cursor = 0;
-	match = SKIT_PEG_lookup_test(parser, 0, sSLENGTH(parser->input), trie, &result);
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "foo", lookup_test, trie, &result);
 	sASSERT_EQ(result, 3);
 
-	parser->input = sSLICE("FOO");
-	new_cursor = 0;
-	match = SKIT_PEG_lookup_test(parser, 0, sSLENGTH(parser->input), trie, &result);
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "FOO", lookup_test, trie, &result);
 	sASSERT_EQ(result, 4);
 	
-	skit_peg_parser_mock_free(parser);
 	skit_trie_free(trie);
+	
+	// --------- SUFFIX test. ---------
+	trie = skit_trie_new();
+	
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "x bar", suffix_test, trie, &result);
+	sASSERT_EQ(result, 1);
+
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "foobar bar", suffix_test, trie, &result);
+	sASSERT_EQ(result, 2);
+
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "foo baz", suffix_test, trie, &result);
+	sASSERT_EQ(result, 3);
+
+	result = 0;
+	sASSERT_PARSE_PASS(parser, "FOO baz", suffix_test, trie, &result);
+	sASSERT_EQ(result, 4);
+	
+	skit_trie_free(trie);
+	
+	skit_peg_parser_mock_free(parser);
 	
 	printf("  skit_peg_lookup_test passed.\n");
 }

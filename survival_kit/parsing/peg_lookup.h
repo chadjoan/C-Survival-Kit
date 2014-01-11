@@ -11,7 +11,7 @@ Usage is like so:
 	
 		// LOOKUPs may not be nested within other PEG elements, so they must
 		// be at the root of their own RULE.
-		#define SKIT_PEG_LOOKUP_CHOICE(TRIE_TO_USE, CHOICE) \
+		#define SKIT_PEG_LOOKUP_CHOICE(TRIE_TO_USE, CHOICE, SUFFIX) \
 			TRIE_TO_USE(trie) \
 			CHOICE(x,       SKIT_PEG_ACTION( (*result) = 1; )) \
 			CHOICE(foobar,  SKIT_PEG_ACTION( (*result) = 2; )) \
@@ -38,7 +38,7 @@ Or, with shortand notation (#include "survival_kit/parsing/peg_shorthand.h")
 
 		// LOOKUPs may not be nested within other PEG elements, so they must
 		// be at the root of their own RULE.
-		#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE) \
+		#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE, SUFFIX) \
 			TRIE_TO_USE(trie) \
 			CHOICE(x,       ACTION( (*result) = 1; )) \
 			CHOICE(foobar,  ACTION( (*result) = 2; )) \
@@ -71,20 +71,38 @@ do {
 	{
 		#define SKIT_X_TRIE_TO_USE(ptr_expr)
 		#define SKIT_X_CHOICE(keyword, rule) skit_x__ ## keyword,
-		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE)
+		#define SKIT_X_SUFFIX(name, rule)
+		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE, SKIT_X_SUFFIX)
 		#undef SKIT_X_TRIE_TO_USE
 		#undef SKIT_X_CHOICE
+		#undef SKIT_X_SUFFIX
+		skit__peg_lookup__kw_count
+	};
+	
+	enum
+	{
+		skit__peg_lookup_default_suffix,
+		#define SKIT_X_TRIE_TO_USE(ptr_expr)
+		#define SKIT_X_CHOICE(keyword, rule)
+		#define SKIT_X_SUFFIX(name, rule)    skit_sx__ ## name,
+		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE, SKIT_X_SUFFIX)
+		#undef SKIT_X_TRIE_TO_USE
+		#undef SKIT_X_CHOICE
+		#undef SKIT_X_SUFFIX
 	};
 
 	// Retrieve the trie we will be using.
 	#define SKIT_X_TRIE_TO_USE(ptr_expr) skit_trie *skit__peg_lookup_trie = (ptr_expr);
 	#define SKIT_X_CHOICE(keyword, rule)
-	SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE)
+	#define SKIT_X_SUFFIX(name, rule)
+	SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE, SKIT_X_SUFFIX)
 	#undef SKIT_X_TRIE_TO_USE
 	#undef SKIT_X_CHOICE
+	#undef SKIT_X_SUFFIX
 
 	// Lazily initialize the trie used to choose potential strings.
 	static int skit__peg_lookup_initialized = 0;
+	static int *skit__peg_lookup_suffix_table = NULL;
 	if ( !skit__peg_lookup_initialized ) {
 
 		sASSERT(skit__peg_lookup_trie != NULL);
@@ -93,13 +111,20 @@ do {
 			skit_trie_dtor(skit__peg_lookup_trie);
 			skit_trie_ctor(skit__peg_lookup_trie);
 		}
+		
+		skit__peg_lookup_suffix_table = skit_malloc(sizeof(int)*(skit__peg_lookup__kw_count));
+		int skit__peg_lookup_current_suffix = skit__peg_lookup_default_suffix;
 
 		#define SKIT_X_TRIE_TO_USE(ptr_expr) (void)0;
 		#define SKIT_X_CHOICE(keyword, rule) \
-			skit_trie_set( skit__peg_lookup_trie, sSLICE(#keyword), (void*)(skit_x__ ## keyword), SKIT_FLAG_C );
-		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE)
+			skit_trie_set( skit__peg_lookup_trie, sSLICE(#keyword), (void*)(skit_x__ ## keyword), SKIT_FLAG_C ); \
+			skit__peg_lookup_suffix_table[skit_x__ ## keyword] = skit__peg_lookup_current_suffix;
+		#define SKIT_X_SUFFIX(name, rule) \
+			skit__peg_lookup_current_suffix = skit_sx__ ## name;
+		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE, SKIT_X_SUFFIX)
 		#undef SKIT_X_TRIE_TO_USE
 		#undef SKIT_X_CHOICE
+		#undef SKIT_X_SUFFIX
 		skit__peg_lookup_initialized = 1;
 	}
 
@@ -109,6 +134,10 @@ do {
 	SKIT_PEG_RULE(any_word, "keyword", &word, &word_buf);
 	if ( !match.successful )
 		break;
+	new_cursor = match.end;
+	
+	if ( auto_consume_whitespace )
+		new_cursor = parser->parse_whitespace(parser, new_cursor, ubound);
 
 	// Verify that the identifier/keyword parsed is one of
 	//   the keywords that we can accept.
@@ -125,16 +154,60 @@ do {
 			sSLENGTH(next_chars), sSPTR(next_chars) );
 		break;
 	}
+	
+	// Parse the SUFFIX associated with the keyword.
+	int skit__peg_lookup_which_suffix = 
+		skit__peg_lookup_suffix_table[skit__peg_lookup_which_keyword];
+	
+	// The default suffix would be RULE(success).
+	// We can move a little faster by just doing nothing in such cases,
+	//   which is what this if-statement enforces.
+	if ( skit__peg_lookup_which_suffix != skit__peg_lookup_default_suffix )
+	{
+		// Dispatch using a switch-case statement.
+		switch(skit__peg_lookup_which_suffix)
+		{
+			#define SKIT_X_TRIE_TO_USE(ptr_expr) default: sTHROW(SKIT_EXCEPTION, "This should not happen.");
+			#define SKIT_X_CHOICE(keyword, rule)
+			#define SKIT_X_SUFFIX(name, rule) \
+				case skit_sx__ ## name: \
+					rule; \
+					break;
+
+			SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE, SKIT_X_SUFFIX)
+			#undef SKIT_X_TRIE_TO_USE
+			#undef SKIT_X_CHOICE
+			#undef SKIT_X_SUFFIX
+		}
+		if ( !match.successful )
+			break;
+		new_cursor = match.end;
+		
+		if ( auto_consume_whitespace )
+			new_cursor = parser->parse_whitespace(parser, new_cursor, ubound);
+	}
 
 	// Dispatch using a switch-case statement.
 	switch (skit__peg_lookup_which_keyword)
 	{
 		#define SKIT_X_TRIE_TO_USE(ptr_expr) default: sTHROW(SKIT_EXCEPTION, "This should not happen.");
-		#define SKIT_X_CHOICE(keyword, rule) case skit_x__ ## keyword: rule; break;
-		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE)
+
+		#define SKIT_X_CHOICE(keyword, rule) \
+			case skit_x__ ## keyword: \
+				rule; \
+				break;
+		
+		#define SKIT_X_SUFFIX(name, rule)
+
+		SKIT_PEG_LOOKUP_CHOICE(SKIT_X_TRIE_TO_USE, SKIT_X_CHOICE, SKIT_X_SUFFIX)
 		#undef SKIT_X_TRIE_TO_USE
 		#undef SKIT_X_CHOICE
+		#undef SKIT_X_SUFFIX
 	}
+	
+	if ( !match.successful )
+		break;
+	new_cursor = match.end;
 
 } while(0);
 

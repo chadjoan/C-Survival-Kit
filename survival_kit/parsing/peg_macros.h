@@ -1,6 +1,8 @@
 #ifndef SKIT_PARSING_PEG_MACROS_INCLUDED
 #define SKIT_PARSING_PEG_MACROS_INCLUDED
 
+#include "survival_kit/macro.h"
+
 // Default parser debugging status.
 #ifndef SKIT_DEBUG_PEG_PARSING
 #define SKIT_DEBUG_PEG_PARSING 0
@@ -216,10 +218,18 @@
 		a; \
 	} while(0)
 
-#define SKIT_PEG_RULE(rule_name, ...) \
+#define SKIT_PEG_RULE_N1(rule_name) \
 	do { \
-		match = SKIT_PEG_ ## rule_name (parser, new_cursor, ubound, __VA_ARGS__); \
+		match = SKIT_PEG_ ## rule_name ( parser, new_cursor, ubound); \
 	} while(0)
+
+#define SKIT_PEG_RULE_N2(rule_name, ...) \
+	do { \
+		match = SKIT_PEG_ ## rule_name ( parser, new_cursor, ubound, __VA_ARGS__); \
+	} while(0)
+
+#define SKIT_PEG_RULE(...) \
+	SKIT_MACRO_DISPATCHER2(SKIT_PEG_RULE_N, __VA_ARGS__)(__VA_ARGS__)
 
 #define SKIT_PEG_NEG_LOOKAHEAD(a) \
 	do { \
@@ -241,7 +251,7 @@
 		SKIT_PEG_PARSING_INITIAL_VARS((parser)); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		\
-		sASSER_MSGF( match.successful, "Parser failed to match the input \"%.*s\", error as follows: %.*s", \
+		sASSERT_MSGF( match.successful, "Parser failed to match the input \"%.*s\", error as follows: %.*s", \
 			sSLENGTH((parser)->input),          sSPTR((parser)->input), \
 			sSLENGTH((parser)->last_error_msg), sSPTR((parser)->last_error_msg)); \
 		sASSERT_EQ( match.end, sSLENGTH((parser)->input) ); \

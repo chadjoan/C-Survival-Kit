@@ -75,6 +75,15 @@ void skit_peg_parser_set_text(skit_peg_parser *parser, skit_slice text_to_parse)
 skit_peg_parse_match skit_peg_match_success(skit_peg_parser *parser, size_t begin, size_t end);
 skit_peg_parse_match skit_peg_match_failure(skit_peg_parser *parser, ssize_t position, const char *fail_msg, ...);
 
+/// Rules that either always succeed or always fail, and do nothing else.
+/// These are useful for debugging primarily, or sometimes for inserting the
+/// analogue of a "no-op" into a parser.
+/// Typical invocation:
+///    SKIT_PEG_RULE(success) // Long notation.
+///    RULE(success)          // Shorthand notation.
+skit_peg_parse_match SKIT_PEG_success( skit_peg_parser *parser, ssize_t cursor, ssize_t ubound );
+skit_peg_parse_match SKIT_PEG_failure( skit_peg_parser *parser, ssize_t cursor, ssize_t ubound ); ///
+
 /// Returns the next 'nchars' characters in the text being parsed.
 /// This is useful for generating error messages of the typical
 /// "Expected X, instead got Y" nature.
