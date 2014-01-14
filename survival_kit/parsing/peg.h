@@ -4,6 +4,9 @@
 
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/string.h"
+#include "survival_kit/trie.h"
+
+#include <pthread.h>
 
 typedef struct skit_peg_parser skit_peg_parser;
 struct skit_peg_parser
@@ -58,6 +61,15 @@ struct skit_peg_parse_match
 	ssize_t      begin, end;
 };
 
+typedef struct skit_peg_lookup_index skit_peg_lookup_index;
+struct skit_peg_lookup_index
+{
+	pthread_mutex_t         mutex;
+	pthread_mutexattr_t     mutex_attrs;
+	int                     *suffix_table;
+	skit_trie               trie;
+};
+
 void skit_peg_parser_ctor( skit_peg_parser *parser, skit_slice text_to_parse, skit_stream *debug_out );
 void skit_peg_parser_dtor( skit_peg_parser *parser );
 
@@ -66,6 +78,13 @@ skit_peg_parser *skit_peg_parser_free(skit_peg_parser *parser);
 
 skit_peg_parser *skit_peg_parser_mock_new( skit_slice text_to_parse );
 skit_peg_parser *skit_peg_parser_mock_free( skit_peg_parser *parser );
+
+skit_peg_lookup_index *skit_peg_lookup_index_new();
+void skit_peg_lookup_index_ctor( skit_peg_lookup_index *index );
+
+skit_peg_lookup_index *skit_peg_lookup_index_free( skit_peg_lookup_index *index );
+void skit_peg_lookup_index_dtor( skit_peg_lookup_index *index );
+
 
 /// Set's the text that the parser should parse, and updates any related
 /// internal state that the parser needs.
@@ -160,6 +179,13 @@ skit_peg_parse_match SKIT_PEG_any_word(
 	const char *description,
 	skit_slice *result,
 	char **buffer_ref );
+
+/// Internal use only:
+/// These are global mutices used by the peg_lookup.h include to safely
+/// initialize global indices.  They are not to be used explicitly.  Please
+/// do not touch these outside of peg_lookup.h or peg.c.
+extern  pthread_mutex_t      skit_peg__lookup_mutex;
+extern  pthread_mutexattr_t  skit_peg__lookup_mutex_attrs;
 
 void skit_peg_module_init();
 

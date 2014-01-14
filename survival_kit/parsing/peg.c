@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <inttypes.h>
+#include <pthread.h>
 
 #include "survival_kit/feature_emulation.h"
 #include "survival_kit/streams/stream.h"
@@ -73,6 +74,49 @@ skit_peg_parser *skit_peg_parser_mock_free(skit_peg_parser *parser)
 {
 	return skit_peg_parser_free(parser);
 }
+
+/* ------------------------------------------------------------------------- */
+
+skit_peg_lookup_index *skit_peg_lookup_index_new()
+{
+	skit_peg_lookup_index *index = skit_malloc(sizeof(skit_peg_lookup_index));
+	skit_peg_lookup_index_ctor(index);
+	return index;
+}
+
+void skit_peg_lookup_index_ctor( skit_peg_lookup_index *index )
+{
+	SKIT_USE_FEATURE_EMULATION;
+	sCTRACE(pthread_mutexattr_init(&index->mutex_attrs));
+	sCTRACE(pthread_mutexattr_settype(&index->mutex_attrs, PTHREAD_MUTEX_ERRORCHECK));
+	sCTRACE(pthread_mutex_init(&index->mutex, &index->mutex_attrs));
+
+	index->suffix_table = NULL;
+	skit_trie_ctor(&index->trie);
+}
+
+skit_peg_lookup_index *skit_peg_lookup_index_free( skit_peg_lookup_index *index )
+{
+	skit_peg_lookup_index_dtor(index);
+	return NULL;
+}
+
+void skit_peg_lookup_index_dtor( skit_peg_lookup_index *index )
+{
+	SKIT_USE_FEATURE_EMULATION;
+	sCTRACE(pthread_mutex_destroy(&index->mutex));
+	sCTRACE(pthread_mutexattr_destroy(&index->mutex_attrs));
+
+	if ( index->suffix_table != NULL )
+	{
+		skit_free(index->suffix_table);
+		index->suffix_table = NULL;
+	}
+
+	skit_trie_dtor(&index->trie);
+}
+
+/* ------------------------------------------------------------------------- */
 
 void skit_peg_parser_set_text(skit_peg_parser *parser, skit_slice text_to_parse)
 {
@@ -469,11 +513,11 @@ static void skit_peg_any_word_test()
 
 /* ------------------------------------------------------------------------- */
 
-DEFINE_RULE(lookup_test, skit_trie *trie, int *result)
+DEFINE_RULE(lookup_test, skit_peg_lookup_index *index, int *result)
 	SKIT_USE_FEATURE_EMULATION;
 
-	#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE, SUFFIX) \
-		TRIE_TO_USE(trie) \
+	#define LOOKUP_CHOICE(INDEX, CHOICE, SUFFIX) \
+		INDEX(index) \
 		CHOICE(x,       ACTION( (*result) = 1; )) \
 		CHOICE(foobar,  ACTION( (*result) = 2; )) \
 		CHOICE(foo,     ACTION( (*result) = 3; )) \
@@ -483,11 +527,10 @@ DEFINE_RULE(lookup_test, skit_trie *trie, int *result)
 
 END_RULE
 
-DEFINE_RULE(suffix_test, skit_trie *trie, int *result)
+DEFINE_RULE(suffix_test, skit_peg_lookup_index *index, int *result)
 	SKIT_USE_FEATURE_EMULATION;
 	
-	#define LOOKUP_CHOICE(TRIE_TO_USE, CHOICE, SUFFIX) \
-		TRIE_TO_USE(trie) \
+	#define LOOKUP_CHOICE(INDEX, CHOICE, SUFFIX) \
 		SUFFIX(bar,     RULE(keyword, "bar")) \
 		CHOICE(x,       ACTION( (*result) = 1; )) \
 		CHOICE(foobar,  ACTION( (*result) = 2; )) \
@@ -507,46 +550,46 @@ static void skit_peg_lookup_test()
 	int result;
 	
 	// --------- Normal, non-SUFFIX test. ---------
-	skit_trie *trie = skit_trie_new();
+	skit_peg_lookup_index *index = skit_peg_lookup_index_new();
 	
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "x", lookup_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "x", lookup_test, index, &result);
 	sASSERT_EQ(result, 1);
 
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "foobar", lookup_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "foobar", lookup_test, index, &result);
 	sASSERT_EQ(result, 2);
 
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "foo", lookup_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "foo", lookup_test, index, &result);
 	sASSERT_EQ(result, 3);
 
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "FOO", lookup_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "FOO", lookup_test, index, &result);
 	sASSERT_EQ(result, 4);
 	
-	skit_trie_free(trie);
+	skit_peg_lookup_index_free(index);
 	
 	// --------- SUFFIX test. ---------
-	trie = skit_trie_new();
+	index = skit_peg_lookup_index_new();
 	
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "x bar", suffix_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "x bar", suffix_test, index, &result);
 	sASSERT_EQ(result, 1);
 
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "foobar bar", suffix_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "foobar bar", suffix_test, index, &result);
 	sASSERT_EQ(result, 2);
 
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "foo baz", suffix_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "foo baz", suffix_test, index, &result);
 	sASSERT_EQ(result, 3);
 
 	result = 0;
-	sASSERT_PARSE_PASS(parser, "FOO baz", suffix_test, trie, &result);
+	sASSERT_PARSE_PASS(parser, "FOO baz", suffix_test, index, &result);
 	sASSERT_EQ(result, 4);
 	
-	skit_trie_free(trie);
+	skit_peg_lookup_index_free(index);
 	
 	skit_peg_parser_mock_free(parser);
 	
@@ -555,12 +598,27 @@ static void skit_peg_lookup_test()
 
 /* ------------------------------------------------------------------------- */
 
+static int skit_peg_module_initialized = 0;
+pthread_mutex_t      skit_peg__lookup_mutex;
+pthread_mutexattr_t  skit_peg__lookup_mutex_attrs;
+
 void skit_peg_module_init()
 {
+	SKIT_USE_FEATURE_EMULATION;
+	
+	if ( skit_peg_module_initialized )
+		return;
+
 	skit_peg_default_word_char_tbl = skit_malloc(skit_peg_default_word_char_tlen);
 	ssize_t i = 0;
 	for ( i = 0; i < skit_peg_default_word_char_tlen; i++ )
 		skit_peg_default_word_char_tbl[i] = skit_peg_is_word_char_method(NULL, i);
+	
+	sCTRACE(pthread_mutexattr_init(&skit_peg__lookup_mutex_attrs));
+	sCTRACE(pthread_mutexattr_settype(&skit_peg__lookup_mutex_attrs, PTHREAD_MUTEX_ERRORCHECK));
+	sCTRACE(pthread_mutex_init(&skit_peg__lookup_mutex, &skit_peg__lookup_mutex_attrs));
+	
+	skit_peg_module_initialized = 1;
 }
 
 /* ------------------------------------------------------------------------- */
