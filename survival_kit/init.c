@@ -27,6 +27,16 @@ void skit_init()
 
 	skit_init_exceptions();
 	skit_features_init();
+	
+	// We consider global initialization to be "done" upon entry to all of
+	// the module initializers.  This prevents things like
+	// SKIT_USE_FEATURE_EMULATION from infinitely recursing when they try
+	// to lazily initialize by calling skit_init().
+	// The exceptions/features initialization calls (above this line) should
+	// never use the SKIT_USE_FEATURE_EMULATION macro or anything that could
+	// call skit_init().  That would be a bad circular dependency.
+	skit__init_called = 1;
+	
 	skit_cstr_init();
 	skit_sig_init();
 	skit_path_module_init();
@@ -34,7 +44,6 @@ void skit_init()
 	skit_stream_module_init_all();
 	skit_peg_module_init();
 	pthread_key_create(&skit__thread_init_called, &skit_thread_dummy_dtor);
-	skit__init_called = 1;
 }
 
 int skit_init_was_called()
