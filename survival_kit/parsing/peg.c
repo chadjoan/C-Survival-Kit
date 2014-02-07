@@ -36,7 +36,7 @@ void skit_peg_parser_ctor( skit_peg_parser *parser, skit_slice text_to_parse, sk
 	parser->last_error_msg_buf = skit_loaf_alloc(1024);
 	parser->last_error_msg = skit_slice_of(parser->last_error_msg_buf.as_slice, 0, 0);
 	parser->debug_out = debug_out;
-	parser->caller_ctx = NULL;
+	parser->caller_context = NULL;
 	parser->case_sensitive = 1;
 	parser->is_word_char_table = skit_peg_default_word_char_tbl;
 	parser->is_word_char_table_len = skit_peg_default_word_char_tlen;

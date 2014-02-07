@@ -20,7 +20,7 @@ struct skit_peg_parser
 	/// This is important, because the DEFINE_RULE/END_RULE and RULE()
 	/// macros do not provide an easy way to swap parser implementations.
 	/// This is NULL by default.
-	void                *caller_ctx;
+	void                *caller_context;
 	
 	/// Determines if string matching is case sensitive by default.
 	/// The caller can always create elements in their grammar that are
