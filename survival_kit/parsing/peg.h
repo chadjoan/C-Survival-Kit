@@ -130,6 +130,11 @@ int skit_parsing_is_whitespace( skit_utf8c c );
 /// position.
 ssize_t skit_peg_parse_whitespace(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound);
 
+/// Parses any number of non-whitespace characters until whitespace is reached.
+/// Technically, this will call parser->parse_whitespace at every character and
+/// stop once a non-zero value is returned.
+skit_peg_parse_match SKIT_PEG_non_whitespace(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound);
+
 /// Invoke as "RULE(word_boundary)" to determine if there is a word boundary
 ///   at the parser's current cursor position.
 skit_peg_parse_match SKIT_PEG_word_boundary(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound);

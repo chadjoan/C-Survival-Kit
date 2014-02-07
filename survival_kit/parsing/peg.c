@@ -264,6 +264,19 @@ static void skit_peg_macros_test()
 
 /* ------------------------------------------------------------------------- */
 
+skit_peg_parse_match SKIT_PEG_non_whitespace(
+	skit_peg_parser *parser,
+	ssize_t cursor,
+	ssize_t ubound)
+{
+	while ( cursor < ubound && parser->parse_whitespace(parser, cursor, ubound) == 0 )
+		cursor++;
+	
+	return skit_peg_match_success(parser, cursor, ubound);
+}
+
+/* ------------------------------------------------------------------------- */
+
 int skit_peg_is_word_char_method( skit_peg_parser *parser, skit_utf32c c )
 {
 	if ( ('0' <= c && c <= '9') ||
