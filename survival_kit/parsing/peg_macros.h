@@ -44,7 +44,7 @@
 		int auto_consume_whitespace = 1; \
 		ssize_t cursor = 0; \
 		ssize_t new_cursor = 0; \
-		ssize_t ubound = skit_slice_is_null(parser->input) ? 0 : sSLENGTH(parser->input); \
+		ssize_t ubound = skit_slice_is_null((parser)->input) ? 0 : sSLENGTH((parser)->input); \
 		skit_peg_parse_match match; \
 		(void)auto_consume_whitespace; \
 		(void)cursor; \
@@ -52,11 +52,20 @@
 		(void)ubound; \
 		(void)match;
 
-#define SKIT_PEG_DEFINE_RULE(rule_name, ...) \
+#define SKIT_PEG_DEFINE_RULE1(rule_name) \
+	static skit_peg_parse_match SKIT_PEG_ ## rule_name ( \
+		skit_peg_parser *parser, ssize_t cursor, ssize_t ubound ) \
+	{ \
+		SKIT_PEG_RULE_HEADER
+
+#define SKIT_PEG_DEFINE_RULE2(rule_name, ...) \
 	static skit_peg_parse_match SKIT_PEG_ ## rule_name ( \
 		skit_peg_parser *parser, ssize_t cursor, ssize_t ubound, __VA_ARGS__) \
 	{ \
 		SKIT_PEG_RULE_HEADER
+
+#define SKIT_PEG_DEFINE_RULE(...) \
+	SKIT_MACRO_DISPATCHER2(SKIT_PEG_DEFINE_RULE, __VA_ARGS__)(__VA_ARGS__)
 
 #define SKIT_PEG_RULE_HEADER \
 		int auto_consume_whitespace = 1; \
@@ -123,18 +132,28 @@
 		match = skit_peg_match_success(parser, cursor, new_cursor); \
 	} while(0)
 
-#define SKIT_PEG_ZERO_OR_MORE2(a,b)       SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ2(a,b))
-#define SKIT_PEG_ZERO_OR_MORE3(a,b,c)     SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ3(a,b,c))
-#define SKIT_PEG_ZERO_OR_MORE4(a,b,c,d)   SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ4(a,b,c,d))
-#define SKIT_PEG_ZERO_OR_MORE5(a,b,c,d,e) SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ5(a,b,c,d,e))
+#define SKIT_PEG_ZERO_OR_MORE2(a,b)                  SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ2(a,b))
+#define SKIT_PEG_ZERO_OR_MORE3(a,b,c)                SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ3(a,b,c))
+#define SKIT_PEG_ZERO_OR_MORE4(a,b,c,d)              SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ4(a,b,c,d))
+#define SKIT_PEG_ZERO_OR_MORE5(a,b,c,d,e)            SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ5(a,b,c,d,e))
+#define SKIT_PEG_ZERO_OR_MORE6(a,b,c,d,e,f)          SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ6(a,b,c,d,e,f))
+#define SKIT_PEG_ZERO_OR_MORE7(a,b,c,d,e,f,g)        SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ7(a,b,c,d,e,f,g))
+#define SKIT_PEG_ZERO_OR_MORE8(a,b,c,d,e,f,g,h)      SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ8(a,b,c,d,e,f,g,h))
+#define SKIT_PEG_ZERO_OR_MORE9(a,b,c,d,e,f,g,h,i)    SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ9(a,b,c,d,e,f,g,h,i))
+#define SKIT_PEG_ZERO_OR_MORE10(a,b,c,d,e,f,g,h,i,j) SKIT_PEG_ZERO_OR_MORE1(SKIT_PEG_SEQ10(a,b,c,d,e,f,g,h,i,j))
 
 #define SKIT_PEG_ZERO_OR_MORE(...) SKIT_MACRO_DISPATCHER(SKIT_PEG_ZERO_OR_MORE, __VA_ARGS__)(__VA_ARGS__)
 
-#define SKIT_PEG_ONE_OR_MORE1(a)          SKIT_PEG_SEQ2(a,                        SKIT_PEG_ZERO_OR_MORE1(a))
-#define SKIT_PEG_ONE_OR_MORE2(a,b)        SKIT_PEG_SEQ2(SKIT_PEG_SEQ2(a,b),       SKIT_PEG_ZERO_OR_MORE2(a,b))
-#define SKIT_PEG_ONE_OR_MORE3(a,b,c)      SKIT_PEG_SEQ2(SKIT_PEG_SEQ3(a,b,c),     SKIT_PEG_ZERO_OR_MORE3(a,b,c))
-#define SKIT_PEG_ONE_OR_MORE4(a,b,c,d)    SKIT_PEG_SEQ2(SKIT_PEG_SEQ4(a,b,c,d),   SKIT_PEG_ZERO_OR_MORE4(a,b,c,d))
-#define SKIT_PEG_ONE_OR_MORE5(a,b,c,d,e)  SKIT_PEG_SEQ2(SKIT_PEG_SEQ5(a,b,c,d,e), SKIT_PEG_ZERO_OR_MORE5(a,b,c,d,e))
+#define SKIT_PEG_ONE_OR_MORE1(a)                     SKIT_PEG_SEQ2(a,                                   SKIT_PEG_ZERO_OR_MORE1(a))
+#define SKIT_PEG_ONE_OR_MORE2(a,b)                   SKIT_PEG_SEQ2(SKIT_PEG_SEQ2(a,b),                  SKIT_PEG_ZERO_OR_MORE2(a,b))
+#define SKIT_PEG_ONE_OR_MORE3(a,b,c)                 SKIT_PEG_SEQ2(SKIT_PEG_SEQ3(a,b,c),                SKIT_PEG_ZERO_OR_MORE3(a,b,c))
+#define SKIT_PEG_ONE_OR_MORE4(a,b,c,d)               SKIT_PEG_SEQ2(SKIT_PEG_SEQ4(a,b,c,d),              SKIT_PEG_ZERO_OR_MORE4(a,b,c,d))
+#define SKIT_PEG_ONE_OR_MORE5(a,b,c,d,e)             SKIT_PEG_SEQ2(SKIT_PEG_SEQ5(a,b,c,d,e),            SKIT_PEG_ZERO_OR_MORE5(a,b,c,d,e))
+#define SKIT_PEG_ONE_OR_MORE6(a,b,c,d,e,f)           SKIT_PEG_SEQ2(SKIT_PEG_SEQ6(a,b,c,d,e,f),          SKIT_PEG_ZERO_OR_MORE6(a,b,c,d,e,f))
+#define SKIT_PEG_ONE_OR_MORE7(a,b,c,d,e,f,g)         SKIT_PEG_SEQ2(SKIT_PEG_SEQ7(a,b,c,d,e,f,g),        SKIT_PEG_ZERO_OR_MORE7(a,b,c,d,e,f,g))
+#define SKIT_PEG_ONE_OR_MORE8(a,b,c,d,e,f,g,h)       SKIT_PEG_SEQ2(SKIT_PEG_SEQ8(a,b,c,d,e,f,g,h),      SKIT_PEG_ZERO_OR_MORE8(a,b,c,d,e,f,g,h))
+#define SKIT_PEG_ONE_OR_MORE9(a,b,c,d,e,f,g,h,i)     SKIT_PEG_SEQ2(SKIT_PEG_SEQ9(a,b,c,d,e,f,g,h,i),    SKIT_PEG_ZERO_OR_MORE9(a,b,c,d,e,f,g,h,i))
+#define SKIT_PEG_ONE_OR_MORE10(a,b,c,d,e,f,g,h,i,j)  SKIT_PEG_SEQ2(SKIT_PEG_SEQ10(a,b,c,d,e,f,g,h,i,j), SKIT_PEG_ZERO_OR_MORE10(a,b,c,d,e,f,g,h,i,j))
 
 #define SKIT_PEG_ONE_OR_MORE(...) SKIT_MACRO_DISPATCHER(SKIT_PEG_ONE_OR_MORE, __VA_ARGS__)(__VA_ARGS__)
 
@@ -185,10 +204,14 @@
 		break; \
 	} while(0)
 
-#define SKIT_PEG_CHOOSE3(a,b,c)       SKIT_PEG_CHOOSE2(a,                       SKIT_PEG_CHOOSE2(b,c))
-#define SKIT_PEG_CHOOSE4(a,b,c,d)     SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE2(a,b),   SKIT_PEG_CHOOSE2(c,d))
-#define SKIT_PEG_CHOOSE5(a,b,c,d,e)   SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE3(a,b,c), SKIT_PEG_CHOOSE2(d,e))
-#define SKIT_PEG_CHOOSE6(a,b,c,d,e,f) SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE3(a,b,c), SKIT_PEG_CHOOSE3(d,e,f))
+#define SKIT_PEG_CHOOSE3(a,b,c)                 SKIT_PEG_CHOOSE2(a,                           SKIT_PEG_CHOOSE2(b,c))
+#define SKIT_PEG_CHOOSE4(a,b,c,d)               SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE2(a,b),       SKIT_PEG_CHOOSE2(c,d))
+#define SKIT_PEG_CHOOSE5(a,b,c,d,e)             SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE3(a,b,c),     SKIT_PEG_CHOOSE2(d,e))
+#define SKIT_PEG_CHOOSE6(a,b,c,d,e,f)           SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE3(a,b,c),     SKIT_PEG_CHOOSE3(d,e,f))
+#define SKIT_PEG_CHOOSE7(a,b,c,d,e,f,g)         SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE4(a,b,c,d),   SKIT_PEG_CHOOSE3(e,f,g))
+#define SKIT_PEG_CHOOSE8(a,b,c,d,e,f,g,h)       SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE4(a,b,c,d),   SKIT_PEG_CHOOSE4(e,f,g,h))
+#define SKIT_PEG_CHOOSE9(a,b,c,d,e,f,g,h,i)     SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE5(a,b,c,d,e), SKIT_PEG_CHOOSE4(f,g,h,i))
+#define SKIT_PEG_CHOOSE10(a,b,c,d,e,f,g,h,i,j)  SKIT_PEG_CHOOSE2(SKIT_PEG_CHOOSE5(a,b,c,d,e), SKIT_PEG_CHOOSE5(f,g,h,i,j))
 
 #define SKIT_PEG_CHOOSE(...) SKIT_MACRO_DISPATCHER(SKIT_PEG_CHOOSE, __VA_ARGS__)(__VA_ARGS__)
 
@@ -205,10 +228,15 @@
 		} \
 	} while(0)
 
-#define SKIT_PEG_OPTIONAL2(a,b)       SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ2(a,b))
-#define SKIT_PEG_OPTIONAL3(a,b,c)     SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ3(a,b,c))
-#define SKIT_PEG_OPTIONAL4(a,b,c,d)   SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ4(a,b,c,d))
-#define SKIT_PEG_OPTIONAL5(a,b,c,d,e) SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ5(a,b,c,d,e))
+#define SKIT_PEG_OPTIONAL2(a,b)                   SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ2(a,b))
+#define SKIT_PEG_OPTIONAL3(a,b,c)                 SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ3(a,b,c))
+#define SKIT_PEG_OPTIONAL4(a,b,c,d)               SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ4(a,b,c,d))
+#define SKIT_PEG_OPTIONAL5(a,b,c,d,e)             SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ5(a,b,c,d,e))
+#define SKIT_PEG_OPTIONAL6(a,b,c,d,e,f)           SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ6(a,b,c,d,e,f))
+#define SKIT_PEG_OPTIONAL7(a,b,c,d,e,f,g)         SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ7(a,b,c,d,e,f,g))
+#define SKIT_PEG_OPTIONAL8(a,b,c,d,e,f,g,h)       SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ8(a,b,c,d,e,f,g,h))
+#define SKIT_PEG_OPTIONAL9(a,b,c,d,e,f,g,h,i)     SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ9(a,b,c,d,e,f,g,h,i))
+#define SKIT_PEG_OPTIONAL10(a,b,c,d,e,f,g,h,i,j)  SKIT_PEG_OPTIONAL1(SKIT_PEG_SEQ10(a,b,c,d,e,f,g,h,i,j))
 
 #define SKIT_PEG_OPTIONAL(...) SKIT_MACRO_DISPATCHER(SKIT_PEG_OPTIONAL, __VA_ARGS__)(__VA_ARGS__)
 
@@ -244,40 +272,61 @@
 		match = skit_peg_match_success( parser, cursor, cursor ); \
 	} while(0)
 
-#define SKIT_PEG_ASSERT_PARSE_PASS(parser, str, rule_name, ...) \
+#define SKIT_PEG_ASSERT_PARSE_PASS(parser_arg, str, rule_name, ...) \
 	do { \
-		skit_peg_parser_set_text((parser),sSLICE((str))); \
+		/* If we try to use (parser_arg) everywhere in the macro and the caller */ \
+		/* of this macro passes anything besides a (skit_peg_parser*) then */ \
+		/* they will get this vague error message (from GCC): */ \
+		/* "error: request for member 'input' in something not a structure or union" */ \
+		/* This can easily happen if they use the wrong level of indirection, */ \
+		/* ex: SKIT_PEG_ASSERT_PARSE_PASS(&my_structure->parser, ...) */ \
+		/*     instead of */ \
+		/*     SKIT_PEG_ASSERT_PARSE_PASS(my_structure->parser, ...) */ \
+		/* To make this mistake easier to find, we expand the argument */ \
+		/* only once and pass it into a variable.  This also avoids */ \
+		/* side-effectful expressions being evaluated more than once. */ \
+		/* The error message then becomes something like this: */ \
+		/* "warning: initialization makes pointer from integer without a cast" */ \
+		skit_peg_parser *parser = (parser_arg); \
+		skit_peg_parser_set_text(parser,sSLICE((str))); \
 		\
-		SKIT_PEG_PARSING_INITIAL_VARS((parser)); \
+		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		\
 		sASSERT_MSGF( match.successful, "Parser failed to match the input \"%.*s\", error as follows: %.*s", \
-			sSLENGTH((parser)->input),          sSPTR((parser)->input), \
-			sSLENGTH((parser)->last_error_msg), sSPTR((parser)->last_error_msg)); \
-		sASSERT_EQ( match.end, sSLENGTH((parser)->input) ); \
+			sSLENGTH(parser->input),          sSPTR(parser->input), \
+			sSLENGTH(parser->last_error_msg), sSPTR(parser->last_error_msg)); \
+		sASSERT_EQ( match.end, sSLENGTH(parser->input) ); \
 		\
 	} while(0)
 
-#define SKIT_PEG_ASSERT_PARSE_FAIL(parser, str, rule_name, ...) \
+#define SKIT_PEG_ASSERT_PARSE_FAIL(parser_arg, str, rule_name, ...) \
 	do { \
-		skit_peg_parser_set_text((parser),sSLICE((str))); \
+		/* NOTE: we intentionally assign to a variable, rather than expanding (parser_arg) everywhere. */ \
+		/* See SKIT_PEG_ASSERT_PASS for a more thorough explanation. */ \
+		skit_peg_parser *parser = (parser_arg); \
+		skit_peg_parser_set_text(parser, sSLICE((str))); \
 		\
-		SKIT_PEG_PARSING_INITIAL_VARS((parser)); \
+		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		sASSERT( !match.successful ); \
 		\
 	} while(0)
 
 /* Use this to ensure that rules aren't over-aggressive when calculating how long a match is. */
-#define SKIT_PEG_ASSERT_PARSE_PART(parser, str_to_parse, str_after, rule_name, ...) \
+#define SKIT_PEG_ASSERT_PARSE_PART(parser_arg, str_to_parse, str_after, rule_name, ...) \
 	do { \
+		/* NOTE: we intentionally assign to a variable, rather than expanding (parser_arg) everywhere. */ \
+		/* See SKIT_PEG_ASSERT_PASS for a more thorough explanation. */ \
+		skit_peg_parser *parser = (parser_arg); \
+		\
 		char parser_input[sizeof((str_to_parse)) + sizeof((str_after)) + 1]; \
 		memcpy(parser_input, (str_to_parse), (sizeof((str_to_parse))-1)); \
 		memcpy(parser_input + (sizeof((str_to_parse))-1), str_after, sizeof((str_after))); \
 		\
-		skit_peg_parser_set_text((parser),skit_slice_of_cstrn(parser_input, sizeof(parser_input)-1)); \
+		skit_peg_parser_set_text(parser, skit_slice_of_cstrn(parser_input, sizeof(parser_input)-1)); \
 		\
-		SKIT_PEG_PARSING_INITIAL_VARS((parser)); \
+		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		sASSERT( match.successful ); \
 		sASSERT_EQ( match.end, sizeof((str_to_parse))-1 ); \
