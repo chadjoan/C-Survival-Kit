@@ -371,10 +371,14 @@ See that function for specifics on usage and behavior.
 */
 SKIT_T(slice) SKIT_T(loaf_store_carr)(SKIT_T(loaf) *loaf, const SKIT_T_ELEM_TYPE array[], size_t length);
 
-/*
+/**
+This is analogous to skit_loaf_assign_cstr in "survival_kit/string.h".
+See that function for specifics on usage and behavior.
+
 (The name "xfer" is short for "transfer" and is used instead of "assign" as a
 way to shorten the symbol name due to OpenVMS linker limitations.)
 */
+SKIT_T(slice) SKIT_T(loaf_xfer_carr)(SKIT_T(loaf) *loaf, const SKIT_T_ELEM_TYPE array[], size_t length);
 
 /**
 This is analogous to skit_loaf_store_slice in "survival_kit/string.h".
@@ -382,10 +386,14 @@ See that function for specifics on usage and behavior.
 */
 SKIT_T(slice) SKIT_T(loaf_store_slice)(SKIT_T(loaf) *loaf, SKIT_T(slice) slice);
 
-/*
+/**
+This is analogous to skit_loaf_assign_slice in "survival_kit/string.h".
+See that function for specifics on usage and behavior.
+
 (The name "xfer" is short for "transfer" and is used instead of "assign" as a
 way to shorten the symbol name due to OpenVMS linker limitations.)
 */
+SKIT_T(slice) SKIT_T(loaf_xfer_slice)(SKIT_T(loaf) *loaf, SKIT_T(slice) slice);
 
 /**
 This is analogous to skit_slice_of in "survival_kit/string.h".

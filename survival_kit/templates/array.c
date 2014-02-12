@@ -158,17 +158,24 @@ SKIT_T(loaf) SKIT_T(loaf_dup)(SKIT_T(slice) slice)
 
 SKIT_T(slice) SKIT_T(loaf_store_carr)(SKIT_T(loaf) *loaf, const SKIT_T_ELEM_TYPE array[], size_t length)
 {
-	sASSERT( loaf != NULL );
-	sASSERT(!SKIT_T(loaf_is_null)(*loaf));
-	if ( length > SKIT_T(loaf_len)(*loaf) )
-		SKIT_T(loaf_resize)(loaf, length);
-	memcpy((void*)SKIT_T(loaf_ptr)(*loaf), (void*)array, length * sizeof(SKIT_T_ELEM_TYPE));
-	return SKIT_T(slice_of)(loaf->as_slice, 0, length);
+	SKIT_T(slice) carr_as_slice = SKIT_T(slice_of_carr)(array, length);
+	return SKIT_T(loaf_store_slice)(loaf, carr_as_slice);
+}
+
+SKIT_T(slice) SKIT_T(loaf_xfer_carr)(SKIT_T(loaf) *loaf, const SKIT_T_ELEM_TYPE array[], size_t length)
+{
+	SKIT_T(slice) carr_as_slice = SKIT_T(slice_of_carr)(array, length);
+	return SKIT_T(loaf_xfer_slice)(loaf, carr_as_slice);
 }
 
 SKIT_T(slice) SKIT_T(loaf_store_slice)(SKIT_T(loaf) *loaf, SKIT_T(slice) slice)
 {
 	return SKIT_T(slice_templated)(skit_loaf_store_slice((skit_loaf*)loaf, slice.as_skit_slice));
+}
+
+SKIT_T(slice) SKIT_T(loaf_xfer_slice)(SKIT_T(loaf) *loaf, SKIT_T(slice) slice)
+{
+	return SKIT_T(slice_templated)(skit_loaf_assign_slice((skit_loaf*)loaf, slice.as_skit_slice));
 }
 
 SKIT_T(slice) SKIT_T(slice_of)(SKIT_T(slice) slice, ssize_t index1, ssize_t index2)

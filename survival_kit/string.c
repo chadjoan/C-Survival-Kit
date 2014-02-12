@@ -750,6 +750,7 @@ static void skit_loaf_store_cstr_test()
 	skit_slice test4 = skit_loaf_store_cstr(&loaf, smallish);
 	sASSERT_EQS( test4, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	skit_loaf_free(&loaf);
 	
 	// Do nothing when assigned NULL.
 	loaf = skit_loaf_new();
@@ -759,6 +760,73 @@ static void skit_loaf_store_cstr_test()
 	skit_loaf_free(&loaf);
 	
 	printf("  skit_loaf_store_cstr_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
+{
+	if ( cstr == NULL )
+	{
+		if ( !skit_loaf_is_null(*loaf) )
+		{
+			skit_loaf_free(loaf);
+			*loaf = skit_loaf_null();
+		}
+		
+		return skit_slice_null();
+	}
+	else
+	{
+		skit_slice result = skit_loaf_store_cstr(loaf,cstr);
+		ssize_t loaf_len = sLLENGTH(*loaf);
+		ssize_t cstr_len = sSLENGTH(result);
+		if ( cstr_len < loaf_len )
+			skit_loaf_resize(loaf, cstr_len);
+		return result;
+	}
+}
+
+static void skit_loaf_assign_cstr_test()
+{
+	skit_loaf loaf = skit_loaf_alloc(8);
+	const char *smallish = "foo";
+	const char *largish  = "Hello world!";
+	
+	// Start off with a small string.
+	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), 3 );
+	
+	// Enlarge.
+	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
+	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
+	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
+	
+	// Narrow.
+	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
+	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	
+	skit_loaf_free(&loaf);
+	
+	// Allocate when null:
+	loaf = skit_loaf_null();
+	skit_slice test4 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test4, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	skit_loaf_free(&loaf);
+	
+	// Free the loaf when assigned NULL.
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_assign_cstr(&loaf, NULL);
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( skit_loaf_is_null(loaf) );
+	
+	printf("  skit_loaf_assign_cstr_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -788,28 +856,45 @@ skit_slice skit_loaf_store_slice(skit_loaf *loaf, skit_slice slice)
 static void skit_loaf_store_slice_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(8);
-	skit_slice smallish = sSLICE("foo");
-	skit_slice largish  = sSLICE("Hello world!");
+	skit_slice  smallish = sSLICE("foo");
+	skit_slice  largish  = sSLICE("Hello world!");
+	
+	// Start off with a small string.
 	skit_slice test1 = skit_loaf_store_slice(&loaf, smallish);
 	sASSERT_EQS( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), 8 );
+	
+	// Enlarge.
 	skit_slice test2 = skit_loaf_store_slice(&loaf, largish);
 	sASSERT_EQS( test2, largish );
 	sASSERT_NES( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
-	skit_loaf_free(&loaf);
 	
+	// Narrow.
+	skit_slice test3 = skit_loaf_store_slice(&loaf, smallish);
+	sASSERT_EQS( test3, smallish );
+	sASSERT_NES( test2, largish );
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
+	
+	skit_loaf_free(&loaf);
+
+	// Null characters (and any following characters) should be included in
+	// the assignment.
 	loaf = skit_loaf_new();
 	skit_slice nullified = sSLICE("\0a");
-	skit_slice test3 = skit_loaf_store_slice(&loaf, nullified);
-	sASSERT_EQS( test3, nullified );
+	skit_slice testNull = skit_loaf_store_slice(&loaf, nullified);
+	sASSERT_EQS( testNull, nullified );
 	skit_loaf_free(&loaf);
-	
+
+	// Allocate when null:
 	loaf = skit_loaf_null();
 	skit_slice test4 = skit_loaf_store_slice(&loaf, smallish);
 	sASSERT_EQS( test4, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	skit_loaf_free(&loaf);
 	
+	// Do nothing when assigned skit_slice_null().
 	loaf = skit_loaf_new();
 	skit_slice test5 = skit_loaf_store_slice(&loaf, skit_slice_null());
 	sASSERT( skit_slice_is_null(test5) );
@@ -817,6 +902,81 @@ static void skit_loaf_store_slice_test()
 	skit_loaf_free(&loaf);
 	
 	printf("  skit_loaf_store_slice_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice)
+{
+	if ( skit_slice_is_null(slice) )
+	{
+		if ( !skit_loaf_is_null(*loaf) )
+		{
+			skit_loaf_free(loaf);
+			*loaf = skit_loaf_null();
+		}
+		
+		return skit_slice_null();
+	}
+	else
+	{
+		skit_slice result = skit_loaf_store_slice(loaf,slice);
+		ssize_t loaf_len  = sLLENGTH(*loaf);
+		ssize_t slice_len = sSLENGTH(result);
+		if ( slice_len < loaf_len )
+			skit_loaf_resize(loaf, slice_len);
+		return result;
+	}
+}
+
+static void skit_loaf_assign_slice_test()
+{
+	skit_loaf loaf = skit_loaf_alloc(8);
+	skit_slice  smallish = sSLICE("foo");
+	skit_slice  largish  = sSLICE("Hello world!");
+	
+	// Start off with a small string.
+	skit_slice test1 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), 3 );
+	
+	// Enlarge.
+	skit_slice test2 = skit_loaf_assign_slice(&loaf, largish);
+	sASSERT_EQS( test2, largish );
+	sASSERT_NES( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
+	
+	// Narrow.
+	skit_slice test3 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test3, smallish );
+	sASSERT_NES( test2, largish );
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	
+	skit_loaf_free(&loaf);
+
+	// Null characters (and any following characters) should be included in
+	// the assignment.
+	loaf = skit_loaf_new();
+	skit_slice nullified = sSLICE("\0a");
+	skit_slice testNull = skit_loaf_assign_slice(&loaf, nullified);
+	sASSERT_EQS( testNull, nullified );
+	skit_loaf_free(&loaf);
+
+	// Allocate when null:
+	loaf = skit_loaf_null();
+	skit_slice test4 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test4, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	skit_loaf_free(&loaf);
+	
+	// Free the loaf when assigned skit_slice_null().
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_assign_slice(&loaf, skit_slice_null());
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( skit_loaf_is_null(loaf) );
+
+	printf("  skit_loaf_assign_slice_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1839,7 +1999,9 @@ void skit_string_unittest()
 	skit_slice_buffered_append_test();
 	skit_loaf_dup_test();
 	skit_loaf_store_cstr_test();
+	skit_loaf_assign_cstr_test();
 	skit_loaf_store_slice_test();
+	skit_loaf_assign_slice_test();
 	skit_slice_of_test();
 	skit_loaf_free_test();
 	skit_slice_get_printf_formatter_test();

@@ -486,6 +486,14 @@ enlarging of the loaf.
 The loaf will never be shrunk.  Instead, the returned value is a slice of the 
 loaf corresponding to the text actually written.
 
+This is similar to skit_loaf_assign_cstr, except that it will never perform
+deallocating operations, and skit_loaf_assign_cstr might.  
+skit_loaf_store_cstr is intended for situations where the given 'loaf' is
+being used as a buffer for string data of unknown length.  It is expected
+that the caller will store length information outside of the loaf (such as
+by persisting the returned slice) so that it is possible to extract the
+correct string information from the loaf being used as a buffer.
+
 If the referenced loaf is null (ex: skit_loaf_is_null(*loaf) == 0), then the
 loaf will be allocated using skit_loaf_alloc().
 
@@ -525,6 +533,7 @@ Example:
 	skit_slice test4 = skit_loaf_store_cstr(&loaf, smallish);
 	sASSERT_EQS( test4, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	skit_loaf_free(&loaf);
 	
 	// Do nothing when assigned NULL.
 	loaf = skit_loaf_new();
@@ -536,6 +545,66 @@ Example:
 skit_slice skit_loaf_store_cstr(skit_loaf *loaf, const char *cstr);
 
 /**
+Turns the given loaf into a carbon-copy of the given nul-terminated C string
+while re-using the loaf's already allocated memory whenever possible.
+The loaf will be allocated, deallocated, shrunk, or enlarged as needed to make
+it fit the exact length, contents, and NULL status of the given C string.
+
+This is similar to skit_loaf_store_cstr, except that it will do deallocating
+operations, and skit_loaf_store_cstr won't.  skit_loaf_assign_cstr is intended
+to be used in situations where 'loaf' is used as the sole representation for
+the stored string data, including length information.
+
+If the referenced loaf is null (ex: skit_loaf_is_null(*loaf) == 0), then the
+loaf will be allocated using skit_loaf_alloc().
+
+Assigning a NULL string to a non-null loaf will cause the loaf to be freed,
+and skit_slice_null() will be returned.
+
+Assigning a NULL string to a null loaf will do nothing, and skit_slice_null()
+will be returned.
+
+Example:
+	skit_loaf loaf = skit_loaf_alloc(8);
+	const char *smallish = "foo";
+	const char *largish  = "Hello world!";
+	
+	// Start off with a small string.
+	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), 3 );
+	
+	// Enlarge.
+	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
+	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
+	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
+	
+	// Narrow.
+	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
+	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
+	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	
+	skit_loaf_free(&loaf);
+	
+	// Allocate when null:
+	loaf = skit_loaf_null();
+	skit_slice test4 = skit_loaf_assign_cstr(&loaf, smallish);
+	sASSERT_EQS( test4, skit_slice_of_cstr(smallish) );
+	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
+	skit_loaf_free(&loaf);
+	
+	// Free the loaf when assigned NULL.
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_assign_cstr(&loaf, NULL);
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( skit_loaf_is_null(loaf) );
+*/
+skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr);
+
+/**
 Replaces the contents of the given loaf with a copy of the text in the given
 slice.  It will use skit_loaf_resize to handle an necessary enlarging of the
 loaf.  
@@ -543,39 +612,64 @@ loaf.
 The loaf will never be shrunk.  Instead, the returned value is a slice of the 
 loaf corresponding to the text actually written.
 
+This is similar to skit_loaf_assign_slice, except that it will never perform
+deallocating operations, and skit_loaf_assign_slice might.  
+skit_loaf_store_slice is intended for situations where the given 'loaf' is
+being used as a buffer for string data of unknown length.  It is expected
+that the caller will store length information outside of the loaf (such as
+by persisting the returned slice) so that it is possible to extract the
+correct string information from the loaf being used as a buffer.
+
 If the referenced loaf is null (ex: skit_loaf_is_null(*loaf) == 0), then the
 loaf will be allocated using skit_loaf_alloc().
 
-Assigning a NULL slice to a non-null loaf will do nothing, and
+Assigning a null slice to a non-null loaf will do nothing, and
 skit_slice_null() will be returned.
 
-Assigning a NULL slice to a null loaf will do nothing, and skit_slice_null()
+Assigning a null slice to a null loaf will do nothing, and skit_slice_null()
 will be returned.
 
 Example:
 	skit_loaf loaf = skit_loaf_alloc(8);
-	skit_slice smallish = sSLICE("foo");
-	skit_slice largish  = sSLICE("Hello world!");
+	skit_slice  smallish = sSLICE("foo");
+	skit_slice  largish  = sSLICE("Hello world!");
+	
+	// Start off with a small string.
 	skit_slice test1 = skit_loaf_store_slice(&loaf, smallish);
 	sASSERT_EQS( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), 8 );
+	
+	// Enlarge.
 	skit_slice test2 = skit_loaf_store_slice(&loaf, largish);
 	sASSERT_EQS( test2, largish );
 	sASSERT_NES( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
-	skit_loaf_free(&loaf);
 	
+	// Narrow.
+	skit_slice test3 = skit_loaf_store_slice(&loaf, smallish);
+	sASSERT_EQS( test3, smallish );
+	sASSERT_NES( test2, largish );
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
+	
+	skit_loaf_free(&loaf);
+
+	// Null characters (and any following characters) should be included in
+	// the assignment.
 	loaf = skit_loaf_new();
 	skit_slice nullified = sSLICE("\0a");
-	skit_slice test3 = skit_loaf_store_slice(&loaf, nullified);
-	sASSERT_EQS( test3, nullified );
+	skit_slice testNull = skit_loaf_store_slice(&loaf, nullified);
+	sASSERT_EQS( testNull, nullified );
 	skit_loaf_free(&loaf);
-	
+
+	// Allocate when null:
 	loaf = skit_loaf_null();
 	skit_slice test4 = skit_loaf_store_slice(&loaf, smallish);
 	sASSERT_EQS( test4, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	skit_loaf_free(&loaf);
 	
+	// Do nothing when assigned skit_slice_null().
 	loaf = skit_loaf_new();
 	skit_slice test5 = skit_loaf_store_slice(&loaf, skit_slice_null());
 	sASSERT( skit_slice_is_null(test5) );
@@ -583,6 +677,74 @@ Example:
 	skit_loaf_free(&loaf);
 */
 skit_slice skit_loaf_store_slice(skit_loaf *loaf, skit_slice slice);
+
+/**
+Turns the given loaf into a carbon-copy of the given slice while re-using the
+loaf's already allocated memory whenever possible.  The loaf will be allocated,
+deallocated, shrunk, or enlarged as needed to make it fit the exact length,
+contents, and NULL status of the given slice.
+
+This is similar to skit_loaf_store_slice, except that it will do deallocating
+operations, and skit_loaf_store_slice won't.  skit_loaf_assign_slice is 
+intended to be used in situations where 'loaf' is used as the sole 
+representation for the stored string data, including length information.
+
+If the referenced loaf is null (ex: skit_loaf_is_null(*loaf) == 0), then the
+loaf will be allocated using skit_loaf_alloc().
+
+Assigning a null slice to a non-null loaf will cause the loaf to be freed,
+and skit_slice_null() will be returned.
+
+Assigning a null slice to a null loaf will do nothing, and skit_slice_null()
+will be returned.
+
+Example:
+	skit_loaf loaf = skit_loaf_alloc(8);
+	skit_slice  smallish = sSLICE("foo");
+	skit_slice  largish  = sSLICE("Hello world!");
+	
+	// Start off with a small string.
+	skit_slice test1 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), 3 );
+	
+	// Enlarge.
+	skit_slice test2 = skit_loaf_assign_slice(&loaf, largish);
+	sASSERT_EQS( test2, largish );
+	sASSERT_NES( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
+	
+	// Narrow.
+	skit_slice test3 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test3, smallish );
+	sASSERT_NES( test2, largish );
+	sASSERT_EQS( test1, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	
+	skit_loaf_free(&loaf);
+
+	// Null characters (and any following characters) should be included in
+	// the assignment.
+	loaf = skit_loaf_new();
+	skit_slice nullified = sSLICE("\0a");
+	skit_slice testNull = skit_loaf_assign_slice(&loaf, nullified);
+	sASSERT_EQS( testNull, nullified );
+	skit_loaf_free(&loaf);
+
+	// Allocate when null:
+	loaf = skit_loaf_null();
+	skit_slice test4 = skit_loaf_assign_slice(&loaf, smallish);
+	sASSERT_EQS( test4, smallish );
+	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
+	skit_loaf_free(&loaf);
+	
+	// Free the loaf when assigned skit_slice_null().
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_assign_slice(&loaf, skit_slice_null());
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( skit_loaf_is_null(loaf) );
+*/
+skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice);
 
 /**
 Takes a slice of the given string/slice.
