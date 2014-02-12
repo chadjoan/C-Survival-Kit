@@ -287,16 +287,21 @@
 		/* side-effectful expressions being evaluated more than once. */ \
 		/* The error message then becomes something like this: */ \
 		/* "warning: initialization makes pointer from integer without a cast" */ \
-		skit_peg_parser *parser = (parser_arg); \
-		skit_peg_parser_set_text(parser,sSLICE((str))); \
+		/* Further design note: DO NOT name this variable 'parser'. */ \
+		/* If the caller invokes the macro with a variable named "parser" */ \
+		/* passed into 'parser_arg', then the below statement becomes */ \
+		/* 'skit_peg_parser *parser = parser;' which has an undefined value */ \
+		/* after the assignment, and will almost certainly segfault. */ \
+		skit_peg_parser *skit__assert_parser = (parser_arg); \
+		skit_peg_parser_set_text(skit__assert_parser,sSLICE((str))); \
 		\
-		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
+		SKIT_PEG_PARSING_INITIAL_VARS(skit__assert_parser); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		\
 		sASSERT_MSGF( match.successful, "Parser failed to match the input \"%.*s\", error as follows: %.*s", \
-			sSLENGTH(parser->input),          sSPTR(parser->input), \
-			sSLENGTH(parser->last_error_msg), sSPTR(parser->last_error_msg)); \
-		sASSERT_EQ( match.end, sSLENGTH(parser->input) ); \
+			sSLENGTH(skit__assert_parser->input),          sSPTR(skit__assert_parser->input), \
+			sSLENGTH(skit__assert_parser->last_error_msg), sSPTR(skit__assert_parser->last_error_msg)); \
+		sASSERT_EQ( match.end, sSLENGTH(skit__assert_parser->input) ); \
 		\
 	} while(0)
 
@@ -304,10 +309,10 @@
 	do { \
 		/* NOTE: we intentionally assign to a variable, rather than expanding (parser_arg) everywhere. */ \
 		/* See SKIT_PEG_ASSERT_PASS for a more thorough explanation. */ \
-		skit_peg_parser *parser = (parser_arg); \
-		skit_peg_parser_set_text(parser, sSLICE((str))); \
+		skit_peg_parser *skit__assert_parser = (parser_arg); \
+		sTRACE(skit_peg_parser_set_text(parser, sSLICE((str)))); \
 		\
-		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
+		SKIT_PEG_PARSING_INITIAL_VARS(skit__assert_parser); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		sASSERT( !match.successful ); \
 		\
@@ -318,15 +323,15 @@
 	do { \
 		/* NOTE: we intentionally assign to a variable, rather than expanding (parser_arg) everywhere. */ \
 		/* See SKIT_PEG_ASSERT_PASS for a more thorough explanation. */ \
-		skit_peg_parser *parser = (parser_arg); \
+		skit_peg_parser *skit__assert_parser = (parser_arg); \
 		\
 		char parser_input[sizeof((str_to_parse)) + sizeof((str_after)) + 1]; \
 		memcpy(parser_input, (str_to_parse), (sizeof((str_to_parse))-1)); \
 		memcpy(parser_input + (sizeof((str_to_parse))-1), str_after, sizeof((str_after))); \
 		\
-		skit_peg_parser_set_text(parser, skit_slice_of_cstrn(parser_input, sizeof(parser_input)-1)); \
+		sTRACE(skit_peg_parser_set_text(skit__assert_parser, skit_slice_of_cstrn(parser_input, sizeof(parser_input)-1))); \
 		\
-		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
+		SKIT_PEG_PARSING_INITIAL_VARS(skit__assert_parser); \
 		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
 		sASSERT( match.successful ); \
 		sASSERT_EQ( match.end, sizeof((str_to_parse))-1 ); \

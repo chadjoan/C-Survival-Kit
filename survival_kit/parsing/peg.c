@@ -120,6 +120,7 @@ void skit_peg_lookup_index_dtor( skit_peg_lookup_index *index )
 
 void skit_peg_parser_set_text(skit_peg_parser *parser, skit_slice text_to_parse)
 {
+	sASSERT(parser != NULL);
 	parser->input = text_to_parse;
 }
 
@@ -563,7 +564,7 @@ static void skit_peg_lookup_test()
 	int result;
 	
 	// --------- Normal, non-SUFFIX test. ---------
-	skit_peg_lookup_index *index = skit_peg_lookup_index_new();
+	skit_peg_lookup_index *index = sETRACE(skit_peg_lookup_index_new());
 	
 	result = 0;
 	sASSERT_PARSE_PASS(parser, "x", lookup_test, index, &result);
@@ -581,10 +582,10 @@ static void skit_peg_lookup_test()
 	sASSERT_PARSE_PASS(parser, "FOO", lookup_test, index, &result);
 	sASSERT_EQ(result, 4);
 	
-	skit_peg_lookup_index_free(index);
+	sTRACE(skit_peg_lookup_index_free(index));
 	
 	// --------- SUFFIX test. ---------
-	index = skit_peg_lookup_index_new();
+	index = sETRACE(skit_peg_lookup_index_new());
 	
 	result = 0;
 	sASSERT_PARSE_PASS(parser, "x bar", suffix_test, index, &result);
@@ -602,9 +603,9 @@ static void skit_peg_lookup_test()
 	sASSERT_PARSE_PASS(parser, "FOO baz", suffix_test, index, &result);
 	sASSERT_EQ(result, 4);
 	
-	skit_peg_lookup_index_free(index);
+	sTRACE(skit_peg_lookup_index_free(index));
 	
-	skit_peg_parser_mock_free(parser);
+	sTRACE(skit_peg_parser_mock_free(parser));
 	
 	printf("  skit_peg_lookup_test passed.\n");
 }
