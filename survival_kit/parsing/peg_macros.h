@@ -180,7 +180,7 @@
 		} \
 		\
 		prev_match = match; \
-		prev_err_msg = skit_loaf_assign_slice(&prev_err_msg_buf, parser->last_error_msg); \
+		prev_err_msg = skit_loaf_store_slice(&prev_err_msg_buf, parser->last_error_msg); \
 		\
 		new_cursor = stored_cursor; \
 		b; \
@@ -195,7 +195,7 @@
 		/* As outlined earlier on, we will prefer the error that reached the farthest. */ \
 		if ( prev_match.begin > match.begin ) \
 		{ \
-			parser->last_error_msg = skit_loaf_assign_slice(&parser->last_error_msg_buf, prev_err_msg); \
+			parser->last_error_msg = skit_loaf_store_slice(&parser->last_error_msg_buf, prev_err_msg); \
 			match = prev_match; \
 		} \
 		skit_loaf_free(&prev_err_msg_buf); \

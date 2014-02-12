@@ -1998,7 +1998,7 @@ static void skit_trie_test_make_trigram(
 	{
 		skit_loaf current = skit_loaf_alloc(depth);
 		loaf[*loaf_index] = current;
-		skit_loaf_assign_slice(&current, parent);
+		skit_loaf_store_slice(&current, parent);
 		uint8_t *ptr = sLPTR(current);
 		
 		if ( i == 0 )

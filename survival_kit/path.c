@@ -81,7 +81,7 @@ static int skit_path_receive( char *path )
 {
 	printf("skit_path_receive('%s')\n",path);
 	skit_path_receive_struct *path_receive_buf = pthread_getspecific(skit_path_receive_buf_key);
-	path_receive_buf->path = skit_loaf_assign_cstr(&path_receive_buf->buffer, path);
+	path_receive_buf->path = skit_loaf_store_cstr(&path_receive_buf->buffer, path);
 	return 1;
 }
 
@@ -129,7 +129,7 @@ sSCOPE
 	{
 		skit_slice rpath = skit_get_received_path();
 		/*printf("rpath = '%.*s'\n", sSLENGTH(rpath), sSPTR(rpath));*/
-		result = skit_loaf_assign_slice(path_buf, rpath);
+		result = skit_loaf_store_slice(path_buf, rpath);
 	}
 	else
 		result = path;

@@ -225,7 +225,7 @@ skit_loaf skit_loaf_new()
 skit_loaf skit_loaf_copy_cstr(const char *cstr)
 {
 	skit_loaf result = skit_loaf_alloc(strlen(cstr));
-	skit_loaf_assign_cstr(&result,cstr);
+	skit_loaf_store_cstr(&result,cstr);
 	return result;
 }
 
@@ -689,7 +689,7 @@ static void skit_loaf_dup_test()
 	skit_slice slice = skit_slice_of(foo.as_slice, 0, 0);
 	skit_loaf bar = skit_loaf_dup(slice);
 	sASSERT(sLPTR(foo) != sLPTR(bar));
-	skit_loaf_assign_cstr(&bar, "bar");
+	skit_loaf_store_cstr(&bar, "bar");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(foo), "foo");
 	sASSERT_EQ_CSTR(skit_loaf_as_cstr(bar), "bar");
 	skit_loaf_free(&foo);
@@ -699,20 +699,12 @@ static void skit_loaf_dup_test()
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
+skit_slice skit_loaf_store_cstr(skit_loaf *loaf, const char *cstr)
 {
 	sASSERT( loaf != NULL );
 	
 	if ( cstr == NULL )
-	{
-		if ( !skit_loaf_is_null(*loaf) )
-		{
-			skit_loaf_free(loaf);
-			*loaf = skit_loaf_null();
-		}
-		
 		return skit_slice_null();
-	}
 	else
 	{
 		ssize_t length = strlen(cstr);
@@ -727,25 +719,25 @@ skit_slice skit_loaf_assign_cstr(skit_loaf *loaf, const char *cstr)
 	}
 }
 
-static void skit_loaf_assign_cstr_test()
+static void skit_loaf_store_cstr_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(8);
 	const char *smallish = "foo";
 	const char *largish  = "Hello world!";
 	
 	// Start off with a small string.
-	skit_slice test1 = skit_loaf_assign_cstr(&loaf, smallish);
+	skit_slice test1 = skit_loaf_store_cstr(&loaf, smallish);
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), 8 );
 	
 	// Enlarge.
-	skit_slice test2 = skit_loaf_assign_cstr(&loaf, largish);
+	skit_slice test2 = skit_loaf_store_cstr(&loaf, largish);
 	sASSERT_EQS( test2, skit_slice_of_cstr(largish) );
 	sASSERT_NES( test1, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), strlen(largish) );
 	
 	// Narrow.
-	skit_slice test3 = skit_loaf_assign_cstr(&loaf, smallish);
+	skit_slice test3 = skit_loaf_store_cstr(&loaf, smallish);
 	sASSERT_EQS( test3, skit_slice_of_cstr(smallish) );
 	sASSERT_NES( test2, skit_slice_of_cstr(largish) );
 	sASSERT_EQS( test1, skit_slice_of_cstr(smallish) );
@@ -753,29 +745,28 @@ static void skit_loaf_assign_cstr_test()
 	
 	skit_loaf_free(&loaf);
 	
-	// Allocate-on-null:
+	// Allocate when null:
 	loaf = skit_loaf_null();
-	skit_slice test4 = skit_loaf_assign_cstr(&loaf, smallish);
+	skit_slice test4 = skit_loaf_store_cstr(&loaf, smallish);
 	sASSERT_EQS( test4, skit_slice_of_cstr(smallish) );
 	sASSERT_EQ( sLLENGTH(loaf), strlen(smallish) );
 	
-	printf("  skit_loaf_assign_cstr_test passed.\n");
+	// Do nothing when assigned NULL.
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_store_cstr(&loaf, NULL);
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( !skit_loaf_is_null(loaf) );
+	skit_loaf_free(&loaf);
+	
+	printf("  skit_loaf_store_cstr_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
 
-skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice)
+skit_slice skit_loaf_store_slice(skit_loaf *loaf, skit_slice slice)
 {
 	if ( skit_slice_is_null(slice) )
-	{
-		if ( !skit_loaf_is_null(*loaf) )
-		{
-			skit_loaf_free(loaf);
-			*loaf = skit_loaf_null();
-		}
-		
 		return skit_slice_null();
-	}
 	else
 	{
 		ssize_t length = sSLENGTH(slice);
@@ -794,15 +785,15 @@ skit_slice skit_loaf_assign_slice(skit_loaf *loaf, skit_slice slice)
 	}
 }
 
-static void skit_loaf_assign_slice_test()
+static void skit_loaf_store_slice_test()
 {
 	skit_loaf loaf = skit_loaf_alloc(8);
 	skit_slice smallish = sSLICE("foo");
 	skit_slice largish  = sSLICE("Hello world!");
-	skit_slice test1 = skit_loaf_assign_slice(&loaf, smallish);
+	skit_slice test1 = skit_loaf_store_slice(&loaf, smallish);
 	sASSERT_EQS( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), 8 );
-	skit_slice test2 = skit_loaf_assign_slice(&loaf, largish);
+	skit_slice test2 = skit_loaf_store_slice(&loaf, largish);
 	sASSERT_EQS( test2, largish );
 	sASSERT_NES( test1, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(largish) );
@@ -810,16 +801,22 @@ static void skit_loaf_assign_slice_test()
 	
 	loaf = skit_loaf_new();
 	skit_slice nullified = sSLICE("\0a");
-	skit_slice test3 = skit_loaf_assign_slice(&loaf, nullified);
+	skit_slice test3 = skit_loaf_store_slice(&loaf, nullified);
 	sASSERT_EQS( test3, nullified );
 	skit_loaf_free(&loaf);
 	
 	loaf = skit_loaf_null();
-	skit_slice test4 = skit_loaf_assign_slice(&loaf, smallish);
+	skit_slice test4 = skit_loaf_store_slice(&loaf, smallish);
 	sASSERT_EQS( test4, smallish );
 	sASSERT_EQ( sLLENGTH(loaf), sSLENGTH(smallish) );
 	
-	printf("  skit_loaf_assign_slice_test passed.\n");
+	loaf = skit_loaf_new();
+	skit_slice test5 = skit_loaf_store_slice(&loaf, skit_slice_null());
+	sASSERT( skit_slice_is_null(test5) );
+	sASSERT( !skit_loaf_is_null(loaf) );
+	skit_loaf_free(&loaf);
+	
+	printf("  skit_loaf_store_slice_test passed.\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1841,8 +1838,8 @@ void skit_string_unittest()
 	skit_slice_buffered_resize_test();
 	skit_slice_buffered_append_test();
 	skit_loaf_dup_test();
-	skit_loaf_assign_cstr_test();
-	skit_loaf_assign_slice_test();
+	skit_loaf_store_cstr_test();
+	skit_loaf_store_slice_test();
 	skit_slice_of_test();
 	skit_loaf_free_test();
 	skit_slice_get_printf_formatter_test();
