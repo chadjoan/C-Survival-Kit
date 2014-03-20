@@ -19,6 +19,9 @@ struct skit_peg_parser
 	/// Allows the caller to embed caller-specific state into the parser.
 	/// This is important, because the DEFINE_RULE/END_RULE and RULE()
 	/// macros do not provide an easy way to swap parser implementations.
+	/// As such, this provides a way for the caller to access its own
+	/// variables and data from within callbacks (ex: parse_whitespace
+	/// and branch_discard) that were called from within the skit_peg module.
 	/// This is NULL by default.
 	void                *caller_context;
 	
@@ -50,7 +53,22 @@ struct skit_peg_parser
 	ssize_t (*parse_whitespace)(
 			skit_peg_parser *parser,
 			ssize_t cursor,
-			ssize_t ubound ); 
+			ssize_t ubound );
+
+	/// This will be called by the parser whenever a branch fails to parse
+	/// (ex: rules within a CHOOSE, OPTIONAL, or ZERO_OR_MORE element) or
+	/// in other situations where parsing should not produce side-effects
+	/// (ex: NEG_LOOKAHEAD).
+	/// The 'cursor_reset_pos' argument indicates what position the parser's
+	/// cursor was rewound to in preparation for attempting other branches.
+	/// This allows the caller's derived parser to discard or undo any side-
+	/// effects that occurred during the branch that was discarded, for
+	/// example: removing queued warning messages or deallocating no-longer
+	/// relevant data structures.
+	/// By default, this is set to NULL.
+	void (*branch_discard)(
+		skit_peg_parser *parser,
+		ssize_t cursor_reset_pos );
 };
 
 typedef struct skit_peg_parse_match skit_peg_parse_match;

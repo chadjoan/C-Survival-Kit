@@ -42,6 +42,7 @@ void skit_peg_parser_ctor( skit_peg_parser *parser, skit_slice text_to_parse, sk
 	parser->is_word_char_table_len = skit_peg_default_word_char_tlen;
 	parser->is_word_char_method = &skit_peg_is_word_char_method;
 	parser->parse_whitespace = &skit_peg_parse_whitespace;
+	parser->branch_discard = NULL;
 }
 
 skit_peg_parser *skit_peg_parser_new( skit_slice text_to_parse, skit_stream *debug_out )
@@ -171,11 +172,29 @@ skit_slice skit_peg_next_chars_in_parse(skit_peg_parser *parser, ssize_t cursor,
 ssize_t skit_peg_parse_one_newline(skit_utf8c *txt, ssize_t cursor, ssize_t ubound)
 {
 	ssize_t remaining = (ubound - cursor);
-	if ( remaining >= 1 && (txt[cursor] == '\n' || txt[cursor] == '\r') )
-		return cursor+1;
-	if ( remaining >= 2 && (txt[cursor] == '\r' && txt[cursor+1] == '\n') )
+	if      ( remaining >= 2 && (txt[cursor] == '\r' && txt[cursor+1] == '\n') )
 		return cursor+2;
+	else if ( remaining >= 1 && (txt[cursor] == '\n' || txt[cursor] == '\r') )
+		return cursor+1;
 	return cursor; /* No match. */
+}
+
+static void skit_peg_parse_one_newline_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+
+	skit_utf8c mline[] = "x\n;y\r\n;z";
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  0, sizeof(mline)),  0);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  1, sizeof(mline)),  2);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  2, sizeof(mline)),  2);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  3, sizeof(mline)),  3);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  4, sizeof(mline)),  6);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  5, sizeof(mline)),  6);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  6, sizeof(mline)),  6);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  7, sizeof(mline)),  7);
+	sASSERT_EQ(skit_peg_parse_one_newline(mline,  8, sizeof(mline)),  8);
+	
+	printf("  skit_peg_parse_one_newline_test passed.\n");
 }
 
 int skit_parsing_is_whitespace( skit_utf8c c )
@@ -270,7 +289,8 @@ skit_peg_parse_match SKIT_PEG_non_whitespace(
 	ssize_t cursor,
 	ssize_t ubound)
 {
-	while ( cursor < ubound && parser->parse_whitespace(parser, cursor, ubound) == 0 )
+	while ( cursor < ubound && parser->parse_whitespace != NULL 
+	&&      parser->parse_whitespace(parser, cursor, ubound) == 0 )
 		cursor++;
 	
 	return skit_peg_match_success(parser, cursor, ubound);
@@ -612,6 +632,94 @@ static void skit_peg_lookup_test()
 
 /* ------------------------------------------------------------------------- */
 
+static void skit_peg_bd_test_callback( skit_peg_parser *parser, ssize_t cursor_reset_pos )
+{
+	int *which_discard = (int*)parser->caller_context;
+	
+	switch( *which_discard )
+	{
+		// branch_discard_1
+		case 0: sASSERT_EQ( cursor_reset_pos, 1 ); break;
+		case 1: sASSERT_EQ( cursor_reset_pos, 1 ); break;
+		case 2: sASSERT_EQ( cursor_reset_pos, 1 ); break;
+		case 3: sASSERT_EQ( cursor_reset_pos, 2 ); break;
+		case 4: sASSERT_EQ( cursor_reset_pos, 3 ); break;
+		
+		// branch_discard_2
+		case 5: sASSERT_EQ( cursor_reset_pos, 4 ); break;
+		case 6: sASSERT_EQ( cursor_reset_pos, 9 ); break;
+		
+		// branch_discard_3
+		case 7: sASSERT_EQ( cursor_reset_pos, 1 ); break;
+		case 8: sASSERT_EQ( cursor_reset_pos, 0 ); break;
+		
+		// There should be no other discards.
+		default: sASSERT(0);
+	}
+	
+	(*which_discard)++;
+}
+
+DEFINE_RULE(branch_discard_1)
+	auto_consume_whitespace = 0;
+	SEQ(
+		RULE(token, "a"),
+		CHOOSE(
+			RULE(token, "x"), // which_discard == 0
+			RULE(token, "y"), // which_discard == 1
+			RULE(token, "z"), // which_discard == 2
+			RULE(token, "b")
+		),
+		OPTIONAL(RULE(token,"q")), // which_discard == 3
+		RULE(token,"c"),
+		NEG_LOOKAHEAD(RULE(token,"1")), // which_discard == 4
+		RULE(token,"d")
+	);
+END_RULE
+
+DEFINE_RULE(branch_discard_2)
+	auto_consume_whitespace = 0;
+	SEQ(
+		ZERO_OR_MORE(RULE(token, "a")), // which_discard == 5
+		RULE(token,"b"),
+		ONE_OR_MORE(RULE(token, "a"))   // which_discard == 6
+	);
+END_RULE
+
+DEFINE_RULE(branch_discard_3)
+	auto_consume_whitespace = 0;
+	CHOOSE(
+		SEQ(
+			RULE(token, "a"),
+			CHOOSE(
+				RULE(token, "x"), // which_discard == 7
+				RULE(token, "y")
+			)
+		), // which_discard == 8
+		RULE(token, "abc")
+	);
+END_RULE
+
+static void skit_peg_branch_discard_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+	skit_peg_parser *parser = skit_peg_parser_mock_new(skit_slice_null());
+	SKIT_PEG_PARSING_INITIAL_VARS(parser);
+	int which_discard = 0;
+	parser->caller_context = &which_discard;
+	parser->branch_discard = &skit_peg_bd_test_callback;
+	
+	sASSERT_PARSE_PASS(parser, "abcd",      branch_discard_1);
+	sASSERT_PARSE_PASS(parser, "aaaabaaaa", branch_discard_2);
+	sASSERT_PARSE_PASS(parser, "abc",       branch_discard_3);
+	
+	sTRACE(skit_peg_parser_mock_free(parser));
+	
+	printf("  skit_peg_branch_discard_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 static int skit_peg_module_initialized = 0;
 pthread_mutex_t      skit_peg__lookup_mutex;
 pthread_mutexattr_t  skit_peg__lookup_mutex_attrs;
@@ -642,11 +750,13 @@ void skit_peg_unittests()
 	SKIT_USE_FEATURE_EMULATION;
 	printf("skit_peg_parser_unittests()\n");
 	sTRACE(skit_peg_macros_test());
+	sTRACE(skit_peg_parse_one_newline_test());
 	sTRACE(skit_peg_whitespace_test());
 	sTRACE(skit_peg_word_boundary_test());
 	// TODO: token, keyword tests.
 	sTRACE(skit_peg_any_word_test());
 	sTRACE(skit_peg_lookup_test());
+	sTRACE(skit_peg_branch_discard_test());
 	printf("  skit_peg_parser_unittests all passed!\n");
 	printf("\n");
 }

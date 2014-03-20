@@ -81,6 +81,12 @@
 		return match; \
 	}
 
+#define SKIT_PEG__BRANCH_DISCARD(cursor_reset_pos) \
+	do { \
+		if ( parser->branch_discard != NULL ) \
+			parser->branch_discard(parser, cursor_reset_pos); \
+	} while(0)
+
 #define SKIT_PEG_SEQ1(a) \
 	do { \
 		a; \
@@ -93,7 +99,7 @@
 			break; \
 		\
 		new_cursor = match.end; \
-		if ( auto_consume_whitespace ) \
+		if ( auto_consume_whitespace && parser->parse_whitespace != NULL ) \
 			new_cursor = parser->parse_whitespace(parser, new_cursor, ubound); \
 		\
 		b; \
@@ -124,11 +130,14 @@
 				break; \
 			\
 			new_cursor = match.end; \
-			if ( auto_consume_whitespace ) \
+			if ( auto_consume_whitespace && parser->parse_whitespace != NULL ) \
 				new_cursor = parser->parse_whitespace(parser, new_cursor, ubound); \
 			stored_cursor = new_cursor; \
 		} \
 		new_cursor = stored_cursor; \
+		/* We /know/ a branch failure will have occured: */ \
+		/* it's the only way to stop iteration. */ \
+		SKIT_PEG__BRANCH_DISCARD(new_cursor); \
 		match = skit_peg_match_success(parser, cursor, new_cursor); \
 	} while(0)
 
@@ -183,6 +192,8 @@
 		prev_err_msg = skit_loaf_store_slice(&prev_err_msg_buf, parser->last_error_msg); \
 		\
 		new_cursor = stored_cursor; \
+		SKIT_PEG__BRANCH_DISCARD(new_cursor); \
+		\
 		b; \
 		if ( match.successful ) \
 		{ \
@@ -201,6 +212,12 @@
 		skit_loaf_free(&prev_err_msg_buf); \
 		\
 		new_cursor = stored_cursor; \
+		/* NOTE: do not stick SKIT_PEG__BRANCH_DISCARD here. */ \
+		/* At this point, it is simply a failing rule, like how SEQ would fail. */ \
+		/* If there are more branches, then those will immediately call */ \
+		/* SKIT_PEG__BRANCH_DISCARD once this rule returns. */ \
+		/* If there aren't any more branches, then that means the whole */ \
+		/* grammar failed and the entry point can issue a branch failure. */ \
 		break; \
 	} while(0)
 
@@ -223,8 +240,10 @@
 			new_cursor = match.end; \
 		else \
 		{ \
-			match = skit_peg_match_success(parser, stored_cursor, stored_cursor); \
 			new_cursor = stored_cursor; \
+			/* Notify the caller of the failure of the optional branch. */ \
+			SKIT_PEG__BRANCH_DISCARD(new_cursor); \
+			match = skit_peg_match_success(parser, new_cursor, new_cursor); \
 		} \
 	} while(0)
 
@@ -261,18 +280,25 @@
 
 #define SKIT_PEG_NEG_LOOKAHEAD(a) \
 	do { \
+		ssize_t stored_cursor = new_cursor; \
+		\
 		a; \
+		\
+		/* This is a lookahead, so we unconditionally discard any parsing action: */ \
+		new_cursor = stored_cursor; \
+		SKIT_PEG__BRANCH_DISCARD(new_cursor); \
+		\
 		if ( match.successful ) \
 		{ \
 			skit_slice invalid_elem = skit_slice_of(match.input, match.begin, match.end); \
-			match = skit_peg_match_failure( parser, cursor, "Invalid syntax element: %.*s", sSLENGTH(invalid_elem), sSPTR(invalid_elem) ); \
+			match = skit_peg_match_failure( parser, new_cursor, "Invalid syntax element: %.*s", sSLENGTH(invalid_elem), sSPTR(invalid_elem) ); \
 			break; \
 		} \
 		\
-		match = skit_peg_match_success( parser, cursor, cursor ); \
+		match = skit_peg_match_success( parser, new_cursor, new_cursor ); \
 	} while(0)
 
-#define SKIT_PEG_ASSERT_PARSE_PASS(parser_arg, str, rule_name, ...) \
+#define SKIT_PEG_ASSERT_PARSE_PASS(parser_arg, str, ...) \
 	do { \
 		/* If we try to use (parser_arg) everywhere in the macro and the caller */ \
 		/* of this macro passes anything besides a (skit_peg_parser*) then */ \
@@ -308,7 +334,10 @@
 		skit_peg_parser_set_text(parser,sSLICE((str))); \
 		\
 		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
-		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
+		\
+		/* __VA_ARGS__ contains rule_name. */ \
+		/* This is contrived, but it allows zero-arg rules to be invoked. */ \
+		SKIT_PEG_RULE(__VA_ARGS__); \
 		\
 		sASSERT_MSGF( match.successful, "Parser failed to match the input \"%.*s\", error as follows: %.*s", \
 			sSLENGTH(parser->input),          sSPTR(parser->input), \
@@ -317,7 +346,7 @@
 		\
 	} while(0)
 
-#define SKIT_PEG_ASSERT_PARSE_FAIL(parser_arg, str, rule_name, ...) \
+#define SKIT_PEG_ASSERT_PARSE_FAIL(parser_arg, str, ...) \
 	do { \
 		/* NOTE: we intentionally assign to a variable, rather than expanding (parser_arg) everywhere. */ \
 		/* See SKIT_PEG_ASSERT_PASS for a more thorough explanation. */ \
@@ -327,13 +356,17 @@
 		sTRACE(skit_peg_parser_set_text(parser, sSLICE((str)))); \
 		\
 		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
-		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
+		\
+		/* __VA_ARGS__ contains rule_name. */ \
+		/* This is contrived, but it allows zero-arg rules to be invoked. */ \
+		SKIT_PEG_RULE(__VA_ARGS__); \
+		\
 		sASSERT( !match.successful ); \
 		\
 	} while(0)
 
 /* Use this to ensure that rules aren't over-aggressive when calculating how long a match is. */
-#define SKIT_PEG_ASSERT_PARSE_PART(parser_arg, str_to_parse, str_after, rule_name, ...) \
+#define SKIT_PEG_ASSERT_PARSE_PART(parser_arg, str_to_parse, str_after, ...) \
 	do { \
 		/* NOTE: we intentionally assign to a variable, rather than expanding (parser_arg) everywhere. */ \
 		/* See SKIT_PEG_ASSERT_PASS for a more thorough explanation. */ \
@@ -347,7 +380,11 @@
 		sTRACE(skit_peg_parser_set_text(parser, skit_slice_of_cstrn(parser_input, sizeof(parser_input)-1))); \
 		\
 		SKIT_PEG_PARSING_INITIAL_VARS(parser); \
-		SKIT_PEG_RULE(rule_name, __VA_ARGS__); \
+		\
+		/* __VA_ARGS__ contains rule_name. */ \
+		/* This is contrived, but it allows zero-arg rules to be invoked. */ \
+		SKIT_PEG_RULE(__VA_ARGS__); \
+		\
 		sASSERT( match.successful ); \
 		sASSERT_EQ( match.end, sizeof((str_to_parse))-1 ); \
 		\
