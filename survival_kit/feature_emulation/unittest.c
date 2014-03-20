@@ -390,6 +390,30 @@ sSCOPE
 	sRETURN(0);
 sEND_SCOPE
 
+static void skit_scope_vms_return_sub(char *ptr, size_t sz)
+{
+	memset(ptr, 0xFF, sz);
+}
+
+static ssize_t skit_scope_vms_return_test()
+sSCOPE
+	// Test for the SKIT_RETURN_INTERNAL1 macro, which replaced a previous
+	// SKIT_RETURN_INTERNAL() macro that failed by corrupting return values
+	// on an OpenVMS/IA64 system (v8.4).
+	// If the SKIT_RETURN_INTERAL1 macro is implemented incorrently, then this
+	// unittest should fail on such an OpenVMS system.  It seems to succeed
+	// on Linux systems regardless of the macro implementation.
+	SKIT_USE_FEATURE_EMULATION;
+	char children[32 /* sizeof(astd_sdl_stmt_iter) */];
+	sSCOPE_EXIT(skit_scope_vms_return_sub(children, sizeof(children)));
+	
+	ssize_t count = 0;
+	while ( "ab"[count] != '\0' )
+		count++;
+
+	sRETURN(count);
+sEND_SCOPE
+
 static void unittest_scope()
 {
 	SKIT_USE_FEATURE_EMULATION;
@@ -445,6 +469,8 @@ static void unittest_scope()
 	sCATCH(SKIT_EXCEPTION,e)
 		sASSERT_EQ(val,0);
 	sEND_TRY
+
+	sASSERT_EQ(skit_scope_vms_return_test(), 2);
 
 	printf("  scope unittest passed!\n");
 	

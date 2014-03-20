@@ -175,28 +175,79 @@ placed in sSCOPE-sEND_SCOPE statements.
 TODO: It should clean up sTRY-sCATCH stacks too, so that it can be called
 from sTRY-sCATCH blocks.
 */
-#define SKIT_RETURN_INTERNAL(return_expr) \
+#define SKIT_RETURN_COMMON \
+	(void)SKIT_RETURN_HAS_USE_TXT; \
+	SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT(SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR); \
+	(void)*SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR; \
+	\
+	/* Redefine this (again) as a pointer so that the builtin return will work from here. */ \
+	char *SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR = 0; \
+	(void)SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR;
+
+#define SKIT_RETURN_INTERNAL0 \
 	{ \
-		(void)SKIT_RETURN_HAS_USE_TXT; \
-		SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_TXT(SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR); \
-		(void)*SKIT_NO_MACRO_RETURN_FROM_SCOPE_GUARDS_PTR; \
-		\
-		/* Redefine this (again) as a pointer so that the builtin return will work from here. */ \
-		char *SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR = 0; \
-		(void)SKIT_NO_BUILTIN_RETURN_FROM_SCOPE_PTR; \
-		\
+		SKIT_RETURN_COMMON \
 		SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
-		return_expr; \
+		return; \
 	}
 
-#define sRETURN0()     SKIT_RETURN_INTERNAL(return)
-#define sRETURN1(expr) SKIT_RETURN_INTERNAL(return (expr))
+// Note that we store the return value into a volatile variable before
+// SKIT__SCAN_SCOPE_GUARDS.  This is because SKIT__SCAN_SCOPE_GUARDS calls
+// longjmp, and setjmp/longjmp implementations tend to come with this caveat:
+//
+//   All accessible objects have values as of the time longjmp() was called, 
+//   except that the values of objects of automatic storage duration which are
+//   local to the function containing the invocation of the corresponding 
+//   setjmp() which do not have volatile-qualified type and which are changed 
+//   between the setjmp() invocation and longjmp() call are indeterminate. 
+//
+// (quote from: http://pubs.opengroup.org/onlinepubs/7908799/xsh/setjmp.html)
+//
+// Another page with warnings about this, and more importantly, also examples,
+// is this one:
+//   https://www.securecoding.cert.org/confluence/display/seccode/MSC22-C.+Use+the+setjmp%28%29,+longjmp%28%29+facility+securely
+//
+// Typically, any enregistered variable that was altered after setjmp will be
+// clobbered after the call to longjmp.  This is because setjmp usually stores
+// all of the registers' current values in an array (the jmp_buf), which are
+// then restored when longjmp is called.  Any changes to those registers
+// between the setjmp/longjmp calls are lost.
+// 
+// Storing 'expr' into a volatile variable prevents the caller from attempting
+// to return a local variable that isn't volatile-qualified by forcing the
+// return value to be volatile-qualified.  That should force the value to
+// be written into memory or otherwise removed from the register bank, which
+// /should/ make the value survive the subsequent longjmp.  Other values in
+// the call stack have no consequence: they are going to fall out of scope
+// anyways.
+//
+// The only doubt is this: examples that I (Chad Joan) have read so far tend to
+// show volatile variables declared before setjmp is called, thus making all
+// operations between setjmp/longjmp occur on a /volatile/ variable.  In this
+// case the caller is potentially doing operations on a not-volatile-qualified
+// variable between setjmp/longjmp, and then saving it into a volatile one at
+// the last moment.  This could be slightly different, depending on how the
+// above quote is understood by the C compilter's writer.  *Fingers crossed*
+//
+// This is tested by the skit_scope_vms_return_test() function in the
+// feature emulation unittests (feature_emulation/unittests.c).
+//
+#define SKIT_RETURN_INTERNAL1(expr) \
+	{ \
+		SKIT_RETURN_COMMON \
+		volatile __typeof__((expr)) SKIT__sRETURN_TMP = (expr); \
+		SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
+		return SKIT__sRETURN_TMP; \
+	}
+
+#define sRETURN0()     SKIT_RETURN_INTERNAL0
+#define sRETURN1(expr) SKIT_RETURN_INTERNAL1(expr)
 #define sRETURN(...) SKIT_MACRO_DISPATCHER1(sRETURN, __VA_ARGS__)(__VA_ARGS__)
 
 /* This (slightly uglier) version is offered as a way to work around the
 lack of an ability to determine whether a variadic macro was expanded with
 1 argument or 0 arguments. */
-#define sRETURN_       SKIT_RETURN_INTERNAL(return)
+#define sRETURN_       SKIT_RETURN_INTERNAL0
 
 /* 
 This macro is used internally by macros to simplify the creation of error 
