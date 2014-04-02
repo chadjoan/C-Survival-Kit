@@ -1,6 +1,8 @@
 #ifndef SKIT_PORTABLE_INTS_INCLUDED
 #define SKIT_PORTABLE_INTS_INCLUDED
 
+#include <inttypes.h>
+
 #ifdef __VMS
 	// More portable on VMS.
 	#define skit_uintmax        uint64_t
@@ -60,6 +62,7 @@
 	#define UINT64_MAX          ((uint64_t)0xFFFFffffFFFFffffULL)
 	#endif
 #else
+#include <stdint.h>
 	// More portable everywhere else.
 	#define skit_uintmax        uintmax_t
 	#define skit_intmax         intmax_t
@@ -69,6 +72,10 @@
 	#define skit_intmax_hexfmt  "%jx"
 	#define skit_uintptr_t      uintptr_t
 	#define skit_intptr_t       intptr_t
+#endif
+
+#ifndef SSIZE_MIN
+#define SSIZE_MIN ((ssize_t)1 << (sizeof(ssize_t)*8 - 1))
 #endif
 
 #endif
