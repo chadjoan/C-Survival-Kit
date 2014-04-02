@@ -1316,6 +1316,132 @@ int skit_slice_match_nl(
 	const skit_slice text,
 	ssize_t pos);
 
+/// Finds the first occurrence of 'needle' in 'haystack'.
+/// If 'output_pos' is non-NULL, it will be filled with 'needle's position
+/// within the 'haystack', or -1 if it was not found.
+///
+/// Preconditions:
+/// 'haystack' must be non-null.
+/// 'needle' must be non-null.
+///
+/// Returns 1 if it was found, or 0 if it was not.
+/// Example:
+///   ssize_t pos = 0;
+///   sASSERT(!skit_slice_find(sSLICE("foo"),sSLICE("x"),&pos));
+///   sASSERT_EQ(pos,-1);
+///   sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("o"),&pos));
+///   sASSERT_EQ(pos,1);
+///   sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("f"),&pos));
+///   sASSERT_EQ(pos,0);
+///   sASSERT(!skit_slice_find(sSLICE("foo"),sSLICE("x"),NULL));
+///   sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("f"),NULL));
+///   sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("o"),NULL));
+int skit_slice_find(
+	const skit_slice haystack,
+	const skit_slice needle,
+	ssize_t *output_pos);
+
+/// Finds the first occurrence of 'delimiter' in 'text' and splits it into
+/// left (head) and right (tail) slices.
+///
+/// If either 'head' or 'tail' is a NULL pointer, then that argument will not
+/// be populated.  Calling skit_slice_partition(a,b,NULL,NULL) is equivalent
+/// to calling skit_slice_find(a,b,NULL): they both determine if the string
+/// 'b' exists in 'a' and do nothing else.
+///
+/// Preconditions:
+/// 'text' must be non-null.
+/// 'delimiter' must be non-null.
+///
+/// Returns: 1 if 'delimiter' was found, 0 if it was not.
+/// Example:
+///   skit_slice text = sSLICE("Hello world!");
+///   skit_slice head = skit_slice_null();
+///   skit_slice tail = skit_slice_null();
+///   skit_slice delim = sSLICE(" ");
+///
+///   sASSERT(skit_slice_partition(text, delim, &head, &tail));
+///   sASSERT_EQS(head, sSLICE("Hello"));
+///   sASSERT_EQS(tail, sSLICE("world!"));
+///
+///   tail = skit_slice_null();
+///   sASSERT(skit_slice_partition(text, delim, &head, NULL));
+///   sASSERT_EQS(head, sSLICE("Hello") );
+///   sASSERT( skit_slice_is_null(tail) );
+///
+///   head = skit_slice_null();
+///   sASSERT(skit_slice_partition(text, delim, NULL, &tail));
+///   sASSERT( skit_slice_is_null(head) );
+///   sASSERT_EQS(tail, sSLICE("world!"));
+///
+///   text = sSLICE("Hello");
+///   sASSERT(!skit_slice_partition(text, delim, &head, &tail));
+///   sASSERT_EQS(head, sSLICE("Hello"));
+///   sASSERT_EQS(tail, sSLICE(""));
+///
+///   text = sSLICE("");
+///   sASSERT(!skit_slice_partition(text, delim, &head, &tail));
+///   sASSERT_EQS(head, sSLICE(""));
+///   sASSERT_EQS(tail, sSLICE(""));
+///
+int skit_slice_partition(
+	const skit_slice text,
+	const skit_slice delimiter,
+	skit_slice *head,
+	skit_slice *tail);
+
+/// A less-powerful but (sometimes) more convenient derivative of
+/// skit_slice_partition.  It is designed to be easier to use in while-loops.
+/// This will split 'text' at the first occurrence of 'delimiter', and return
+/// the left part of the split.  'text' will be modified to contain only the
+/// text that directly follows the found delimiter.
+/// If 'delimiter' is not found in 'text', then the entire value of 'text' is
+/// returned and 'text' is modified to contain an empty string (essentially,
+/// skit_slice_of(text, SKIT_EOT, SKIT_EOT)).
+///
+/// If 'head' is NULL (doesn't point to a slice), then this argument simply
+/// won't be populated.  The slice pointed to by 'text' will still be modified
+/// as if a non-NULL 'head' reference was given.
+///
+/// Preconditions:
+/// 'text' must be non-NULL.
+/// '*text' must be non-null.
+/// 'delimiter' must be non-null.
+///
+/// Returns: 1 if 'text' was a non-empty slice, 0 if 'text' was an empty slice.
+///
+/// Example:
+///   skit_slice text = sSLICE("a b c");
+///   skit_slice head = skit_slice_null();
+///   skit_slice delim = sSLICE(" ");
+///
+///   sASSERT(skit_slice_take_head(&text,delim,&head));
+///   sASSERT_EQS(head,sSLICE("a"));
+///   sASSERT_EQS(text,sSLICE("b c"));
+///
+///   sASSERT(skit_slice_take_head(&text,delim,&head));
+///   sASSERT_EQS(head,sSLICE("b"));
+///   sASSERT_EQS(text,sSLICE("c"));
+///
+///   sASSERT(skit_slice_take_head(&text,delim,&head));
+///   sASSERT_EQS(head,sSLICE("c"));
+///   sASSERT_EQS(text,sSLICE(""));
+///
+///   sASSERT(!skit_slice_take_head(&text,delim,&head));
+///   sASSERT_EQS(head,sSLICE(""));
+///   sASSERT_EQS(text,sSLICE(""));
+///
+///   text = sSLICE("a b c");
+///   int count = 0;
+///   while ( skit_slice_take_head(&text,delim,NULL) )
+///       count++;
+///   sASSERT_EQ(count, 3);
+///
+int skit_slice_take_head(
+	skit_slice *text,
+	const skit_slice delimiter,
+	skit_slice *head);
+
 /**
 Applies C-style escaping to the given string.  This allows non-printable
 characters to be passed into places like terminal output and displayed.

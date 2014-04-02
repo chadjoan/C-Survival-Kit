@@ -1859,6 +1859,160 @@ static void skit_slice_match_test_nl()
 
 /* ------------------------------------------------------------------------- */
 
+int skit_slice_find(
+	const skit_slice haystack,
+	const skit_slice needle,
+	ssize_t *output_pos)
+{
+	ssize_t pos;
+	ssize_t len = sSLENGTH(haystack);
+	if ( output_pos == NULL )
+		output_pos = &pos;
+
+	for ( pos = 0; pos < len; pos++ )
+	{
+		if ( skit_slice_match(haystack,needle,pos) )
+		{
+			*output_pos = pos;
+			return 1;
+		}
+	}
+
+	*output_pos = -1;
+	return 0;
+}
+
+static void skit_slice_find_test()
+{
+	ssize_t pos = 0;
+	sASSERT(!skit_slice_find(sSLICE("foo"),sSLICE("x"),&pos));
+	sASSERT_EQ(pos,-1);
+	sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("o"),&pos));
+	sASSERT_EQ(pos,1);
+	sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("f"),&pos));
+	sASSERT_EQ(pos,0);
+	sASSERT(!skit_slice_find(sSLICE("foo"),sSLICE("x"),NULL));
+	sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("f"),NULL));
+	sASSERT(skit_slice_find(sSLICE("foo"),sSLICE("o"),NULL));
+	printf("  skit_slice_find_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+int skit_slice_partition(
+	const skit_slice text,
+	const skit_slice delimiter,
+	skit_slice *head,
+	skit_slice *tail)
+{
+	sASSERT(!skit_slice_is_null(text));
+	sASSERT(!skit_slice_is_null(delimiter));
+
+	ssize_t head_end = -1;
+	ssize_t tail_start = 0;
+	ssize_t text_len = sSLENGTH(text);
+	
+	int found = skit_slice_find(text, delimiter, &head_end);
+	if ( found )
+	{
+		// head_end is already assigned by skit_slice_find.
+		tail_start = head_end + sSLENGTH(delimiter);
+	}
+	else
+	{
+		head_end = text_len;
+		tail_start = text_len;
+	}
+
+	if ( head ) *head = skit_slice_of(text, 0, head_end);
+	if ( tail ) *tail = skit_slice_of(text, tail_start, text_len);
+
+	return found;
+}
+
+static void skit_slice_partition_test()
+{
+	skit_slice text = sSLICE("Hello world!");
+	skit_slice head = skit_slice_null();
+	skit_slice tail = skit_slice_null();
+	skit_slice delim = sSLICE(" ");
+	
+	sASSERT(skit_slice_partition(text, delim, &head, &tail));
+	sASSERT_EQS(head, sSLICE("Hello"));
+	sASSERT_EQS(tail, sSLICE("world!"));
+	
+	tail = skit_slice_null();
+	sASSERT(skit_slice_partition(text, delim, &head, NULL));
+	sASSERT_EQS(head, sSLICE("Hello") );
+	sASSERT( skit_slice_is_null(tail) );
+	
+	head = skit_slice_null();
+	sASSERT(skit_slice_partition(text, delim, NULL, &tail));
+	sASSERT( skit_slice_is_null(head) );
+	sASSERT_EQS(tail, sSLICE("world!"));
+
+	text = sSLICE("Hello");
+	sASSERT(!skit_slice_partition(text, delim, &head, &tail));
+	sASSERT_EQS(head, sSLICE("Hello"));
+	sASSERT_EQS(tail, sSLICE(""));
+	
+	text = sSLICE("");
+	sASSERT(!skit_slice_partition(text, delim, &head, &tail));
+	sASSERT_EQS(head, sSLICE(""));
+	sASSERT_EQS(tail, sSLICE(""));
+
+	printf("  skit_slice_partition_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
+int skit_slice_take_head(
+	skit_slice *text,
+	const skit_slice delimiter,
+	skit_slice *head)
+{
+	sASSERT(text != NULL);
+	sASSERT(!skit_slice_is_null(*text));
+	sASSERT(!skit_slice_is_null(delimiter));
+
+	int have_next = !!(sSLENGTH(*text) > 0);
+	skit_slice_partition(*text, delimiter, head, text);
+	return have_next;
+}
+
+static void skit_slice_take_head_test()
+{
+	skit_slice text = sSLICE("a b c");
+	skit_slice head = skit_slice_null();
+	skit_slice delim = sSLICE(" ");
+	
+	sASSERT(skit_slice_take_head(&text,delim,&head));
+	sASSERT_EQS(head,sSLICE("a"));
+	sASSERT_EQS(text,sSLICE("b c"));
+	
+	sASSERT(skit_slice_take_head(&text,delim,&head));
+	sASSERT_EQS(head,sSLICE("b"));
+	sASSERT_EQS(text,sSLICE("c"));
+	
+	sASSERT(skit_slice_take_head(&text,delim,&head));
+	sASSERT_EQS(head,sSLICE("c"));
+	sASSERT_EQS(text,sSLICE(""));
+	
+	sASSERT(!skit_slice_take_head(&text,delim,&head));
+	sASSERT_EQS(head,sSLICE(""));
+	sASSERT_EQS(text,sSLICE(""));
+	
+	text = sSLICE("a b c");
+	int count = 0;
+	while ( skit_slice_take_head(&text,delim,NULL) )
+	    count++;
+	sASSERT_EQ(count, 3);
+
+	printf("  skit_slice_take_head_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 static int skit_char_is_printable( skit_utf8c c )
 {
 	/* Printable chars between space (inclusive) and delete (exclusive) */
@@ -2020,6 +2174,9 @@ void skit_string_unittest()
 	skit_slice_truncate_test();
 	skit_slice_match_test();
 	skit_slice_match_test_nl();
+	skit_slice_find_test();
+	skit_slice_partition_test();
+	skit_slice_take_head_test();
 	skit_slice_escapify_test();
 	printf("  skit_slice_unittest passed!\n");
 	printf("\n");
