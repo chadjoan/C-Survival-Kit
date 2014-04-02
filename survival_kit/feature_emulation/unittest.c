@@ -390,6 +390,14 @@ sSCOPE
 	sRETURN(0);
 sEND_SCOPE
 
+static int skit_scope_ordering_test(int *result)
+sSCOPE
+	SKIT_USE_FEATURE_EMULATION;
+	sSCOPE_EXIT(*result = 0);
+	sSCOPE_EXIT(*result = 1);
+	sRETURN(0);
+sEND_SCOPE
+
 static void skit_scope_vms_return_sub(char *ptr, size_t sz)
 {
 	memset(ptr, 0xFF, sz);
@@ -469,6 +477,9 @@ static void unittest_scope()
 	sCATCH(SKIT_EXCEPTION,e)
 		sASSERT_EQ(val,0);
 	sEND_TRY
+
+	skit_scope_ordering_test(&val);
+	sASSERT_EQ(val,0);
 
 	sASSERT_EQ(skit_scope_vms_return_test(), 2);
 
