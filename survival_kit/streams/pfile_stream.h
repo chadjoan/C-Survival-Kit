@@ -89,7 +89,30 @@ skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer)
 skit_slice skit_pfile_stream_to_slice(skit_pfile_stream *stream, skit_loaf *buffer);
 void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output);
 void skit_pfile_stream_dtor(skit_pfile_stream *stream);
+
+/// Releases any file-handling resources related to the stream.
+/// This does not free the stream object itself, nor does it free any internal
+/// buffers used by the stream.  Thus, it is possible to efficiently re-use
+/// a pfile stream on multiple files and minimize the amount of malloc/free
+/// calls per-file.
 void skit_pfile_stream_close(skit_pfile_stream *stream);
+
+// As of this writing, this macro symbol is defined nowhere.
+// It is placed as a way to indicate that the given function definition is
+// not supposed to exist, because it is actually implemented as a macro.
+// In the future, a documentation generator might define a macro symbol like
+// this to allow itself to separate the user-readable function definition
+// from the macro details.
+#ifdef SKIT__DOCUMENTATION_ONLY
+/// Opens the file at the given path, using the given pfile stream for all
+/// subsequent read/write operations.
+/// The access mode is the same as given in POSIX specifications for fopen,
+/// For details on path handling and the mode parameter, see:
+///   http://pubs.opengroup.org/onlinepubs/009695399/functions/fopen.html
+///   or
+///   http://www.cplusplus.com/reference/cstdio/fopen/
+void skit_pfile_stream_open(skit_pfile_stream *stream, skit_slice file_path, const char *mode);
+#endif
 
 /* OpenVMS has it's own very special fopen function with variadic args.
 It can't be asked to provide a version with a va_list argument, so it is
@@ -109,6 +132,19 @@ const char *skit__pfile_stream_populate(skit_pfile_stream *stream, skit_slice fn
 void skit__pfile_stream_assign_fp(skit_pfile_stream *stream, FILE *fp);
 #define SKIT_PFILE_FIRST_VARG(...) SKIT_PFILE_FIRST_VARG_(__VA_ARGS__, throwaway)
 #define SKIT_PFILE_FIRST_VARG_(first,...) first
+
+/// This function implements convenient one-line file slurp functionality.
+/// It will place the contents of the file at 'file_path' into the given
+/// 'buffer' and return the slice that corresponds to the contents (the buffer
+/// might be slightly larger for the sake of efficient buffering).
+///
+/// Under the hood, this will use a skit_pfile_stream to do the dirty work.
+///
+/// Unlike many of the stream functions that take a buffer argument, this
+/// buffer is mandatory, and the returned slice WILL be a slice of that buffer.
+/// This allows the caller to persist the text buffer after its originating
+/// stream has long since been closed and freed.
+skit_slice skit_pfile_slurp_into( skit_slice file_path, skit_loaf *buffer );
 
 void skit_pfile_stream_unittests();
 

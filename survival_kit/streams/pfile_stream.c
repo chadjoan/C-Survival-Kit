@@ -23,6 +23,12 @@
 
 /* ------------------------------------------------------------------------- */
 
+#define SKIT_PFILE_UTEST_FILE "skit_pfile_unittest.txt"
+static void skit_pfile_utest_prep_file(skit_slice contents);
+static void skit_pfile_utest_rm();
+
+/* ------------------------------------------------------------------------- */
+
 static skit_loaf *skit_pfile_get_read_buffer( skit_pfile_stream_internal *pstreami, skit_loaf *arg_buffer )
 {
 	return skit_stream_get_read_buffer(&(pstreami->read_buffer), arg_buffer);
@@ -692,7 +698,49 @@ void skit_pfile_stream_close(skit_pfile_stream *stream)
 
 /* ------------------------------------------------------------------------- */
 
-#define SKIT_PFILE_UTEST_FILE "skit_pfile_unittest.txt"
+skit_slice skit_pfile_slurp_into( skit_slice file_path, skit_loaf *buffer )
+sSCOPE
+	SKIT_USE_FEATURE_EMULATION;
+	sASSERT(buffer != NULL);
+
+	skit_pfile_stream pstream;
+
+	sTRACE1(skit_pfile_stream_ctor(&pstream));
+	sSCOPE_EXIT(skit_pfile_stream_dtor(&pstream));
+
+	sTRACE1(skit_pfile_stream_open(&pstream, file_path, "r"));
+	sSCOPE_EXIT(skit_pfile_stream_close(&pstream));
+
+	skit_slice contents = sETRACE1(skit_pfile_stream_slurp(&pstream, buffer));
+	if ( sSPTR(contents) != sLPTR(*buffer) )
+	{
+		// If, for some odd reason, the stream decides to use its own internal
+		// buffer, then we must copy the contents out of it.
+		sTRACE1(skit_loaf_store_slice(buffer, contents));
+	}
+
+	sRETURN(contents);
+sEND_SCOPE
+
+static void skit_pfile_slurp_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+	SKIT_LOAF_ON_STACK(content_buffer, 1024);
+	
+	skit_slice expected_content = sSLICE("Slurp test.");
+	skit_pfile_utest_prep_file(expected_content);
+	skit_slice result_content = 
+		sETRACE(skit_pfile_slurp_into(sSLICE(SKIT_PFILE_UTEST_FILE), &content_buffer));
+	skit_pfile_utest_rm();
+
+	sASSERT_EQS(result_content, expected_content);
+
+	skit_loaf_free(&content_buffer);
+
+	printf("  skit_pfile_slurp_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
 
 typedef struct skit_pfile_utest_context skit_pfile_utest_context;
 struct skit_pfile_utest_context
@@ -812,6 +860,8 @@ void skit_pfile_stream_unittests()
 	skit_pfile_run_utest(&pstream, sSLICE(SKIT_REWIND_UNITTEST_CONTENTS),     &skit_stream_rewind_unittest);
 	
 	skit_pfile_stream_dtor(&pstream);
+
+	skit_pfile_slurp_test();
 
 	/* TODO: It would be nice if there was some way to test this automatically.  For now, this will at least make sure it doesn't crash. */
 	skit_stream_appendln(skit_stream_stdout, sSLICE("  skit_pfile_stream_stdout test passed."));
