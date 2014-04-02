@@ -129,27 +129,33 @@ void skit_print_mem(void *ptr, int size)
 
 const char *skit_errno_to_cstr( char *buf, size_t buf_size)
 {
-		#ifdef __VMS
-			/* strerror_r is not provided on OpenVMS, but supposedly strerror is thread-safe on VMS.
-			source: http://www.mail-archive.com/boost-cvs@lists.sourceforge.net/msg08433.html
-			(Search for "VMS doesn't provide strerror_r, but on this platform")
-			*/
-			const char *result = strerror(errno);
-		#elif defined(__linux__)
-			/* Linux: do it the normal way. */
-			char *result = buf;
-			
-			/* Reference: http://linux.die.net/man/3/strerror_r */
-			#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
-				int errval = strerror_r(errno, result, buf_size);
-				(void)errval;
-				/* TODO: what to do if (errval != 0) ? */
-			#else
-				result = strerror_r(errno, buf, buf_size);
-			#endif
-		#else
-		#	error "This requires porting."
-		#endif
-		
-		return buf;
+	return skit_error_code_to_cstr(errno, buf, buf_size);
 }
+
+const char *skit_error_code_to_cstr( int error_code, char *buf, size_t buf_size)
+{
+	#ifdef __VMS
+		/* strerror_r is not provided on OpenVMS, but supposedly strerror is thread-safe on VMS.
+		source: http://www.mail-archive.com/boost-cvs@lists.sourceforge.net/msg08433.html
+		(Search for "VMS doesn't provide strerror_r, but on this platform")
+		*/
+		const char *result = strerror(error_code);
+	#elif defined(__linux__)
+		/* Linux: do it the normal way. */
+		char *result = buf;
+		
+		/* Reference: http://linux.die.net/man/3/strerror_r */
+		#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+			int errval = strerror_r(error_code, result, buf_size);
+			(void)errval;
+			/* TODO: what to do if (errval != 0) ? */
+		#else
+			result = strerror_r(error_code, buf, buf_size);
+		#endif
+	#else
+	#	error "This requires porting."
+	#endif
+	
+	return buf;
+}
+

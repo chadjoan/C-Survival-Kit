@@ -37,4 +37,8 @@ This function will try to avoid allocations.  (TODO: does strerror on VMS guaran
 */
 const char *skit_errno_to_cstr( char *buf, size_t buf_size);
 
+/// This is similar to skit_errno_to_cstr, but this version allows the caller
+/// to pass an error code value that is to be used instead of global errno.
+const char *skit_error_code_to_cstr( int error_code, char *buf, size_t buf_size);
+
 #endif
