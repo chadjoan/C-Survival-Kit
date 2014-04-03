@@ -410,48 +410,66 @@ skit_slice skit_stream_buffered_slurp(
 	)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	const size_t default_chunk_size = 1024;
-	/*char chunk_buf[default_chunk_size]; */ /* This number is completely unoptimized. */
+	const size_t default_chunk_size = 1024; // This number is completely unoptimized.
 	sASSERT(context != NULL);
+
+	// If buffer is NULL, then we have no way to transfer ownership of the
+	// loaf to the caller, and any memory allocated will almost certainly be
+	// leaked.  Thus, the caller MUST provide us with a pointer to something
+	// that can reference any memory we allocate.
+	// (Streams can accept NULL buffer arguments because they have a way to
+	// buffer the memory internally.  This function does not have such a
+	// context.  Typically, the stream's internal buffer will be pointed to
+	// by the buffer argument, if the stream's caller didn't already provide
+	// their own buffer to use instead.)
+	sASSERT(buffer != NULL);
+
+	// It IS OK if the caller didn't allocate any memory.  We will just have
+	// to make some ourselves, in this case.  The caller is already responsible
+	// for any buffer allocations in this function.
+	if ( skit_loaf_is_null(*buffer) )
+		*buffer = skit_loaf_alloc(default_chunk_size);
 	
-	/* Make sure the buffer used is large enough. */
+	// Make sure the buffer used is large enough.
+	// If it is too small, then the resizes by %150 will truncate to be no
+	// larger than the size before the multiplication by %150,
+	//   Ex: (1 * 3) / 2 -> 3 / 2 -> integer(1.5) -> 1
+	// and that would prevent the buffer from ever growing.  We pick something
+	// that will grow reasonably fast, if needed.  8 is very conservative, but
+	// should work.
 	ssize_t buf_length = sLLENGTH(*buffer);
-	if ( (buffer == NULL && buf_length < default_chunk_size) || sLLENGTH(*buffer) < 8 )
+	if ( buf_length < 8 )
 	{
 		skit_loaf_resize(buffer, default_chunk_size);
 		buf_length = sLLENGTH(*buffer);
 	}
 	
-	/* Do the read. */
+	// Do the read.
 	size_t offset = 0;
 	size_t chunk_length = buf_length;
 	size_t nbytes_read = 0;
 	while ( 1 )
 	{
-		/* Grow buffer as needed. */
-		while ( (offset + chunk_length) < buf_length )
-		{
-			skit_loaf_resize(buffer, (buf_length * 3)/2);
-			buf_length = sLLENGTH(*buffer);
-		}
-		
-		/* Read the next chunk of bytes from the source. */
-		nbytes_read = sETRACE(data_source(context, sLPTR(*buffer) + offset, chunk_length));
-		
-		/* Check for EOF. */
+		// Read the next chunk of bytes from the source.
+		nbytes_read = sETRACE2(data_source(context, sLPTR(*buffer) + offset, chunk_length));
+
+		// ...
+		offset += nbytes_read;
+
+		// Check for EOF.
 		if ( nbytes_read < chunk_length )
 			break;
-		
-		/* ... */
-		offset += nbytes_read;
-		chunk_length = default_chunk_size; /* After the first resize, start reading this many bytes at a time. */
+	
+		// Grow by 1.5 each time, and prep the extra 0.5 for filling.
+		skit_loaf_resize(buffer, (buf_length * 3) / 2);
+		buf_length = sLLENGTH(*buffer);
+
+		chunk_length = buf_length - offset;
 	}
 
-	/* The slurp's total size will be the offset to the last chunk read plus */
-	/*   the number of bytes read into the last chunk. */
-	size_t slurp_length = offset + nbytes_read;
+	size_t slurp_length = offset;
 	
-	/* done. */
+	// done.
 	return skit_slice_of(buffer->as_slice, 0, slurp_length);
 }
 

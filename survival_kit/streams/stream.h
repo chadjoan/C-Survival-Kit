@@ -504,6 +504,11 @@ bytes from the stream and place them into a buffer.
 The return value for data_source should indicate the number of bytes read
 from the stream and written into 'sink'.  A return value less than the
 requested_chunk_size shall indicate an end-of-stream condition.
+
+Passing a value of NULL into the 'buffer' argument may trigger assertions or
+segfaults; don't do it.  It is, however, allowable to pass a pointer to a
+skit_loaf whose value is skit_loaf_null().  After completion of the call, the
+caller will own the skit_loaf that is pointed to by the 'buffer' argument.
 */
 skit_slice skit_stream_buffered_slurp(
 	void *context,
