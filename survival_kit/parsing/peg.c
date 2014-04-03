@@ -768,6 +768,429 @@ static int skit_peg_module_initialized = 0;
 pthread_mutex_t      skit_peg__lookup_mutex;
 pthread_mutexattr_t  skit_peg__lookup_mutex_attrs;
 
+/* ------------------------------------------------------------------------- */
+
+static void skit_peg_get_line_bounds(const char *input, ssize_t cursor, ssize_t ubound, ssize_t *begin, ssize_t *end)
+{
+	if ( cursor > ubound )
+		cursor = ubound;
+	if ( cursor < 0 )
+		cursor = 0;
+
+	ssize_t line_start = cursor-1;
+	if ( line_start < 0 )
+		line_start = 0;
+
+	while (1)
+	{
+		char c = input[line_start];
+		if ( c == '\n' || c == '\r' )
+		{
+			line_start++;
+			break;
+		}
+
+		if ( line_start == 0 )
+			break;
+
+		line_start--;
+	}
+
+	ssize_t line_end = cursor;
+	while(line_end < ubound)
+	{
+		char c = input[line_end];
+		if ( c == '\n' || c == '\r' )
+			break;
+		line_end++;
+	}
+
+	*begin = line_start;
+	*end = line_end;
+}
+
+static void skit_peg_line_bounds_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+	const char *str = "foo\nbar\nbaz";
+	ssize_t ubound = strlen(str);
+	ssize_t lo, hi;
+
+	skit_peg_get_line_bounds(str, 0, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 0);
+	sASSERT_EQ(hi, 3);
+
+	skit_peg_get_line_bounds(str, 2, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 0);
+	sASSERT_EQ(hi, 3);
+
+	skit_peg_get_line_bounds(str, 3, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 0);
+	sASSERT_EQ(hi, 3);
+
+	skit_peg_get_line_bounds(str, 4, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 4);
+	sASSERT_EQ(hi, 7);
+
+	skit_peg_get_line_bounds(str, 6, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 4);
+	sASSERT_EQ(hi, 7);
+
+	skit_peg_get_line_bounds(str, 7, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 4);
+	sASSERT_EQ(hi, 7);
+
+	skit_peg_get_line_bounds(str, 8, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 8);
+	sASSERT_EQ(hi, 11);
+
+	skit_peg_get_line_bounds(str, 9, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 8);
+	sASSERT_EQ(hi, 11);
+
+	skit_peg_get_line_bounds(str,11, ubound, &lo, &hi);
+	sASSERT_EQ(lo, 8);
+	sASSERT_EQ(hi, 11);
+
+	printf("  skit_peg_line_bounds_test passed.\n");
+}
+
+static const char *skit__peg_rule_name(const char *func_name)
+{
+	const char *rule_name = func_name;
+	skit_slice func = skit_slice_of_cstr(func_name);
+	skit_slice rule_prefix = sSLICE("SKIT_PEG_");
+	if ( skit_slice_match(func, rule_prefix, 0) )
+		rule_name = func_name + sSLENGTH(rule_prefix);
+	return rule_name;
+}
+
+static void skit__peg_print_marker(
+	skit_stream *output_stream,
+	const char *text_ptr,
+	ssize_t view_begin,
+	ssize_t view_end,
+	ssize_t marker_pos,
+	const char *marker_name
+)
+{
+	sASSERT_LE(view_begin, view_end);
+
+	int n_chars_before_marker = marker_pos - view_begin;
+	int n_chars_after_marker = view_end - marker_pos;
+
+	const char *trail_before = "";
+	if ( n_chars_before_marker < 0 )
+		trail_before = "... ";
+
+	const char *trail_after = "";
+	if ( n_chars_after_marker < 0 ) // marker_pos is past view_end
+		trail_after = "... ";
+
+	if ( n_chars_before_marker >= 1 && n_chars_after_marker >= 1 )
+	{
+		// Case where the marker has text from the view on both sides.
+		//
+		// Ex: 'foo' marker@3 'bar'
+		skit_stream_appendf(output_stream,
+			"'%.*s' %s@%lld '%.*s'",
+			n_chars_before_marker, text_ptr + view_begin,
+			marker_name,
+			(long long int)marker_pos,
+			n_chars_after_marker, text_ptr + marker_pos);
+	}
+	else if ( n_chars_before_marker >= 1 )
+	{
+		// Case where the marker has text before it, but not after.
+		//
+		// Ex: 'foo' ... marker@3
+		skit_stream_appendf(output_stream,
+			"'%.*s' %s%s@%lld",
+			n_chars_before_marker, text_ptr + view_begin,
+			trail_after,
+			marker_name,
+			(long long int)marker_pos);
+	}
+	else if ( n_chars_after_marker >= 1 )
+	{
+		// Case where the marker has text after it, but not before.
+		skit_stream_appendf(output_stream,
+			"%s@%lld %s'%.*s'",
+			marker_name,
+			(long long int)marker_pos,
+			trail_before,
+			n_chars_after_marker, text_ptr + view_begin);
+	}
+	else
+	{
+		// Case where the view is empty.
+		// Currently there isn't any distinguishing between the marker being
+		// before/after/coincident-with the view, because this case is unlikely
+		// to even happen very often at all.
+		//
+		// Ex: marker@0
+		skit_stream_appendf(output_stream,
+			"%s@%lld",
+			marker_name,
+			(long long int)marker_pos);
+	}
+
+}
+
+static void skit__peg_print_selection(
+	skit_stream *output_stream,
+	const char *text_ptr,
+	ssize_t view_begin,
+	ssize_t view_end,
+	ssize_t selection_begin,
+	ssize_t selection_end,
+	const char *selection_begin_name,
+	const char *selection_end_name
+)
+{
+	sASSERT_LE(selection_begin, selection_end);
+	sASSERT_LE(view_begin, view_end);
+
+	// Selection is entirely past the view.
+	if ( selection_begin >= view_end )
+	{
+		skit__peg_print_marker(
+			output_stream,
+			text_ptr,
+			view_begin, view_end,
+			selection_begin,
+			selection_begin_name);
+		if ( selection_begin < selection_end )
+			skit_stream_appendf(output_stream, " ...");
+		skit_stream_appendf(output_stream, " %s@%lld",
+			selection_end_name,
+			(long long int)selection_end);
+		return;
+	}
+
+	// Selection is entirely before the view.
+	if ( selection_end <= view_begin )
+	{
+		skit_stream_appendf(output_stream, "%s@%lld ",
+			selection_begin_name,
+			(long long int)selection_begin);
+		if ( selection_begin < selection_end )
+			skit_stream_appendf(output_stream, "... ");
+		skit__peg_print_marker(
+			output_stream,
+			text_ptr,
+			view_begin, view_end,
+			selection_end,
+			selection_end_name);
+		return;
+	}
+
+	sASSERT_LT(selection_begin, view_end);
+	sASSERT_LT(view_begin, selection_end);
+
+	int n_chars_before_seln = selection_begin - view_begin;
+	int n_chars_after_seln = view_end - selection_end;
+
+	int n_chars_selected =
+		SKIT_MIN(view_end,  selection_end) -
+		SKIT_MAX(view_begin,selection_begin);
+
+	const char *trail_before = "";
+	if ( n_chars_before_seln < 0 )
+		trail_before = "... ";
+
+	const char *trail_after = "";
+	if ( n_chars_after_seln < 0 ) // selection_end is past view_end
+		trail_after = "... ";
+
+	if ( n_chars_before_seln >= 1 && n_chars_after_seln >= 1 )
+	{
+		// Case where the selection is entirely within the view.
+		//
+		// Ex: 'foo' begin@3 'bar' end@6 'baz'
+		skit_stream_appendf(output_stream,
+			"'%.*s' %s@%lld '%.*s' %s@%lld '%.*s'",
+			n_chars_before_seln, text_ptr + view_begin,
+			selection_begin_name,
+			(long long int)selection_begin,
+			n_chars_selected, text_ptr + selection_begin,
+			selection_end_name,
+			(long long int)selection_end,
+			n_chars_after_seln, text_ptr + selection_end);
+	}
+	else if ( n_chars_before_seln >= 1 )
+	{
+		// Case where the end of the selection is either at the end of the view
+		// or is not within the view at all.
+		//
+		// Ex: 'foo' begin@3 'bar' ... end@687
+		skit_stream_appendf(output_stream,
+			"'%.*s' %s@%lld '%.*s' %s%s@%lld",
+			n_chars_before_seln, text_ptr + view_begin,
+			selection_begin_name,
+			(long long int)selection_begin,
+			n_chars_selected, text_ptr + selection_begin,
+			trail_after,
+			selection_end_name,
+			(long long int)selection_end);
+	}
+	else if ( n_chars_after_seln >= 1 )
+	{
+		// Case where the beginning of the selection is either at the beginning
+		// of the view or not within the view at all.
+		//
+		// Ex: begin@0 ... 'bar' end@687 'baz' 
+		skit_stream_appendf(output_stream,
+			"%s@%lld %s'%.*s' %s@%lld '%.*s'",
+			selection_begin_name,
+			(long long int)selection_begin,
+			trail_before,
+			n_chars_selected, text_ptr + view_begin,
+			selection_end_name,
+			(long long int)selection_end,
+			n_chars_after_seln, text_ptr + selection_end);
+	}
+	else
+	{
+		// Case where the view is entirely within the selection.
+		//
+		// Ex: begin@0 'bar' end@3
+		// or
+		// Ex: begin@0 ... 'bar' ... end@687
+		skit_stream_appendf(output_stream,
+			"%s@%lld %s'%.*s' %s%s@%lld",
+			selection_begin_name,
+			(long long int)selection_begin,
+			trail_before,
+			n_chars_selected, text_ptr + view_begin,
+			trail_after,
+			selection_end_name,
+			(long long int)selection_end);
+	}
+
+}
+
+void skit__peg_on_entry(
+	skit_peg_parser *parser,
+	ssize_t cursor,
+	ssize_t ubound,
+	const char *func_name)
+{
+	const char *rule_name = skit__peg_rule_name(func_name);
+
+	const char *text_ptr = (char*)sSPTR(parser->input);
+	ssize_t text_len = sSLENGTH(parser->input);
+
+	ssize_t line_begin = 0;
+	ssize_t line_end = 0;
+	skit_peg_get_line_bounds(
+		text_ptr, cursor, text_len,
+		&line_begin, &line_end);
+
+	skit_stream_appendf(parser->debug_out, "Entering RULE(%s,...), current line: ", rule_name);
+
+	skit__peg_print_selection(
+		parser->debug_out,
+		text_ptr,
+		line_begin, // view_begin
+		line_end,   // view_end
+		cursor,     // selection_begin
+		ubound,     // selection_end
+		"c",        // selection_begin_name,
+		"eot"       // selection_end_name
+	);
+
+	skit_stream_appendf(parser->debug_out, "\n");
+
+	skit_stream_incr_indent(parser->debug_out);
+}
+
+void skit__peg_on_exit(
+	skit_peg_parser      *parser,
+	skit_peg_parse_match match,
+	const char *func_name)
+{
+	skit_stream_decr_indent(parser->debug_out);
+
+	const char *rule_name = skit__peg_rule_name(func_name);
+
+	if ( !match.successful )
+	{
+		// In this case, we don't care about showing what the match selected,
+		// because there is no match.  The only other relevant info from the
+		// body of text being parsed is the text surrounding the match attempt,
+		// but that was already displayed on entry.
+		// This leaves us with just the error message, so let's display that.
+		skit_stream_appendf(parser->debug_out,
+			"RULE(%s) -> match failed: \"%.*s\"\n",
+			rule_name,
+			(int)sSLENGTH(parser->last_error_msg),
+			sSPTR(parser->last_error_msg));
+		return;
+	}
+
+	// Successful match: let's show what was matched.
+	const char *text_ptr = (char*)sSPTR(parser->input);
+	ssize_t text_len = sSLENGTH(parser->input);
+
+	ssize_t line1_begin = 0;
+	ssize_t line1_end = 0;
+	skit_peg_get_line_bounds(
+		text_ptr, match.begin, text_len,
+		&line1_begin, &line1_end);
+
+	ssize_t line2_begin = 0;
+	ssize_t line2_end = 0;
+	skit_peg_get_line_bounds(
+		text_ptr, match.end, text_len,
+		&line2_begin, &line2_end);
+
+	skit_stream_appendf(parser->debug_out, "RULE(%s) -> matched ", rule_name);
+
+	if ( line1_begin == line2_begin )
+	{
+		// It's all on one line; simplify it.
+		skit__peg_print_selection(
+			parser->debug_out,
+			text_ptr,
+			line1_begin, // view_begin
+			line1_end,   // view_end
+			match.begin, // selection_begin
+			match.end,   // selection_end
+			"begin",     // selection_begin_name,
+			"end"        // selection_end_name
+		);
+	}
+	else
+	{
+		// Multi-line match.		
+
+		skit__peg_print_marker(
+			parser->debug_out,
+			text_ptr,
+			line1_begin, // ssize_t view_begin,
+			line1_end,   // ssize_t view_end,
+			match.begin, // ssize_t marker_pos,
+			"begin"      // const char *marker_name
+		);
+
+		skit_stream_appendf(parser->debug_out, " ... ");
+
+		skit__peg_print_marker(
+			parser->debug_out,
+			text_ptr,
+			line2_begin, // ssize_t view_begin,
+			line2_end,   // ssize_t view_end,
+			match.end,   // ssize_t marker_pos,
+			"end"        // const char *marker_name
+		);
+	}
+
+	skit_stream_appendf(parser->debug_out, "\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 void skit_peg_module_init()
 {
 	SKIT_USE_FEATURE_EMULATION;
@@ -802,6 +1225,7 @@ void skit_peg_unittests()
 	sTRACE(skit_peg_any_word_test());
 	sTRACE(skit_peg_lookup_test());
 	sTRACE(skit_peg_branch_discard_test());
+	sTRACE(skit_peg_line_bounds_test());
 	printf("  skit_peg_parser_unittests all passed!\n");
 	printf("\n");
 }

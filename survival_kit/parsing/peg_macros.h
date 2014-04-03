@@ -12,27 +12,12 @@
 
 #  define SKIT__PEG_PRINT_ENTRY() \
 	do { \
-		skit_stream_appendf(parser->debug_out, \
-			"%s('%.*s',%ld,%ld,...)\n", __func__, \
-			(int)sSLENGTH(parser->input), sSPTR(parser->input), \
-			cursor, ubound); \
-		skit_stream_incr_indent(parser->debug_out); \
+		skit__peg_on_entry(parser, cursor, ubound, __func__); \
 	} while(0)
 
 #  define SKIT__PEG_PRINT_EXIT()  \
 	do { \
-		skit_stream_decr_indent(parser->debug_out); \
-		if ( match.successful ) { \
-			skit_slice matched = skit_slice_of(parser->input, match.begin, match.end); \
-			skit_stream_appendf(parser->debug_out, \
-				"%s -> matched \"%.*s\"\n", __func__, \
-				(int)sSLENGTH(matched), sSPTR(matched)); \
-		} else { \
-			skit_stream_appendf(parser->debug_out, \
-				"%s -> match failed: \"%.*s\"\n", __func__, \
-				(int)sSLENGTH(parser->last_error_msg), \
-				sSPTR(parser->last_error_msg)); \
-		} \
+		skit__peg_on_exit(parser, match, __func__); \
 	} while(0)
 
 #else

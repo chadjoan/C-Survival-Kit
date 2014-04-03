@@ -214,6 +214,18 @@ skit_peg_parse_match SKIT_PEG_any_word(
 extern  pthread_mutex_t      skit_peg__lookup_mutex;
 extern  pthread_mutexattr_t  skit_peg__lookup_mutex_attrs;
 
+/// Internal use only
+void skit__peg_on_entry(
+	skit_peg_parser *parser,
+	ssize_t cursor,
+	ssize_t ubound,
+	const char *func_name);
+
+void skit__peg_on_exit(
+	skit_peg_parser      *parser,
+	skit_peg_parse_match match,
+	const char *func_name);
+
 void skit_peg_module_init();
 
 void skit_peg_unittests();
