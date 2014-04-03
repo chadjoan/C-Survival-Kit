@@ -90,13 +90,6 @@ skit_slice skit_pfile_stream_to_slice(skit_pfile_stream *stream, skit_loaf *buff
 void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output);
 void skit_pfile_stream_dtor(skit_pfile_stream *stream);
 
-/// Releases any file-handling resources related to the stream.
-/// This does not free the stream object itself, nor does it free any internal
-/// buffers used by the stream.  Thus, it is possible to efficiently re-use
-/// a pfile stream on multiple files and minimize the amount of malloc/free
-/// calls per-file.
-void skit_pfile_stream_close(skit_pfile_stream *stream);
-
 // As of this writing, this macro symbol is defined nowhere.
 // It is placed as a way to indicate that the given function definition is
 // not supposed to exist, because it is actually implemented as a macro.
@@ -125,6 +118,26 @@ arguments to the OpenVMS fopen. */
 #define skit_pfile_stream_open(stream,fname,...) \
 	skit__pfile_stream_assign_fp(stream, fopen(skit__pfile_stream_populate(stream, fname, SKIT_PFILE_FIRST_VARG(__VA_ARGS__)), SKIT_PFILE_FIRST_VARG(__VA_ARGS__)))
 #endif
+
+/// Opens a file stream using the given handle.
+/// Unlike with skit_pfile_stream_open, the caller will be responsible for
+/// calling fclose/pclose/whatever on the file_handle.
+/// The caller must still call skit_pfile_stream_close when they are done.
+/// NOTE: It is odd that the name and access_mode must be supplied for an
+///   already-opened file_handle.  Perhaps there is a better way?
+///   This might change in the future: these arguments may be removed.
+void skit_pfile_stream_use_handle(
+	skit_pfile_stream *pstream,
+	FILE *file_handle,
+	skit_slice name,
+	const char *access_mode );
+
+/// Releases any file-handling resources related to the stream.
+/// This does not free the stream object itself, nor does it free any internal
+/// buffers used by the stream.  Thus, it is possible to efficiently re-use
+/// a pfile stream on multiple files and minimize the amount of malloc/free
+/// calls per-file.
+void skit_pfile_stream_close(skit_pfile_stream *stream);
 
 /* Internal use functions that are used in the skit_pfile_stream_open macro. */
 /* Do not use directly. */

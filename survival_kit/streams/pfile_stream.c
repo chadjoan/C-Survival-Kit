@@ -127,18 +127,22 @@ void skit_pfile_stream_ctor(skit_pfile_stream *pstream)
 
 /* ------------------------------------------------------------------------- */
 
-static skit_pfile_stream *skit_pfile_stream_from_handle( FILE *file_handle, skit_slice name )
+void skit_pfile_stream_use_handle( skit_pfile_stream *pstream, FILE *file_handle, skit_slice name, const char *access_mode )
 {
-	skit_pfile_stream *result = skit_pfile_stream_new();
-	skit_pfile_stream_internal *pstreami = &(result->as_internal);
+	skit_pfile_stream_internal *pstreami = &(pstream->as_internal);
 	
 	pstreami->name = skit_loaf_dup(name);
-	pstreami->access_mode = skit_loaf_copy_cstr("rw");
+	pstreami->access_mode = skit_loaf_copy_cstr(access_mode);
 	
 	pstreami->file_handle = file_handle;
 	
 	pstreami->handle_owned_by_stream = 0;
-	
+}
+
+static skit_pfile_stream *skit_pfile_stream_from_handle( FILE *file_handle, skit_slice name, const char *access_mode )
+{
+	skit_pfile_stream *result = skit_pfile_stream_new();
+	skit_pfile_stream_use_handle(result, file_handle, name, access_mode);
 	return result;
 }
 
@@ -151,7 +155,7 @@ skit_pfile_stream *skit__pfile_stderr_cache = NULL;
 skit_pfile_stream *skit__pfile_stream_cached( FILE *file_handle, skit_pfile_stream **cached_stream, skit_slice name )
 {
 	if ( *cached_stream == NULL )
-		*cached_stream = skit_pfile_stream_from_handle(file_handle, name);
+		*cached_stream = skit_pfile_stream_from_handle(file_handle, name, "rw");
 	
 	return *cached_stream;
 }
