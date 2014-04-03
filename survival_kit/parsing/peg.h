@@ -157,6 +157,10 @@ skit_peg_parse_match SKIT_PEG_non_whitespace(skit_peg_parser *parser, ssize_t cu
 ///   at the parser's current cursor position.
 skit_peg_parse_match SKIT_PEG_word_boundary(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound);
 
+/// Invoke as "RULE(end_of_text)" to determine if the text ends at the parser's
+///   current cursor position.
+skit_peg_parse_match SKIT_PEG_end_of_text(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound);
+
 // Internal use.
 skit_peg_parse_match skit__peg_parse_token(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound, skit_slice token);
 skit_peg_parse_match skit__peg_parse_keyword(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound, skit_slice keyword);

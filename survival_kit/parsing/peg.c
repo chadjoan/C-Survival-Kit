@@ -384,6 +384,43 @@ static void skit_peg_word_boundary_test()
 
 /* ------------------------------------------------------------------------- */
 
+skit_peg_parse_match SKIT_PEG_end_of_text(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound)
+{
+	skit_slice next_chars;
+	if ( cursor < ubound )
+	{
+		next_chars = skit_peg_next_chars_in_parse(parser,cursor,NUM_NEXT_CHARS);
+		return skit_peg_match_failure(parser, cursor, "Expected token end-of-text, instead got '%.*s'",
+			sSLENGTH(next_chars), sSPTR(next_chars) );
+	}
+
+	return skit_peg_match_success(parser, cursor, cursor);
+}
+
+static void skit_peg_end_of_text_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+	skit_peg_parser *parser = NULL;
+	ssize_t ubound = 0;
+
+	//
+	parser = skit_peg_parser_mock_new(sSLICE("."));
+	ubound = sSLENGTH(parser->input);
+	sASSERT_EQ(SKIT_PEG_end_of_text(parser, 0, ubound).successful,  0);
+	sASSERT_EQ(SKIT_PEG_end_of_text(parser, 1, ubound).successful,  1);
+	skit_peg_parser_mock_free(parser);
+	
+	//
+	parser = skit_peg_parser_mock_new(sSLICE(""));
+	ubound = sSLENGTH(parser->input);
+	sASSERT_EQ(SKIT_PEG_end_of_text(parser, 0, ubound).successful,  1);
+	skit_peg_parser_mock_free(parser);
+	
+	printf("  skit_peg_end_of_text_test passed.\n");
+}
+
+/* ------------------------------------------------------------------------- */
+
 skit_peg_parse_match skit__peg_parse_token(skit_peg_parser *parser, ssize_t cursor, ssize_t ubound, skit_slice token)
 {
 	skit_slice next_chars;
@@ -760,6 +797,7 @@ void skit_peg_unittests()
 	sTRACE(skit_peg_parse_one_newline_test());
 	sTRACE(skit_peg_whitespace_test());
 	sTRACE(skit_peg_word_boundary_test());
+	sTRACE(skit_peg_end_of_text_test());
 	// TODO: token, keyword tests.
 	sTRACE(skit_peg_any_word_test());
 	sTRACE(skit_peg_lookup_test());
