@@ -249,7 +249,7 @@ static void skit_peg_whitespace_test()
 
 skit_peg_parse_match SKIT_PEG_success( skit_peg_parser *parser, ssize_t cursor, ssize_t ubound )
 {
-	return skit_peg_match_success(parser, cursor, ubound);
+	return skit_peg_match_success(parser, cursor, cursor);
 }
 
 skit_peg_parse_match SKIT_PEG_failure( skit_peg_parser *parser, ssize_t cursor, ssize_t ubound )
@@ -265,8 +265,15 @@ static void skit_peg_macros_test()
 	
 	RULE(success);
 	sASSERT_EQ(match.successful, 1);
+	sASSERT_EQ(match.begin, 0);
+	sASSERT_EQ(match.end, 0);
+
 	RULE(failure);
 	sASSERT_EQ(match.successful, 0);
+	sASSERT_EQ(match.begin, 0);
+
+	sASSERT_EQ(cursor, 0);
+	sASSERT_EQ(new_cursor, 0);
 
 	SEQ( RULE(success), RULE(success) );
 	sASSERT_EQ(match.successful, 1);
