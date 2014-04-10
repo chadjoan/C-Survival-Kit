@@ -422,6 +422,79 @@ sSCOPE
 	sRETURN(count);
 sEND_SCOPE
 
+#if 0
+// Since the time of the skit_scope_vms_return_test, another return-corrupting
+// bug has been found on VMS.  The test case is difficult to reduce to the
+// point where it does not use skit_slice or skit_vptr_loaf objects, so there
+// is not currently an executable version of the test.
+// (Sorry, I gave up!  This was taking too long to isolate, and VMS compile
+// times are sloooow. --Chad).
+// The difference in pointers between the two prints of SKIT__sRETURN_TMP are
+// the main problem here.  That value should stay the same.  This can be fixed
+// by having the volatile variable store the address of the original variable,
+// thus ensuring that the original variable is not enregistered sometime 
+// before the volatile assignment (and it also makes sure that the volatile
+// variable is not somehow aliased to the non-volatile original...).  It almost
+// seems as if the VMS DECC (compiler) is ignoring the volatile status in this
+// specific instance.
+// Anyhow, here is what the test looks like:
+
+static void *skit_scope_vms_ret_test2(
+	void  *a1,
+	void  *a2,
+	const void **a3a,
+	const int64_t a3b,
+	const void *a4)
+sSCOPE
+	SKIT_USE_FEATURE_EMULATION;
+	void *v1 = NULL;
+	void *v2 = v1;
+	if(1) {
+		void *nv1 = NULL;
+		void *nv2 = NULL;
+		char *nv3a = NULL;
+		int64_t nv3b = 0;
+		int        nv4 = __LINE__;
+		skit_slice nv5 = sSLICE(__func__);
+		int        nv6 = 1;
+		printf("lotsa pointers: %p %p %p %p %p %p %p\n",
+			&nv1, &nv2, &nv3a, &nv3b, &nv4, &nv5, &nv6);
+	}
+
+	printf("%s, %d: a2== %016llx\n", __func__, __LINE__, (long long int)a2);
+	ssize_t v3 = 17;
+	void **v4 = NULL;
+
+	ssize_t v5;
+	
+	SKIT_ARRAY_ON_STACK(skit_vptr_loaf, v6, 0);
+	sSCOPE_EXIT(skit_vptr_loaf_free(&v6));
+	
+	char *v7a = "";
+	void *v7b = NULL;
+	
+	void *v8 = NULL;
+	printf("v8: %p\n", v8);
+
+	printf("pointers: %p %p %p %p\n", &v7a, &v7b, &v5, &v6);
+	printf("moar: %p %p\n", &v3, &v4);
+	printf("v1: %p\n", &v1);
+	printf("v2: %p\n", &v2);
+
+	printf("%s, %d: a2== %016llx\n", __func__, __LINE__, (long long int)a2);
+	//sRETURN(a2);
+	{
+		SKIT_RETURN_COMMON
+		volatile __typeof__((a2)) SKIT__sRETURN_TMP = (a2);
+		printf("%s, %d: SKIT__sRETURN_TMP == %016llx\n", __func__, __LINE__, (long long int)SKIT__sRETURN_TMP);
+		SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT);
+		printf("%s, %d: SKIT__sRETURN_TMP == %016llx\n", __func__, __LINE__, (long long int)SKIT__sRETURN_TMP);
+		return SKIT__sRETURN_TMP;
+	}
+sEND_SCOPE
+
+#endif
+
 static void unittest_scope()
 {
 	SKIT_USE_FEATURE_EMULATION;

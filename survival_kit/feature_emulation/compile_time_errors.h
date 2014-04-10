@@ -191,9 +191,10 @@ from sTRY-sCATCH blocks.
 		return; \
 	}
 
-// Note that we store the return value into a volatile variable before
-// SKIT__SCAN_SCOPE_GUARDS.  This is because SKIT__SCAN_SCOPE_GUARDS calls
-// longjmp, and setjmp/longjmp implementations tend to come with this caveat:
+// Note that, before we call SKIT__SCAN_SCOPE_GUARDS, we store the return value
+// into an array declared before any setjmp calls.  This is because
+// SKIT__SCAN_SCOPE_GUARDS calls longjmp, and setjmp/longjmp implementations
+// tend to come with this caveat:
 //
 //   All accessible objects have values as of the time longjmp() was called, 
 //   except that the values of objects of automatic storage duration which are
@@ -213,32 +214,73 @@ from sTRY-sCATCH blocks.
 // then restored when longjmp is called.  Any changes to those registers
 // between the setjmp/longjmp calls are lost.
 // 
-// Storing 'expr' into a volatile variable prevents the caller from attempting
-// to return a local variable that isn't volatile-qualified by forcing the
-// return value to be volatile-qualified.  That should force the value to
-// be written into memory or otherwise removed from the register bank, which
-// /should/ make the value survive the subsequent longjmp.  Other values in
-// the call stack have no consequence: they are going to fall out of scope
-// anyways.
-//
-// The only doubt is this: examples that I (Chad Joan) have read so far tend to
-// show volatile variables declared before setjmp is called, thus making all
-// operations between setjmp/longjmp occur on a /volatile/ variable.  In this
-// case the caller is potentially doing operations on a not-volatile-qualified
-// variable between setjmp/longjmp, and then saving it into a volatile one at
-// the last moment.  This could be slightly different, depending on how the
-// above quote is understood by the C compilter's writer.  *Fingers crossed*
+// longjmp also clobbers the stack pointer, which can combine with function
+// calls (usually from within scope guards) to clobber any variables/arrays/etc
+// stored on the stack after the corresponding call to setjmp.
 //
 // This is tested by the skit_scope_vms_return_test() function in the
 // feature emulation unittests (feature_emulation/unittests.c).
 //
+// TODO: HACK: It might be best to just stick SKIT__sRETURN_STORAGE into a
+//   malloc'ed object like some stack in the thread context.  Technically, C99
+//   still doesn't guarantee the safety of SKIT__sRETURN_TMP, even though it
+//   was declared (and hopefully allocated) before any setjmps occured.  The
+//   scope context object has similar concerns.  The tricky part is that this
+//   kind of solution needs to account for the possibility of a function
+//   invoked from a scope guard deciding to sRETURN (and thus potentially
+//   overwriting the sRETURN storage for the earlier scope-guarded function).
+//   It should also be efficient and avoid malloc and complex pointer
+//   traversals during function entry.  (Scope guards are unavoidably
+//   expensive, but you should only pay for what you use, so function entry is
+//   still expected to be relatively cheap.  Maybe allocate memory upon
+//   entering the first scope guard definition?)
+//
 #define SKIT_RETURN_INTERNAL1(expr) \
 	{ \
 		SKIT_RETURN_COMMON \
-		volatile __typeof__((expr)) SKIT__sRETURN_TMP = (expr); \
+		\
+		/* char SKIT__sreturn_value_must_be_less_than_128_bytes[ */ \
+		/*	(sizeof((expr)) <= sizeof(SKIT__sRETURN_STORAGE)) ? 1 : -1]; */ \
+		/*(void)SKIT__sreturn_value_must_be_less_than_128_bytes;*/ \
+		\
+		/* Create a temporary so that we have the expressions' value in a */ \
+		/* form that is guaranteed to be an lvalue (and thus have an address). */ \
+		__typeof__((expr)) SKIT__sRETURN_TMP = (expr); \
+		\
+		/* Copy the value into memory that was (stack) allocated earlier */ \
+		/* than the earliest setjmp in the enclosing function. */ \
+		memcpy(SKIT__sRETURN_STORAGE, &SKIT__sRETURN_TMP, sizeof(SKIT__sRETURN_TMP)); \
+		\
+		/* Finally, scan (execute) the scope guards. */ \
 		SKIT__SCAN_SCOPE_GUARDS(SKIT_SCOPE_SUCCESS_EXIT); \
-		return SKIT__sRETURN_TMP; \
+		\
+		/* Return the data that we stored safely out of reach of the longjmp. */ \
+		SKIT__RETURN_OS_RET(expr) \
 	}
+
+#ifdef __VMS
+// VMS is special and requires an extra memcpy to avoid errors like this:
+//
+//   at line number N in file GIANT:[PATH.WITH.MANY.THINGS]MY_FILE.C;
+//
+//           sRETURN(0);
+//   ........^
+//   %CC-E-BADEXPR, Invalid expression.
+//   at line number M in file GIANT:[PATH.WITH.MANY.THINGS]MY_FILE.C;
+//
+//   static int my_function(int args)
+//   ^
+//   %CC-W-MISSINGRETURN, Non-void function "my_function" does not contain a return statement.
+//
+#define SKIT__RETURN_OS_RET(expr) \
+	memcpy(&SKIT__sRETURN_TMP, SKIT__sRETURN_STORAGE, sizeof(SKIT__sRETURN_TMP)); \
+	return SKIT__sRETURN_TMP;
+#else
+// Everything else can just do some pointer casting and avoid (more) 
+// unnecessary copying.
+#define SKIT__RETURN_OS_RET(expr) \
+	return *((__typeof((expr))*)&SKIT__sRETURN_STORAGE[0]);
+#endif
 
 #define sRETURN0()     SKIT_RETURN_INTERNAL0
 #define sRETURN1(expr) SKIT_RETURN_INTERNAL1(expr)
