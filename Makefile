@@ -47,6 +47,7 @@ OBJECT_FILES= \
 	obj/streams/pfile_stream.o \
 	obj/streams/tcp_stream.o \
 	obj/streams/ind_stream.o \
+	obj/streams/empty_stream.o \
 	obj/streams/init.o \
 	obj/init.o
 

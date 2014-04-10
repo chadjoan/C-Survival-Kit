@@ -41,7 +41,6 @@ skit_pfile_stream *skit__pfile_stream_cached( FILE *file_handle, skit_pfile_stre
 extern skit_ind_stream *skit__ind_stdout_cache;
 extern skit_ind_stream *skit__ind_stdin_cache;
 extern skit_ind_stream *skit__ind_stderr_cache;
-skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream );
 
 /** 
 These expose the standard stdout, stdin, and stderr file streams as pointers

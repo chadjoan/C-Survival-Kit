@@ -164,14 +164,6 @@ skit_ind_stream *skit__ind_stdout_cache = NULL;
 skit_ind_stream *skit__ind_stdin_cache  = NULL;
 skit_ind_stream *skit__ind_stderr_cache = NULL;
 
-skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream )
-{
-	if ( *cached_stream == NULL )
-		*cached_stream = skit_ind_stream_new(src);
-	
-	return *cached_stream;
-}
-
 /* ------------------------------------------------------------------------- */
 
 /* This readln implementation uses the advice posted by "R.." in the following

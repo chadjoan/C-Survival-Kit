@@ -35,6 +35,11 @@ union skit_ind_stream
 
 void skit_ind_stream_module_init();
 
+// Internal use only.
+// This is used by modules like pfile_stream and empty_stream as an easy way to
+// create singletons that are indentable by default.
+skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream );
+
 /**
 Allocates a new skit_ind_stream and calls skit_ind_stream_ctor(*) on it.
 If the caller wishes to stack-allocate the new instance, then they do not need

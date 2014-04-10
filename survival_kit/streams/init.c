@@ -9,6 +9,7 @@
 #include "survival_kit/streams/pfile_stream.h"
 #include "survival_kit/streams/tcp_stream.h"
 #include "survival_kit/streams/ind_stream.h"
+#include "survival_kit/streams/empty_stream.h"
 
 void skit_stream_module_init_all()
 {
@@ -18,4 +19,5 @@ void skit_stream_module_init_all()
 	skit_pfile_stream_module_init();
 	skit_tcp_stream_module_init();
 	skit_ind_stream_module_init();
+	skit_empty_stream_module_init();
 }

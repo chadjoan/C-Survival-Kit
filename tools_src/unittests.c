@@ -17,6 +17,7 @@
 #include "survival_kit/streams/pfile_stream.h"
 #include "survival_kit/streams/tcp_stream.h"
 #include "survival_kit/streams/ind_stream.h"
+#include "survival_kit/streams/empty_stream.h"
 
 #include <stdio.h> /* incase printf is needed. */
 
@@ -38,6 +39,7 @@ void skit_unittest_modules()
 	skit_pfile_stream_unittests();
 	skit_tcp_stream_unittests();
 	skit_ind_stream_unittests();
+	skit_empty_stream_unittests();
 	skit_unittest_signal_handling(); /* Must go LAST.  This test crashes. */
 }
 

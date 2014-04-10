@@ -64,6 +64,16 @@ void skit_ind_stream_module_init()
 
 /* ------------------------------------------------------------------------- */
 
+skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream )
+{
+	if ( *cached_stream == NULL )
+		*cached_stream = skit_ind_stream_new(src);
+	
+	return *cached_stream;
+}
+
+/* ------------------------------------------------------------------------- */
+
 skit_ind_stream *skit_ind_stream_new(skit_stream *backing)
 {
 	skit_ind_stream *result = (skit_ind_stream*)skit_malloc(sizeof(skit_ind_stream));
