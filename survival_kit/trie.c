@@ -75,6 +75,16 @@ typedef enum
 
 /* ------------------------------------------------------------------------- */
 
+typedef enum
+{
+	SKIT_TRIE_CASE_INVALID = 0,
+	SKIT_TRIE_CASE_SENSITIVE = 1,
+	SKIT_TRIE_CASE_TRY_UPPER = 2,
+	SKIT_TRIE_CASE_TRY_LOWER = 3
+} skit_trie_case_find_mode;
+
+/* ------------------------------------------------------------------------- */
+
 static void skit_trie_enforce_valid_flags(skit_flags flags_given, skit_flags flags_allowed)
 {
 	skit_flags bad_flags = flags_given & ~flags_allowed;
@@ -194,9 +204,20 @@ static skit_trie_coords skit_trie_next_node(
 	const uint8_t *key,
 	size_t key_len,
 	size_t pos,
-	int case_sensitive)
+	skit_trie_case_find_mode case_mode)
 {
-	FIND_DEBUG("skit_trie_next_node(trie, \"%.*s\", %ld)\n", (int)key_len, key, pos);
+#if SKIT_DO_FIND_DEBUG != 0
+	SKIT_LOAF_ON_STACK(escapify_buf, 128);
+	skit_slice key_escaped = skit_slice_escapify(skit_slice_of_cstrn((char*)key, key_len), &escapify_buf);
+	FIND_DEBUG("skit_trie_next_node(trie, \"%.*s\", %ld)\n", (int)sSLENGTH(key_escaped), (char*)sSPTR(key_escaped), pos);
+	skit_loaf_free(&escapify_buf);
+
+	if ( current == NULL )
+	{
+		skit_trie_dump(trie, skit_stream_stdout);
+		sASSERT(0);
+	}
+#endif
 
 	if ( current->nodes_len == 0 )
 	{
@@ -217,6 +238,9 @@ static skit_trie_coords skit_trie_next_node(
 		*/
 		FIND_DEBUG("%s, %d: Narrow node. node->chars == \"%.*s\"\n", __func__, __LINE__, (int)current->chars_len, (char*)current->chars);
 		size_t chars_len = current->chars_len;
+		int case_sensitive = 0;
+		if ( case_mode == SKIT_TRIE_CASE_SENSITIVE )
+			case_sensitive = 1;
 
 		size_t start_pos = pos;
 		size_t i = 0;
@@ -251,10 +275,16 @@ static skit_trie_coords skit_trie_next_node(
 		if ( pos >= key_len )
 			return skit_trie_stop_lookup(current, pos, 0);
 
+		char c = key[pos];
+		if ( case_mode == SKIT_TRIE_CASE_TRY_UPPER )
+			c = skit_char_ascii_to_upper(c);
+		else if ( case_mode == SKIT_TRIE_CASE_TRY_LOWER )
+			c = skit_char_ascii_to_lower(c);
+
 		size_t chars_len = current->chars_len;
 		size_t i = 0;
 		for ( ; i < chars_len; i++ )
-			if ( 0 == skit_char_ascii_ccmp(current->chars[i], key[pos], case_sensitive) )
+			if ( 0 == skit_char_ascii_cmp(current->chars[i], c) )
 				break;
 
 		if ( i == chars_len )
@@ -276,16 +306,18 @@ static skit_trie_coords skit_trie_next_node(
 		if ( pos >= key_len )
 			return skit_trie_stop_lookup(current, pos, 0);
 
-		skit_trie_node *next_node = NULL;
-		if ( case_sensitive )
-			next_node = current->nodes.table[key[pos]];
-		else
-		{
-			next_node = current->nodes.table[skit_char_ascii_to_upper(key[pos])];
-			if ( next_node == NULL )
-				next_node = current->nodes.table[skit_char_ascii_to_lower(key[pos])];
-		}
-		
+		// DO NOT make 'c' be of type 'char'.  'char' might be signed, and
+		// given its range of possible values and key[pos]'s range of possible
+		// values, it could end up being negative for high values of key[pos].
+		// To avoid squirrelly sign-expansion issues, we assign it to the
+		// appropriate integer type to begin with. 
+		size_t c = key[pos];
+		if ( case_mode == SKIT_TRIE_CASE_TRY_UPPER )
+			c = skit_char_ascii_to_upper(c);
+		else if ( case_mode == SKIT_TRIE_CASE_TRY_LOWER )
+			c = skit_char_ascii_to_lower(c);
+
+		skit_trie_node *next_node = current->nodes.table[c];
 		if ( next_node == NULL )
 			return skit_trie_stop_lookup(current, pos, 0);
 
@@ -298,13 +330,87 @@ static skit_trie_coords skit_trie_next_node(
 
 /* ------------------------------------------------------------------------- */
 
+// Recursive version of the latter half of skit_trie_find.
+// This is used for case insensitive lookups because it can do backtracking
+// and thus try all possible combinations of casing, as necessary.
+// It is probably slower than the non-recursive version, so it is not used
+// for case-sensitive iteration.
+static skit_trie_coords skit_trie_find_icase(
+	skit_trie *trie,
+	const uint8_t *key_ptr,
+	size_t key_len,
+	skit_trie_coords coords
+);
+
+static skit_trie_coords skit_trie_find_icase_r(
+	skit_trie *trie,
+	const uint8_t *key_ptr,
+	size_t key_len,
+	skit_trie_coords coords,
+	skit_trie_case_find_mode case_mode
+)
+{
+	FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
+	skit_trie_coords next_coords =
+		skit_trie_next_node(
+			trie,
+			coords.node,
+			key_ptr,
+			key_len,
+			coords.pos,
+			case_mode);
+
+	if ( next_coords.lookup_stopped )
+		return next_coords;
+
+	if ( skit_exact_match(next_coords, key_len) )
+		return next_coords;
+
+	// Continue.
+	return skit_trie_find_icase(trie, key_ptr, key_len, next_coords);
+}
+
+static skit_trie_coords skit_trie_find_icase(
+	skit_trie *trie,
+	const uint8_t *key_ptr,
+	size_t key_len,
+	skit_trie_coords coords
+)
+{
+	FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
+	skit_trie_coords end_coords_a = skit_trie_find_icase_r(
+		trie, key_ptr, key_len, coords, SKIT_TRIE_CASE_TRY_UPPER);
+
+	if ( end_coords_a.lookup_stopped && !skit_exact_match(end_coords_a, key_len) )
+	{
+		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
+		skit_trie_coords end_coords_b = skit_trie_find_icase_r(
+			trie, key_ptr, key_len, coords, SKIT_TRIE_CASE_TRY_LOWER);
+
+		// Make sure we return the MOST SUCCESSFUL match, otherwise prefix
+		// matching will be all messed up.
+		// And prefix matching is important for insertion...
+		if ( end_coords_a.pos > end_coords_b.pos )
+			return end_coords_a;
+		else
+			return end_coords_b;
+	}
+	else
+	{
+		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
+		return end_coords_a;
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+
 static skit_trie_coords skit_trie_find(
 	skit_trie *trie,
 	const uint8_t *key_ptr,
 	size_t key_len,
 	int case_sensitive)
 {
-	FIND_DEBUG("skit_trie_find(trie, \"%.*s\")\n", (int)key_len, key_ptr);
+	FIND_DEBUG("%s(trie, \"%.*s\")\n", __func__, (int)key_len, key_ptr);
 	sASSERT(key_ptr != NULL);
 
 	FIND_DEBUG("%s, %d: trie->root == %p\n", __func__, __LINE__, trie->root);
@@ -312,17 +418,16 @@ static skit_trie_coords skit_trie_find(
 		return skit_trie_stop_lookup(NULL, 0, 0);
 
 	skit_trie_coords coords;
-	skit_trie_coords prev;
-	
 	skit_trie_coords_ctor(&coords);
-	skit_trie_coords_ctor(&prev);
 	
 	coords.node = trie->root;
+
+	if ( !case_sensitive )
+		return skit_trie_find_icase(trie, key_ptr, key_len, coords);
 	
 	while ( 1 )
 	{
-		prev = coords;
-		coords = skit_trie_next_node(trie, coords.node, key_ptr, key_len, coords.pos, case_sensitive);
+		coords = skit_trie_next_node(trie, coords.node, key_ptr, key_len, coords.pos, SKIT_TRIE_CASE_SENSITIVE);
 
 		FIND_DEBUG("%s, %d: \n", __func__, __LINE__);
 		
@@ -571,6 +676,7 @@ static skit_trie_node *skit_trie_finish_tail(
 /* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_node(
+	skit_trie *trie,
 	skit_trie_coords coords,
 	const uint8_t *key_ptr,
 	size_t key_len,
@@ -579,6 +685,7 @@ static void skit_trie_split_node(
 /* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_table_node(
+	skit_trie *trie,
 	skit_trie_coords coords,
 	const uint8_t *key_ptr,
 	size_t key_len,
@@ -600,6 +707,7 @@ static void skit_trie_split_table_node(
 /* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_multi_to_table(
+	skit_trie *trie,
 	skit_trie_coords coords,
 	const uint8_t *key_ptr,
 	size_t key_len,
@@ -630,7 +738,14 @@ static void skit_trie_split_multi_to_table(
 	/*   cost of having to find an index into an unsorted node array.      */
 	for ( i = 0; i < node->nodes_len; i++ )
 	{
-		sASSERT(node->chars[i] != new_char);
+#if SKIT_DO_SPLIT_DEBUG != 0
+		if ( node->chars[i] == new_char )
+		{
+			skit_trie_dump(trie, skit_stream_stdout);
+			printf("New key: '%.*s'\n", (int)key_len, (char*)key_ptr);
+		}
+#endif
+		sASSERT_NE(node->chars[i], new_char);
 		skit_trie_node *new_node = skit_malloc(sizeof(skit_trie_node));
 		memcpy(new_node, &node->nodes.array[i], sizeof(skit_trie_node));
 		new_node_array[node->chars[i]] = new_node;
@@ -656,6 +771,7 @@ static void skit_trie_split_multi_to_table(
 /* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_multi_node(
+	skit_trie *trie,
 	skit_trie_coords coords,
 	const uint8_t *key_ptr,
 	size_t key_len,
@@ -693,6 +809,7 @@ static void skit_trie_split_multi_node(
 /* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_linear_node(
+	skit_trie *trie,
 	skit_trie_coords coords,
 	const uint8_t *key_ptr,
 	size_t key_len,
@@ -800,13 +917,14 @@ static void skit_trie_split_linear_node(
 		/*   we could easily violate the assertion that (node->chars_len > 1) */
 		/* Because of that danger, we call the more generic */
 		/*   skit_trie_split_node to force a reclassification of node0. */
-		skit_trie_split_node(new_coords, key_ptr, key_len, value);
+		skit_trie_split_node(trie, new_coords, key_ptr, key_len, value);
 	}
 }
 
 /* ------------------------------------------------------------------------- */
 
 static void skit_trie_split_node(
+	skit_trie *trie,
 	skit_trie_coords coords,
 	const uint8_t *key_ptr,
 	size_t key_len,
@@ -818,13 +936,13 @@ static void skit_trie_split_node(
 	if ( coords.n_chars_into_node == 0 && coords.pos == key_len )
 		skit_trie_node_set_value(node, value);
 	else if ( node->nodes_len == 1 && node->chars_len > 1 )
-		skit_trie_split_linear_node(coords, key_ptr, key_len, value);
+		skit_trie_split_linear_node(trie, coords, key_ptr, key_len, value);
 	else if  ( node->nodes_len < SKIT__TRIE_NODE_PREALLOC )
-		skit_trie_split_multi_node(coords, key_ptr, key_len, value);
+		skit_trie_split_multi_node(trie, coords, key_ptr, key_len, value);
 	else if ( node->nodes_len == SKIT__TRIE_NODE_PREALLOC )
-		skit_trie_split_multi_to_table(coords, key_ptr, key_len, value);
+		skit_trie_split_multi_to_table(trie, coords, key_ptr, key_len, value);
 	else
-		skit_trie_split_table_node(coords, key_ptr, key_len, value);
+		skit_trie_split_table_node(trie, coords, key_ptr, key_len, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -915,7 +1033,7 @@ skit_slice skit_trie_set( skit_trie *trie, const skit_slice key, const void *val
 		memcpy(dst_start, src_start, copy_len);
 
 		/* Split a node to insert the new value. */
-		skit_trie_split_node(coords, key_ptr, key_len, value);
+		skit_trie_split_node(trie, coords, key_ptr, key_len, value);
 		
 		/* Update this. */
 		(trie->length)++;
@@ -1875,6 +1993,7 @@ static void skit_trie_unittest_basics()
 
 	sTRACE0(skit_trie_exhaustive_test(tests, n_tests, 1));
 	
+	char buf[256];
 	void *val;
 	skit_trie *trie;
 
@@ -1894,11 +2013,50 @@ static void skit_trie_unittest_basics()
 	sASSERT_EQS(skit_trie_getc(trie, "", &val, SKIT_FLAGS_NONE), sSLICE(""));
 	sTRACE0(skit_trie_free(trie));
 	
-	/* Bug found in the wild: retrieving from a zero-length string caused a segfault.  It should return a null-slice instead. */
+	// Bug found in the wild: retrieving from a zero-length string caused a
+	//   segfault.  It should return a null-slice instead.
 	trie = skit_trie_new();
 	sASSERT_EQS(skit_trie_getc(trie, "", &val, SKIT_FLAGS_NONE), skit_slice_null());
 	sTRACE0(skit_trie_free(trie));
-	
+
+	// Bug found in the wild: insensitive lookups can fail under certain conditions.
+	// This was caused by the fact that the finding logic wouldn't backtrack
+	// when failing, thus making it possible to use "decoy" paths that differed
+	// in case earlier in the string but differed in content later in the
+	// string.  If a 'doomed' path is chosen first, then the engine would never
+	// back up to the case-insensitive branching point and try the non-doomed
+	// path.
+	trie = skit_trie_new();
+	ssize_t i;
+	buf[1] = '\0';
+	for ( i = 'A'; i <= 'Z'; i++ )
+	{
+		// force a tabled-lookup in the first node of the trie.
+		buf[0] = i;
+		sTRACE(skit_trie_setc(trie, buf, (void*)1, sFLAGS("c")));
+	}
+	// provide multiple options for the first 'd': uppercase and lowercase.
+	sASSERT_EQS(skit_trie_setc(trie, "DA", (void*)2, sFLAGS("c")), sSLICE("DA"));
+	sASSERT_EQS(skit_trie_setc(trie, "dummy", (void*)3, sFLAGS("c")), sSLICE("dummy"));
+	sASSERT_EQS(skit_trie_getc(trie, "dummy", &val, sFLAGS("i")), sSLICE("dummy"));
+	sASSERT_EQ((skit_uintptr_t)val, 3);
+	sTRACE0(skit_trie_free(trie));
+
+	// Bug found in the wild: this is a regression caused while creating the
+	// fix for the previous test case.  Note the case-insensitive flag during
+	// key insertion.
+	trie = skit_trie_new();
+	sASSERT_EQS(skit_trie_setc(trie, "ANY", NULL, sFLAGS("ci")), sSLICE("ANY"));
+	sASSERT_EQS(skit_trie_setc(trie, "ALL", NULL, sFLAGS("ci")), sSLICE("ALL"));
+	for ( i = 'a'; i <= 'z'; i++ )
+	{
+		buf[0] = 'C';
+		buf[1] = i;
+		buf[2] = '\0';
+		sASSERT_EQS(skit_trie_setc(trie, buf, NULL, sFLAGS("ci")), skit_slice_of_cstr(buf));
+	}
+	sTRACE0(skit_trie_free(trie));
+
 	skit_free(tests);
 	
 	printf("  skit_trie_unittest_basics passed.\n");
