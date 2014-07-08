@@ -74,7 +74,7 @@ static void skit_slice_sanity_check()
 	skit_loaf_free(&loaf);
 }
 
-void skit_array_bfd_new_el_test()
+static void skit_array_bfd_new_el_test()
 {
 	SKIT_USE_FEATURE_EMULATION;
 	
@@ -99,6 +99,38 @@ void skit_array_bfd_new_el_test()
 	*new_elem = -13;
 	sASSERT_EQ(*new_elem, ptr[2]);
 	
+	skit_utest_int_loaf_free(&loaf);
+}
+
+static int skit_array_filter_rm2( void *ctx_that_is_null, int *elem )
+{
+	if ( (*elem) == 2 )
+		return 0;
+	else
+		return 1;
+}
+
+static void skit_array_filter_test()
+{
+	SKIT_USE_FEATURE_EMULATION;
+
+	skit_utest_int_loaf loaf = skit_utest_int_loaf_alloc(4);
+	int *ptr = skit_utest_int_loaf_ptr(loaf);
+	ptr[0] = 1;
+	ptr[1] = 2;
+	ptr[2] = 3;
+	ptr[3] = 4;
+
+	skit_utest_int_slice slice = skit_utest_int_slice_of(loaf.as_slice, 0, 3);
+	sASSERT_EQ(skit_utest_int_slice_len(slice), 3);
+
+	skit_utest_int_slice_bfd_filter(&loaf, &slice, NULL, &skit_array_filter_rm2);
+	sASSERT_EQ(skit_utest_int_slice_len(slice), 2);
+	sASSERT_EQ(ptr[0], 1); // sorted, in slice
+	sASSERT_EQ(ptr[1], 3); // sorted, in slice
+	sASSERT_EQ(ptr[2], 2); // unsorted, not sliced
+	sASSERT_EQ(ptr[3], 4); // unsorted, not sliced
+
 	skit_utest_int_loaf_free(&loaf);
 }
 
@@ -174,6 +206,7 @@ void skit_array_unittest()
 	skit_utest_int_loaf_free(&loaf);
 	
 	sTRACE(skit_array_bfd_new_el_test());
+	sTRACE(skit_array_filter_test());
 	
 	printf("  skit_array_unittest passed!\n");
 	printf("\n");

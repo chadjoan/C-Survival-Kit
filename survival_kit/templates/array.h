@@ -451,6 +451,57 @@ SKIT_T_ELEM_TYPE *SKIT_T(slice_index)( const SKIT_T(slice) slice, size_t index )
 /** ditto */
 SKIT_T_ELEM_TYPE *SKIT_T(loaf_index) ( const SKIT_T(loaf) loaf, size_t index );
 
+/// An in-place filter function for arrays.
+///
+/// Removes any elements from 'buf_slice' that cause 'predicate' to return 0.
+/// Since the elements in the buffer could reference resources (ex: memory
+/// allocated with malloc), and the caller might want to keep them around
+/// somewhere, the removed elements will be placed in 'buffer' at positions
+/// just after 'buf_slice'.
+///
+/// The ordering of elements in 'buf_slice' is preserved by this operation.
+///
+/// Example:
+///
+/// static int skit_array_filter_rm2( void *ctx_that_is_null, int *elem )
+/// {
+///     if ( (*elem) == 2 )
+///         return 0;
+///     else
+///         return 1;
+/// }
+/// 
+/// static void skit_array_filter_test()
+/// {
+///     SKIT_USE_FEATURE_EMULATION;
+/// 
+///     skit_utest_int_loaf loaf = skit_utest_int_loaf_alloc(4);
+///     int *ptr = skit_utest_int_loaf_ptr(loaf);
+///     ptr[0] = 1;
+///     ptr[1] = 2;
+///     ptr[2] = 3;
+///     ptr[3] = 4;
+///     
+///     skit_utest_int_slice slice = skit_utest_int_slice_of(loaf.as_slice, 0, 3);
+///     sASSERT_EQ(skit_utest_int_slice_len(slice), 3);
+///     
+///     skit_utest_int_slice_bfd_filter(&loaf, &slice, NULL, &skit_array_filter_rm2);
+///     sASSERT_EQ(skit_utest_int_slice_len(slice), 2);
+///     sASSERT_EQ(ptr[0], 1); // sorted, in slice
+///     sASSERT_EQ(ptr[1], 3); // sorted, in slice
+///     sASSERT_EQ(ptr[2], 2); // unsorted, not sliced
+///     sASSERT_EQ(ptr[3], 4); // unsorted, not sliced
+///     
+///     skit_utest_int_loaf_free(&loaf);
+/// }
+///
+void SKIT_T(slice_bfd_filter) (
+	SKIT_T(loaf)  *buffer,
+	SKIT_T(slice) *buf_slice,
+	void *predicate_context,
+	int  (*predicate)( void *predicate_context, SKIT_T_ELEM_TYPE *elem )
+);
+
 /*
 TODO:
 slice_find(slice,elem)

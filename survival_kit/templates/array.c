@@ -238,6 +238,61 @@ SKIT_T_ELEM_TYPE *SKIT_T(loaf_index)( const SKIT_T(loaf) loaf, size_t index )
 	return &ptr[index];
 }
 
+void SKIT_T(slice_bfd_filter) (
+	SKIT_T(loaf)  *buffer,
+	SKIT_T(slice) *buf_slice,
+	void *predicate_context,
+	int  (*predicate)( void *predicate_context, SKIT_T_ELEM_TYPE *elem )
+)
+{
+	SKIT_T_ELEM_TYPE *ptr = SKIT_T(slice_ptr)(*buf_slice);
+	ssize_t len = SKIT_T(slice_len)(*buf_slice);
+
+	// Make sure that the given slice actually exists within the given buffer.
+	sASSERT_EQ(ptr, SKIT_T(loaf_ptr)(*buffer));
+	sASSERT_LE(len, SKIT_T(loaf_len)(*buffer));
+
+	// At the end of the loop, trailing_idx will be the length of the new slice.
+	ssize_t trailing_idx = 0;
+	ssize_t leading_idx = 0;
+	while ( trailing_idx < len )
+	{
+		SKIT_T_ELEM_TYPE e1 = ptr[trailing_idx];
+		if ( !predicate(predicate_context, &e1) )
+		{
+			// We found a hole!
+			// Find the next passing element and place it here.
+			SKIT_T_ELEM_TYPE e2;
+
+			if ( leading_idx < trailing_idx+1 )
+				leading_idx = trailing_idx+1;
+
+			while ( leading_idx < len )
+			{
+				e2 = ptr[leading_idx];
+				if ( predicate(predicate_context, &e2) )
+					break;
+				leading_idx++;
+			}
+
+			// If there are no more remaining elements, then we are
+			// have finished condensing the slice.
+			if ( leading_idx >= len )
+				break; // Done!
+
+			// There is a remaining element.  Stick it in the hole.
+			ptr[trailing_idx] = e2;
+
+			// Don't leak resources: place the 'hole' where we just got e2 from.
+			ptr[leading_idx] = e1;
+		}
+
+		trailing_idx++;
+	}
+	*buf_slice =
+		SKIT_T(slice_of)(*buf_slice, 0, trailing_idx);
+}
+
 /*
 TODO:
 slice_find(slice,elem)
