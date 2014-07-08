@@ -1,6 +1,7 @@
 
 #include "survival_kit/init.h"
 #include "survival_kit/bag.h"
+#include "survival_kit/datetime.h"
 #include "survival_kit/math.h"
 #include "survival_kit/inheritance_table.h"
 #include "survival_kit/path.h"
@@ -40,6 +41,7 @@ void skit_unittest_modules()
 	skit_tcp_stream_unittests();
 	skit_ind_stream_unittests();
 	skit_empty_stream_unittests();
+	skit_datetime_unittests(); // Depends on stream, math, and slices.
 	skit_unittest_signal_handling(); /* Must go LAST.  This test crashes. */
 }
 

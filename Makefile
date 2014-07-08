@@ -35,6 +35,7 @@ OBJECT_FILES= \
 	obj/signal_handling.o \
 	obj/flags.o \
 	obj/math.o \
+	obj/datetime.o \
 	obj/string.o \
 	obj/trie.o \
 	obj/regex.o \
