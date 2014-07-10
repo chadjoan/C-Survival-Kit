@@ -19,6 +19,16 @@ struct skit_ind_stream_internal
 	skit_stream_metadata      meta;
 	skit_stream_common_fields common_fields;
 	skit_stream               *backing_stream;
+
+	// This buffer used to be stack allocated (with 1024 chars) and then
+	// malloc'd only if the caller presented a larger format string.
+	// This proved to be a liability on OpenVMS where per-thread stack memory
+	// is fairly scarce (~40kB), so it has been moved into the stream's
+	// internal object.  This should still be reasonably fast, since the
+	// allocation is only likely to happen when indent streams are created,
+	// which is infrequent.
+	skit_loaf                 fmtstr_buf;
+
 	const char                *indent_str;
 	int16_t                   indent_level;
 	int16_t                   last_peak_level;

@@ -92,6 +92,7 @@ void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing)
 	
 	skit_ind_stream_internal *istreami = &istream->as_internal;
 	istreami->backing_stream = backing;
+	istreami->fmtstr_buf = skit_loaf_alloc(160);
 	istreami->indent_str = "\t";
 	istreami->indent_level = 0;
 	istreami->last_peak_level = 0;
@@ -229,15 +230,20 @@ void skit_ind_stream_appendf(skit_ind_stream *stream, const char *fmtstr, ...)
 
 /* ------------------------------------------------------------------------- */
 
+#include <pthread.h>
+
+extern size_t iq_stack_size;
+extern void *iq_stack_start_addr;
+
 void skit_ind_stream_appendf_va(skit_ind_stream *stream, const char *fmtstr, va_list vl)
-sSCOPE
+{
 	SKIT_USE_FEATURE_EMULATION;
 	size_t n_newlines = 0;
 	size_t i;
 	sASSERT(stream != NULL);
 	sASSERT(fmtstr != NULL);
 	
-	/* Count the number of newlines in the format string. */
+	// Count the number of newlines in the format string.
 	size_t fmtstr_len = strlen(fmtstr);
 	skit_slice fmtstr_slice = skit_slice_of_cstrn(fmtstr, fmtstr_len);
 	for ( i = 0; i < fmtstr_len; i++ )
@@ -255,19 +261,17 @@ sSCOPE
 	
 	size_t indent_str_len = strlen(istreami->indent_str);
 	
-	/* Allocate space for a second format string: we will copy the fmtstr */
-	/*   into it while substituting newlines with the appropriate amount */
-	/*   of indentation. */
-	SKIT_LOAF_ON_STACK(fmtstr2, 1024);
-	sSCOPE_EXIT(skit_loaf_free(&fmtstr2));
-	size_t fmtstr2_len = fmtstr_len + 
+	// Allocate space for a second format string: we will copy the fmtstr
+	//   into it while substituting newlines with the appropriate amount
+	//   of indentation.
+	size_t fmtstr_buffer_len = fmtstr_len + 
 		(n_newlines *
 		istreami->indent_level *
 		indent_str_len);
 	
-	skit_loaf_resize(&fmtstr2, fmtstr2_len);
+	skit_loaf_resize(&istreami->fmtstr_buf, fmtstr_buffer_len);
 	
-	char *fmtbuf = (char*)sLPTR(fmtstr2);
+	char *fmtbuf = (char*)sLPTR(istreami->fmtstr_buf);
 	size_t j = 0;
 	size_t k;
 	i = 0;
@@ -278,12 +282,12 @@ sSCOPE
 		{
 			if ( i+nl_size < fmtstr_len )
 			{
-				/* Output the newline. */
+				// Output the newline.
 				memcpy(&fmtbuf[j], &fmtstr[i], nl_size);
 				j += nl_size;
 				i += nl_size;
-				
-				/* Output the indent. */
+
+				// Output the indent.
 				for ( k = 0; k < istreami->indent_level; k++ )
 				{
 					memcpy(&fmtbuf[j], istreami->indent_str, indent_str_len);
@@ -292,27 +296,27 @@ sSCOPE
 			}
 			else
 			{
-				/* Output the newline. */
+				// Output the newline.
 				memcpy(&fmtbuf[j], &fmtstr[i], nl_size);
 				j += nl_size;
 				i += nl_size;
 				
-				/* The user may change indentation levels later, before */
-				/*   printing the next line.  Because of this fact, we can't */
-				/*   immediately write indentation out.  We'll have to wait */
-				/*   until they write more text.  We remember this waiting */
-				/*   state by setting the last_write_was_newline flag. */
+				// The user may change indentation levels later, before
+				//   printing the next line.  Because of this fact, we can't
+				//   immediately write indentation out.  We'll have to wait
+				//   until they write more text.  We remember this waiting
+				//   state by setting the last_write_was_newline flag.
 				istreami->last_write_was_newline = 1;
 			}			
 		}
-		else /* Output a single non-newline character. */
+		else // Output a single non-newline character.
 			fmtbuf[j++] = fmtstr[i++];
 	}
 	
 	fmtbuf[j] = '\0';
 
 	skit_stream_appendf_va(istreami->backing_stream, fmtbuf, vl);
-sEND_SCOPE
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -444,7 +448,9 @@ void skit_ind_stream_set_ind_str(skit_ind_stream *stream, const char *c)
 
 void skit_ind_stream_dtor(skit_ind_stream *stream)
 {
-	// No resources are owned by an indent stream.
+	skit_ind_stream_internal *istreami = &(stream->as_internal);
+	if ( !skit_loaf_is_null(istreami->fmtstr_buf) )
+		skit_loaf_free(&istreami->fmtstr_buf);
 }
 
 /* ------------------------------------------------------------------------- */

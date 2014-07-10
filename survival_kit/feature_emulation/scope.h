@@ -280,10 +280,15 @@ TODO: How do I make sRETURN macros that acknowledge nested scopes?  They would h
 	/* Use (void) to silence misleading "warning: unused variable" messages from the compiler. */ \
 	(void) skit__scope_ctx_as_val; \
 	(void) skit__scope_ctx; \
-        /* Before any setjmp calls: allocate some stack space for the return value. */ \
-        char SKIT__sRETURN_STORAGE[128]; \
-        SKIT__sRETURN_STORAGE[0] = '\0'; /* HACKHACKHACK */ \
-        (void) SKIT__sRETURN_STORAGE; \
+	/* Before any setjmp calls: allocate some stack space for the return value. */ \
+	/* There used to be 128 characters stack-allocated here, but that proved */ \
+	/* to be a liability on OpenVMS where per-thread stack memory is fairly */ \
+	/* scarce (~40kB).  So try to keep this small, since EVERY appearance */ \
+	/* of SKIT_USE_FEATURE_EMULATION will contribute this much to stack */ \
+	/* consumption. */ \
+	char SKIT__sRETURN_STORAGE[32]; \
+	SKIT__sRETURN_STORAGE[0] = '\0'; /* HACKHACKHACK */ \
+	(void) SKIT__sRETURN_STORAGE; \
 	skit__scope_ctx_as_val.scope_fn_exit = NULL; \
 	skit__scope_ctx_as_val.scope_guards_used = 0; \
 	skit__scope_ctx_as_val.exit_status = SKIT_SCOPE_NOT_EXITING; \
