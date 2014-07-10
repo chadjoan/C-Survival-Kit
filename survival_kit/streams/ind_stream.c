@@ -230,11 +230,6 @@ void skit_ind_stream_appendf(skit_ind_stream *stream, const char *fmtstr, ...)
 
 /* ------------------------------------------------------------------------- */
 
-#include <pthread.h>
-
-extern size_t iq_stack_size;
-extern void *iq_stack_start_addr;
-
 void skit_ind_stream_appendf_va(skit_ind_stream *stream, const char *fmtstr, va_list vl)
 {
 	SKIT_USE_FEATURE_EMULATION;
