@@ -19,6 +19,8 @@
 #undef SKIT_STREAM_T
 #undef SKIT_VTABLE_T
 
+skit_err_code SKIT_EOS_EXCEPTION;
+
 /* ------------------------- vtable stuff ---------------------------------- */
 static int skit_stream_initialized = 0;
 static skit_stream_vtable_t skit_stream_vtable;
@@ -147,6 +149,8 @@ void skit_stream_module_init()
 	
 	skit_stream_initialized = 1;
 	skit_stream_vtable_init(&skit_stream_vtable);
+
+	SKIT_REGISTER_EXCEPTION(SKIT_EOS_EXCEPTION, SKIT_IO_EXCEPTION, "End Of Stream exception.");
 }
 
 /* ------------------------ virtual methods -------------------------------- */
@@ -285,14 +289,12 @@ int skit_stream_dump_null( skit_stream *output, const void *ptr, const skit_slic
 /* But it's convenient, and there isn't a need for speed right now. */
 /* TODO: BUG: end of stream conditions! */
 /* NOTE: Currently, throwing is better than crashing. */
-/* NOTE: However, it would be nice if we had a SKIT_EOS_EXCEPTION or maybe the */
-/* NOTE:   interface needs to change to something like 'int skit_stream_read_i8(stream, int8_t *val)' */
 #define read_xNN_impl(T) \
 	SKIT_USE_FEATURE_EMULATION; \
 	SKIT_LOAF_ON_STACK(buffer, sizeof(T)); \
 	skit_slice ret = skit_stream_read(stream, &buffer, sizeof(T)); \
 	if ( skit_slice_is_null(ret) ) \
-		sTHROW(SKIT_EXCEPTION, "End of stream reached."); \
+		sTHROW(SKIT_EOS_EXCEPTION, "End of stream reached."); \
 	T result = *(T*)sSPTR(ret); \
 	skit_loaf_free(&buffer); \
 	return result;

@@ -55,6 +55,11 @@ struct skit_custom_read_context
 #undef SKIT_STREAM_T
 #undef SKIT_VTABLE_T
 
+/// An exception that is thrown during End-Of-Stream conditions when it is
+/// otherwise impossible for functions to signal this condition (ex: they don't
+/// return an int that indicates end-of-stream).
+extern skit_err_code SKIT_EOS_EXCEPTION;
+
 void skit_stream_vtable_init(skit_stream_vtable_t *table);
 void skit_stream_module_init();
 

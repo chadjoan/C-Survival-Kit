@@ -4,6 +4,8 @@
 
 #include "survival_kit/streams/stream.h"
 
+extern skit_err_code SKIT_TCP_IO_EXCEPTION;
+
 typedef struct skit_tcp_stream_internal skit_tcp_stream_internal;
 struct skit_tcp_stream_internal
 {

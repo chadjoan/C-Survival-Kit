@@ -35,6 +35,8 @@ typedef size_t socklen_t;
 #undef SKIT_STREAM_T
 #undef SKIT_VTABLE_T
 
+skit_err_code SKIT_TCP_IO_EXCEPTION;
+
 /* ------------------------------------------------------------------------- */
 
 static skit_loaf *skit_tcp_get_read_buffer( skit_tcp_stream_internal *tstreami, skit_loaf *arg_buffer )
@@ -96,6 +98,8 @@ void skit_tcp_stream_module_init()
 
 	skit_tcp_stream_initialized = 1;
 	skit_tcp_stream_vtable_init(&skit_tcp_stream_vtable);
+
+	SKIT_REGISTER_EXCEPTION(SKIT_TCP_IO_EXCEPTION, SKIT_IO_EXCEPTION, "TCP Network I/O exception.");
 }
 
 /* ------------------------------------------------------------------------- */

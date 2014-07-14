@@ -73,7 +73,6 @@ extern skit_err_code SKIT_OUT_OF_BOUNDS;
 extern skit_err_code SKIT_NOT_IMPLEMENTED;
 extern skit_err_code SKIT_IO_EXCEPTION;
 extern skit_err_code SKIT_FILE_IO_EXCEPTION;
-extern skit_err_code SKIT_TCP_IO_EXCEPTION;
 extern skit_err_code SKIT_FILE_NOT_FOUND;
 extern skit_err_code SKIT_END_OF_FILE;
 
