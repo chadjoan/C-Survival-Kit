@@ -25,21 +25,41 @@ exception from another.
 typedef struct skit_exception skit_exception;
 struct skit_exception
 {
-	/* Implementation note: keep this small, it will be returned by-value from functions a lot. */
-	skit_err_code error_code;  /** 0 should always mean "no error". TODO: Values of 0 don't make sense anymore.  It was useful for an inferior exceptions implementation.  Followup needed? */
-	char *error_text;    /** READ ONLY: a description for the error. */
-	size_t error_len;    /** READ ONLY: the length of error_text, minus the trailing nul character. */
-	
-	/** 
-	Points to the stack that stores the exception's debug information.  
-	This is usually the thread context's debug_info_stack, but it can be 
-	different for exceptions created with SKIT_PUSH_EXCEPTION, since it
-	is often necessary to copy the stack trace to preserve it whenever 
-	calling code is allowed to continue executing and altering the stack.
-	*/
+	// Implementation note: keep this small, it will be returned by-value from
+	//   functions a lot.
+	// Implementation note: The above implementation note might be obsolete.
+	//   A current grep (2014-07-14) seems to indicate that skit_exception
+	//   is always passed referentially between functions, thus easing the
+	//   restriction on size somewhat.  It is still a good idea to avoid
+	//   growing this a lot though, so don't stick any buffers in here.
+
+
+	/// An error_code of 0 should always mean "no error".
+	/// TODO: Values of 0 don't make sense anymore.  It was useful for an
+	///   inferior exceptions implementation.  Followup needed?
+	skit_err_code error_code;
+
+	/// READ ONLY: a description for the error.
+	char *error_text;
+
+	/// READ ONLY: the length of error_text, minus the trailing nul character.
+	size_t error_len;
+
+	/// Any contextual information the thrower wants to attach to the
+	/// exception.  The caller is responsible for freeing any resources that
+	/// might be allocated on the other end of this pointer.
+	/// This is useful, for example, to determine which object threw an
+	/// exception whenever it isn't clear from the exception code itself.
+	//void *context; // TODO
+
+	/// Points to the stack that stores the exception's debug information.  
+	/// This is usually the thread context's debug_info_stack, but it can be 
+	/// different for exceptions created with SKIT_PUSH_EXCEPTION, since it
+	/// is often necessary to copy the stack trace to preserve it whenever 
+	/// calling code is allowed to continue executing and altering the stack.
 	skit_debug_stack  *debug_info_stack; 
 	
-	/** Points to the point in the frame info stack where the exception happened. */
+	/// Points to the point in the frame info stack where the exception happened.
 	skit_debug_stnode *frame_info_node;
 };
 
@@ -125,6 +145,12 @@ void skit_init_exceptions();
 /* Code outside of feature_emulation submodules should use */
 /*   SKIT_EXCEPTION_FREE instead. */
 void skit_exception_dtor( skit_thread_context *ctx, skit_exception *exc );
+
+/// Returns the default exception message for the given error_code.
+/// These messages will be very basic and lack a lot of info, so avoid using
+/// them if at all possible.
+/// The C-string returned from this is statically allocated, so do not free it.
+const char *skit_exception_default_msg( skit_err_code error_code );
 
 /*
 This skit_throw_exception_no_ctx definition is used to break macro recursion.

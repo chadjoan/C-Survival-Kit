@@ -50,7 +50,7 @@ Example usage:
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
 		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)); \
+		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), skit_exception_default_msg(etype)); \
 		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
 	} while(0)
 	
@@ -88,7 +88,7 @@ Example usage:
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype)), \
+		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), skit_exception_default_msg(etype)), \
 	)
 	
 #define SKIT_NEW_EXCEPTION2(etype, emsg) \

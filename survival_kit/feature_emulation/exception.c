@@ -38,13 +38,15 @@ skit_err_code SKIT_FILE_NOT_FOUND;
 skit_err_code SKIT_END_OF_FILE;
 
 static skit_inheritance_table skit__exc_inheritance_table;
+static const char **skit__exc_ecode_names  = NULL;
+static const char **skit__exc_default_msgs = NULL;
 static int skit_exceptions_initialized = 0;
 
 void skit_init_exceptions()
 {
 	if ( skit_exceptions_initialized )
 		return;
-	
+
 	/* Make sure the first exception ever is the unrecoverable one. */
 	/* That way, if 0 or NULL is thrown, it will cause a fatal exception and halt the program. */	
 	/* This can happen if someone forgets to register an exception but creates a variable for it */
@@ -63,6 +65,26 @@ void skit_init_exceptions()
 	SKIT_REGISTER_EXCEPTION(SKIT_END_OF_FILE,           SKIT_FILE_IO_EXCEPTION, "Attempt to access past end of file.");
 
 	skit_exceptions_initialized = 1;
+}
+
+// Increases the size of the given array of C-strings.
+// NULLifies any new elements.
+static const char **skit__exc_resize( const char **array_to_resize, ssize_t old_size, ssize_t new_size )
+{
+	if ( new_size < old_size )
+		return array_to_resize;
+
+	if ( array_to_resize == NULL )
+		array_to_resize = skit_malloc(sizeof(array_to_resize[0]));
+	else
+		array_to_resize = skit_realloc(
+			array_to_resize, new_size * sizeof(array_to_resize[0]));
+
+	ssize_t i;
+	for ( i = old_size; i < new_size; i++ )
+		array_to_resize[i] = NULL;
+
+	return array_to_resize;
 }
 
 void skit__register_exception( skit_err_code *ecode, skit_err_code *parent, const char *ecode_name, const char *default_msg )
@@ -85,11 +107,28 @@ void skit__register_exception( skit_err_code *ecode, skit_err_code *parent, cons
 	assert(ecode_name != NULL);
 	assert(default_msg != NULL);
 	
+	ssize_t old_size = skit_inheritance_table_size(&skit__exc_inheritance_table);
+
 	skit_register_parent_child_rel(
 		&skit__exc_inheritance_table, ecode, parent);
 	
 	/* printf("Defined %s as %ld\n", ecode_name, *ecode); */
-	/* TODO: do something with the ecode_name and default_msg. */
+	ssize_t new_size = *ecode + 1;
+	if ( new_size > old_size )
+	{
+		skit__exc_ecode_names  = skit__exc_resize(skit__exc_ecode_names,  old_size, new_size);
+		skit__exc_default_msgs = skit__exc_resize(skit__exc_default_msgs, old_size, new_size);
+	}
+
+	skit__exc_ecode_names[*ecode] = ecode_name;
+	skit__exc_default_msgs[*ecode] = default_msg;
+}
+
+/* ------------------------------------------------------------------------- */
+
+const char *skit_exception_default_msg( skit_err_code error_code )
+{
+	return skit__exc_default_msgs[error_code];
 }
 
 /* ------------------------------------------------------------------------- */

@@ -102,7 +102,23 @@ static void unittest_exceptions()
 	
 	assert(pass);
 	printf("Passed.\n\n");
-	
+
+	printf("------\n");
+	printf("Exception default messages.\n");
+
+	pass = 0;
+	sTRY
+		sTHROW(SKIT_EXCEPTION);
+	sCATCH( SKIT_EXCEPTION, e )
+		pass = 1;
+		assert( strcmp(
+			skit_exception_default_msg(e->error_code),
+			"An exception was thrown.") == 0 );
+	sEND_TRY
+	assert(pass);
+
+	printf("Passed.\n\n");
+
 	printf("------\n");
 	printf("Exception new'ing and delayed throwing.\n");
 	
