@@ -28,7 +28,7 @@ static skit_stream_vtable_t skit_stream_vtable;
 static void skit_stream_func_not_implc(const skit_stream* stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sTHROW(SKIT_NOT_IMPLEMENTED,
+	sTHROWC((void*)stream, SKIT_NOT_IMPLEMENTED,
 		"Attempt to call a virtual function on an "
 		"instance of the abstract class skit_stream (or skit_file_stream).");
 }
@@ -294,7 +294,7 @@ int skit_stream_dump_null( skit_stream *output, const void *ptr, const skit_slic
 	SKIT_LOAF_ON_STACK(buffer, sizeof(T)); \
 	skit_slice ret = skit_stream_read(stream, &buffer, sizeof(T)); \
 	if ( skit_slice_is_null(ret) ) \
-		sTHROW(SKIT_EOS_EXCEPTION, "End of stream reached."); \
+		sTHROWC(stream, SKIT_EOS_EXCEPTION, "End of stream reached."); \
 	T result = *(T*)sSPTR(ret); \
 	skit_loaf_free(&buffer); \
 	return result;
@@ -338,7 +338,7 @@ void skit_stream_append_i8 (skit_stream *stream, int8_t val)   { write_xNN_impl(
 skit_slice skit_stream_read_regex(skit_stream *stream, skit_loaf *buffer, skit_slice regex )
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sTHROW(SKIT_EXCEPTION, "skit_stream_read_regex is not implemented.");
+	sTHROWC(stream, SKIT_IO_EXCEPTION, "skit_stream_read_regex is not implemented.");
 	return skit_slice_null();
 }
 
@@ -353,8 +353,8 @@ sSCOPE
 	
 	/* Prevent memory leaks. */
 	/* sSCOPE_EXIT is awesome and allows us to do this despite using this */
-	/*   very string in the sTHROW expression that leaves this function. */
-	/* sTHROW does specify that it copies its string argument, so there is */
+	/*   very string in the sTHROWC expression that leaves this function. */
+	/* sTHROWC does specify that it copies its string argument, so there is */
 	/*   no need to keep our copy of the string data around while the stack */
 	/*   unwinds. */
 	sSCOPE_EXIT(skit_text_stream_dtor(&err_stream));
@@ -382,7 +382,7 @@ sSCOPE
 	/* Pass our message into the exception, being sure to handle two things right: */
 	/* 1. Prevent any formatter expansions in errtxt. */
 	/* 2. The slice is not necessarily null-terminated, so use the %.*s specifier and length-bound it. */
-	sTHROW( ecode, "%.*s", sSLENGTH(errtxt), sSPTR(errtxt) );
+	sTHROWC( stream, ecode, "%.*s", sSLENGTH(errtxt), sSPTR(errtxt) );
 sEND_SCOPE
 
 /* ------------------------------------------------------------------------- */
