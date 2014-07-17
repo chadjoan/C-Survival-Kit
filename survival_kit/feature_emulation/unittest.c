@@ -122,7 +122,7 @@ static void unittest_exceptions()
 	printf("------\n");
 	printf("Exception new'ing and delayed throwing.\n");
 	
-	skit_exception *exc = SKIT_NEW_EXCEPTION(SKIT_EXCEPTION,"new'd exception");
+	skit_exception *exc = SKIT_NEW_EXCEPTION(SKIT_EXCEPTION,NULL,"new'd exception");
 	
 	pass = 0;
 	sTRY
@@ -210,9 +210,10 @@ static void unittest_exceptions()
 	
 	int rethrow_test = 0;
 	int catch_count = 0;
+	int *context = &rethrow_test;
 	sTRY
 		sTRY
-			sTHROW(SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST");
+			sTHROWC(context, SKIT_EXCEPTION_UTEST, "SKIT_EXCEPTION_UTEST");
 		sCATCH( SKIT_EXCEPTION, e )
 			catch_count++;
 			if ( catch_count > 1 )
@@ -223,6 +224,8 @@ static void unittest_exceptions()
 		assert(0);
 	sCATCH( SKIT_EXCEPTION_UTEST, e )
 		rethrow_test = 1;
+		// Make sure that error/thrower context can survive rethrows.
+		assert( skit_exception_get_context(e) == context );
 	sEND_TRY
 	
 	assert(rethrow_test == 1);

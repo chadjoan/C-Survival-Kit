@@ -200,6 +200,7 @@ static void skit_fill_exception(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	va_list var_args)
 {
@@ -222,7 +223,9 @@ static void skit_fill_exception(
 		
 		exc->error_text = error_text_buffer;
 		exc->error_len  = error_len;
-		
+
+		exc->context = thrower_context;
+
 		exc->debug_info_stack = skit_malloc(sizeof(skit_debug_stack));
 		skit_debug_stack_ctor(exc->debug_info_stack);
 		
@@ -255,7 +258,9 @@ static void skit_fill_exception(
 		exc->error_text = (char*)skit_malloc(error_len+1); /* +1 to make room for the \0 at the end. */
 		strcpy(exc->error_text, skit_thread_ctx->error_text_buffer);
 		exc->error_len = error_len;
-		
+
+		exc->context = thrower_context;
+
 		SKIT_FEATURE_TRACE("%s, %d.136: sTHROW\n", file, line);
 		skit_debug_info_store(fi, line, file, func, " <- exception happened here.");
 		
@@ -286,6 +291,7 @@ void skit_throw_exception_no_ctx(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	...)
 {
@@ -303,6 +309,7 @@ void skit_throw_exception_no_ctx(
 		file,
 		func,
 		etype,
+		thrower_context,
 		fmtMsg,
 		vl);
 	va_end(vl);
@@ -326,6 +333,7 @@ void skit_push_exception_va(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	va_list var_args)
 {
@@ -340,6 +348,7 @@ void skit_push_exception_va(
 		file,
 		func,
 		etype,
+		thrower_context,
 		fmtMsg,
 		var_args);
 }
@@ -352,6 +361,7 @@ void skit_push_exception(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	...)
 {
@@ -364,6 +374,7 @@ void skit_push_exception(
 		file,
 		func,
 		etype,
+		thrower_context,
 		fmtMsg,
 		vl);
 	va_end(vl);
@@ -377,6 +388,7 @@ skit_exception *skit_new_exception_va(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	va_list var_args)
 {
@@ -391,6 +403,7 @@ skit_exception *skit_new_exception_va(
 		file,
 		func,
 		etype,
+		thrower_context,
 		fmtMsg,
 		var_args);
 	
@@ -405,6 +418,7 @@ skit_exception *skit_new_exception(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	...)
 {
@@ -417,11 +431,19 @@ skit_exception *skit_new_exception(
 		file,
 		func,
 		etype,
+		thrower_context,
 		fmtMsg,
 		vl);
 	va_end(vl);
 	
 	return exc;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void *skit_exception_get_context(skit_exception *e)
+{
+	return e->context;
 }
 
 /* ------------------------------------------------------------------------- */

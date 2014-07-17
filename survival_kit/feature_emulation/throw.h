@@ -13,6 +13,16 @@
 #undef THROW
 #endif
 
+#define SKIT__THROW_PRE \
+	do { \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
+		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx);
+
+#define SKIT__THROW_POST \
+		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
+	} while(0)
+
 /** 
 Creates an exception of the type given and then throws it.
 The single argument version accepts an exception type as the first argument
@@ -46,70 +56,132 @@ Example usage:
 #define sTHROW(...) SKIT_MACRO_DISPATCHER3(sTHROW, __VA_ARGS__)(__VA_ARGS__)
 
 #define sTHROW1(etype) \
-	do { \
-		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
-		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), skit_exception_default_msg(etype)); \
-		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
-	} while(0)
+	SKIT__THROW_PRE \
+		skit_push_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), NULL, skit_exception_default_msg((etype))); \
+	SKIT__THROW_POST
 	
 #define sTHROW2(etype, emsg) \
-	do { \
-		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
-		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg)); \
-		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
-	} while(0)
+	SKIT__THROW_PRE \
+		skit_push_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), NULL, (emsg)); \
+	SKIT__THROW_POST
 
 #define sTHROW3(etype, emsg, ...) \
-	do { \
-		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
-		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
-		skit_push_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), __VA_ARGS__); \
-		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
-	} while(0)
+	SKIT__THROW_PRE \
+		skit_push_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), NULL, (emsg), __VA_ARGS__); \
+	SKIT__THROW_POST
 
 #define sTHROW_VA(etype, emsg, vargs) \
-	do { \
-		SKIT_USE_FEATURES_IN_FUNC_BODY = 1; \
-		(void)SKIT_USE_FEATURES_IN_FUNC_BODY; \
-		SKIT_THREAD_CHECK_ENTRY(skit_thread_ctx); \
-		skit_push_exception_va(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), (vargs)); \
-		SKIT__PROPOGATE_THROWN_EXCEPTIONS; \
-	} while(0)
-	
-#define SKIT_NEW_EXCEPTION(...) SKIT_MACRO_DISPATCHER3(SKIT_NEW_EXCEPTION, __VA_ARGS__)(__VA_ARGS__)
+	SKIT__THROW_PRE \
+		skit_push_exception_va( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), NULL, (emsg), (vargs)); \
+	SKIT__THROW_POST
+
+/* -------------------------------------------------------------------------- */
+
+/// A version of sTHROW that allows a thrower-supplied context to be stored in
+/// the exception object that is created by the sTHROWC statement.
+///
+/// This context could be, for example, a pointer to the stream whose method
+/// threw the exception.  In this example, code that catches the exception
+/// would then be able to determine exactly which stream had a problem.
+/// This is a distinction that could be important if there are multiple
+/// streams being used by the catching function.
+///
+/// Due to how variadic macro dispatching works, there is a 1-argument version
+/// of this macro that does not have a context parameter.  Using this 1-arg
+/// version of sTHROWC is equivalent to calling the 1-arg version of sTHROW.
+///
+/// The order of parameters in this macro is intentionally chosen so that
+/// the first argument's type is different from sTHROW's first argument's type.
+/// This makes the compiler as noisy as possible whenever sTHROW is mistakenly
+/// used instead of sTHROWC, or vice-versa.
+#define sTHROWC(...) SKIT_MACRO_DISPATCHER4(sTHROWC, __VA_ARGS__)(__VA_ARGS__)
+
+#define sTHROWC1(etype) sTHROW(etype)
+
+#define sTHROWC2(thrower_context, etype) \
+	SKIT__THROW_PRE \
+		skit_push_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), skit_exception_default_msg((etype))); \
+	SKIT__THROW_POST
+
+#define sTHROWC3(thrower_context, etype, emsg) \
+	SKIT__THROW_PRE \
+		skit_push_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), (emsg)); \
+	SKIT__THROW_POST
+
+#define sTHROWC4(thrower_context, etype, emsg, ...) \
+	SKIT__THROW_PRE \
+		skit_push_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), (emsg), __VA_ARGS__); \
+	SKIT__THROW_POST
+
+#define sTHROWC_VA(thrower_context, etype, emsg, vargs) \
+	SKIT__THROW_PRE \
+		skit_push_exception_va( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), (emsg), (vargs)); \
+	SKIT__THROW_POST
+
+/* -------------------------------------------------------------------------- */
+
+#define SKIT_NEW_EXCEPTION(...) SKIT_MACRO_DISPATCHER4(SKIT_NEW_EXCEPTION, __VA_ARGS__)(__VA_ARGS__)
 
 /* TODO: what if thread isn't entered yet? */
 #define SKIT_NEW_EXCEPTION1(etype) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), skit_exception_default_msg(etype)), \
+		skit_new_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), NULL, skit_exception_default_msg((etype))), \
 	)
 	
-#define SKIT_NEW_EXCEPTION2(etype, emsg) \
+#define SKIT_NEW_EXCEPTION2(etype, thrower_context) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg)) \
+		skit_new_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), skit_exception_default_msg((etype))), \
+	)
+	
+#define SKIT_NEW_EXCEPTION3(etype, thrower_context, emsg) \
+	( \
+		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
+		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
+		skit_new_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), (emsg)) \
 	)
 
-#define SKIT_NEW_EXCEPTION3(etype, emsg, ...) \
+#define SKIT_NEW_EXCEPTION4(etype, thrower_context, emsg, ...) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), __VA_ARGS__) \
+		skit_new_exception( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (thrower_context), (emsg), __VA_ARGS__) \
 	)
 
-#define SKIT_NEW_EXCEPTION_VA(etype, emsg, vargs) \
+#define SKIT_NEW_EXCEPTION_VA(etype, thrower_context, emsg, vargs) \
 	( \
 		SKIT_USE_FEATURES_IN_FUNC_BODY = 1, \
 		(void)SKIT_USE_FEATURES_IN_FUNC_BODY, \
-		skit_new_exception_va(skit_thread_ctx, __LINE__, __FILE__, __func__, (etype), (emsg), (vargs)) \
+		skit_new_exception_va( \
+			skit_thread_ctx, __LINE__, __FILE__, __func__, \
+			(etype), (emsg), (vargs)) \
 	)
 
 

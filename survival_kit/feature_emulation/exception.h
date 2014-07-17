@@ -50,7 +50,10 @@ struct skit_exception
 	/// might be allocated on the other end of this pointer.
 	/// This is useful, for example, to determine which object threw an
 	/// exception whenever it isn't clear from the exception code itself.
-	//void *context; // TODO
+	/// Any code outside of the feature_emulation module should use the
+	/// skit_exception_get_context function to access this instead of directly
+	/// reading/writing from/to this field.
+	void *context;
 
 	/// Points to the stack that stores the exception's debug information.  
 	/// This is usually the thread context's debug_info_stack, but it can be 
@@ -178,6 +181,7 @@ void skit_throw_exception_no_ctx(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	...);
 
@@ -194,6 +198,7 @@ void skit_push_exception(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	...);
 
@@ -205,6 +210,7 @@ void skit_push_exception_va(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	va_list var_args);
 	
@@ -219,6 +225,7 @@ skit_exception *skit_new_exception(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	...);
 	
@@ -230,6 +237,7 @@ skit_exception *skit_new_exception_va(
 	const char *file,
 	const char *func,
 	skit_err_code etype,
+	void *thrower_context,
 	const char *fmtMsg,
 	va_list var_args);
 
@@ -250,10 +258,16 @@ access to the internals of exception handling.
 */
 void skit_propogate_exceptions(skit_thread_context *skit_thread_ctx, int line, const char *file, const char *func);
 
-/** Prints the given exception to stdout. */
+/// Prints the given exception to stdout.
 void skit_print_exception(skit_exception *e);
 
-/** */
+/// Returns the thrower-provided error context for the given exception.
+/// This context is usually determined by the second argument passed into the
+/// sTHROWC macro.  If the thrower provided no additional context, then the
+/// return value of this function will be NULL.
+void *skit_exception_get_context(skit_exception *e);
+
+///
 void skit_print_uncaught_exceptions(skit_thread_context *skit_thread_ctx);
 
 #ifdef skit_thread_context
