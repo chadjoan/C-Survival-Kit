@@ -15,16 +15,9 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#if defined(__DECC)
-/* On VMS, this isn't defined in sys/socket.h like the standard says. */
-/* We'll have to do it ourselves. */
-/* (It doesn't seem to appear in any of the system header files at all... */
-/*    even Java defines its own.) */
-typedef size_t socklen_t; 
-#endif
-
 #include "survival_kit/assert.h"
 #include "survival_kit/memory.h"
+#include "survival_kit/portable_ints.h"
 #include "survival_kit/streams/stream.h"
 #include "survival_kit/streams/tcp_stream.h"
 #include "survival_kit/string.h"

@@ -14,6 +14,12 @@
 	#define skit_uintptr_t      uint64_t
 	#define skit_intptr_t       int64_t
 
+	// On VMS, this isn't defined in sys/socket.h like the standard says.
+	// We'll have to do it ourselves.
+	// (It doesn't seem to appear in any of the system header files at all...
+	//    even Java defines its own.)
+	typedef size_t socklen_t; 
+
 	#ifndef INT8_MAX
 	#define INT8_MAX            ((int8_t)0x7F)
 	#endif
