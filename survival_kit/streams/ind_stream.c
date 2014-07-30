@@ -93,6 +93,7 @@ void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing)
 	skit_ind_stream_internal *istreami = &istream->as_internal;
 	istreami->backing_stream = backing;
 	istreami->fmtstr_buf = skit_loaf_alloc(160);
+	istreami->owns_backing_stream = 0;
 	istreami->indent_str = "\t";
 	istreami->indent_level = 0;
 	istreami->last_peak_level = 0;
@@ -108,6 +109,15 @@ skit_ind_stream *skit_ind_stream_downcast(const skit_stream *stream)
 		return (skit_ind_stream*)stream;
 	else
 		return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_ind_stream_set_own(skit_ind_stream *stream, int has_backing_stream_ownership )
+{
+	sASSERT(stream != NULL);
+	skit_ind_stream_internal *istreami = &(stream->as_internal);
+	istreami->owns_backing_stream = has_backing_stream_ownership;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -446,6 +456,9 @@ void skit_ind_stream_dtor(skit_ind_stream *stream)
 	skit_ind_stream_internal *istreami = &(stream->as_internal);
 	if ( !skit_loaf_is_null(istreami->fmtstr_buf) )
 		skit_loaf_free(&istreami->fmtstr_buf);
+
+	if ( istreami->owns_backing_stream )
+		skit_stream_free(istreami->backing_stream);
 }
 
 /* ------------------------------------------------------------------------- */

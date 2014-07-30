@@ -29,6 +29,11 @@ struct skit_ind_stream_internal
 	// which is infrequent.
 	skit_loaf                 fmtstr_buf;
 
+	// This bit is set when the skit_ind_stream instance owns its backing
+	// stream, and thus must call skit_stream_free() on it whenever
+	// the destructor is called.
+	int                       owns_backing_stream;
+
 	const char                *indent_str;
 	int16_t                   indent_level;
 	int16_t                   last_peak_level;
@@ -64,6 +69,14 @@ This will return NULL if the given stream isn't actually a skit_ind_stream.
 */
 skit_ind_stream *skit_ind_stream_downcast(const skit_stream *stream);
 
+/// Allows calling code to determine whether or not this skit_ind_stream
+/// owns its backing stream.  If the skit_ind_stream owns its backing stream,
+/// then it will call skit_stream_free on that stream whenever it is itself
+/// freed using skit_stream_free or skit_stream_dtor.
+///
+/// By default, skit_ind_stream does not own its backing stream.
+void skit_ind_stream_set_own(skit_ind_stream *stream, int has_backing_stream_ownership );
+
 void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing);
 skit_slice skit_ind_stream_readln(skit_ind_stream *stream, skit_loaf *buffer);
 skit_slice skit_ind_stream_read(skit_ind_stream *stream, skit_loaf *buffer, size_t nbytes);
@@ -89,7 +102,9 @@ const char *skit_ind_stream_get_ind_str(const skit_ind_stream *stream);
 void skit_ind_stream_set_ind_str(skit_ind_stream *stream, const char *c);
 
 
-/** Note that this does NOT free the backing stream. */
+/// Note that this does NOT free the backing stream by default.
+/// To make it free the backing stream, first call
+/// 'skit_ind_stream_set_own(stream,1)'.
 void skit_ind_stream_dtor(skit_ind_stream *stream);
 
 void skit_ind_stream_unittests();
