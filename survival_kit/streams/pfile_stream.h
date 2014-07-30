@@ -87,6 +87,14 @@ void skit_pfile_stream_rewind(skit_pfile_stream *stream);
 skit_slice skit_pfile_stream_slurp(skit_pfile_stream *stream, skit_loaf *buffer);
 skit_slice skit_pfile_stream_to_slice(skit_pfile_stream *stream, skit_loaf *buffer);
 void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output);
+
+/// NOTE: To support generic cleanup of skit_stream* objects,
+///   skit_pfile_stream_dtor will call skit_pfile_stream_close if the caller
+///   had not done so already.
+///   This means that code that tries to free an arbitrary skit_stream*
+///   object using skit_stream_dtor or skit_stream_free will not need to
+///   remember what kind of stream was stored, only whether it needs to call
+///   *_dtor or *_free.
 void skit_pfile_stream_dtor(skit_pfile_stream *stream);
 
 // As of this writing, this macro symbol is defined nowhere.

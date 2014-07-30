@@ -612,11 +612,7 @@ void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 	
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if ( pstreami->file_handle != NULL )
-	{
-		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), 
-			"Attempt to free resources from an open stream.\n"
-			"Use skit_pfile_stream_close(stream) first!"));
-	}
+		skit_pfile_stream_close(stream);
 	
 	if ( !skit_loaf_is_null(pstreami->name) )
 		skit_loaf_free(&pstreami->name);
