@@ -27,14 +27,13 @@ skit_empty_stream *skit__empty_stream_cached();
 
 extern skit_ind_stream *skit__ind_empty_cache;
 
-/// These expose the standard stdout, stdin, and stderr file streams as pointers
-/// to skit_pfile_stream objects.  They are statically allocated on an as-needed
-/// basis and should never have their destructors called or be closed or free'd in
-/// any way. 
 #define skit_raw_empty_stream_instance (skit__empty_stream_cached())
 
 #define skit_ind_empty_stream_instance (skit__ind_stream_cached(&skit_raw_empty_stream_instance->as_stream, &skit__ind_empty_cache ))
 
+// We make skit_empty_stream_instance be indentable by default so that
+// functions like skit_stream_get_ind_lvl() will have the behavior that
+// one might expect, even if all of the extra indentation just goes nowhere.
 #define skit_empty_stream_instance (&skit_ind_empty_stream_instance->as_stream)
 
 /**

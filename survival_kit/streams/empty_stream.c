@@ -212,7 +212,9 @@ void skit_empty_stream_dump(const skit_empty_stream *stream, skit_stream *output
 
 void skit_empty_stream_dtor(skit_empty_stream *stream)
 {
-	sASSERT(stream != NULL);
+	sENFORCE(stream != NULL);
+	sENFORCE_MSG(stream != &skit__empty_stream_static_alloc,
+		"Attempt to free skit_empty_stream_instance.");
 }
 
 /* ------------------------------------------------------------------------- */

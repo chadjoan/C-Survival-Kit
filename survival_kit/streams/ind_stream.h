@@ -29,6 +29,11 @@ struct skit_ind_stream_internal
 	// which is infrequent.
 	skit_loaf                 fmtstr_buf;
 
+	// Set to 1 for streams created by skit__ind_stream_cached().
+	// This allows skit_ind_stream_dtor to catch situations where the
+	// caller attempts to free a static stream that should not be freed.
+	int                       is_static;
+
 	// This bit is set when the skit_ind_stream instance owns its backing
 	// stream, and thus must call skit_stream_free() on it whenever
 	// the destructor is called.

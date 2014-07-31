@@ -608,8 +608,14 @@ void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output
 void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 {
 	SKIT_USE_FEATURE_EMULATION;
-	sASSERT(stream != NULL);
-	
+	sENFORCE(stream != NULL);
+
+#define sFREE_STATIC_MSG "Attempt to free a static skit_pfile_stream: %s"
+	sENFORCE_MSGF(stream != skit__pfile_stdout_cache, sFREE_STATIC_MSG, "skit_stream_stdout");
+	sENFORCE_MSGF(stream != skit__pfile_stdin_cache,  sFREE_STATIC_MSG, "skit_stream_stdin" );
+	sENFORCE_MSGF(stream != skit__pfile_stderr_cache, sFREE_STATIC_MSG, "skit_stream_stderr");
+#undef sFREE_STATIC_MSG
+
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if ( pstreami->file_handle != NULL )
 		skit_pfile_stream_close(stream);

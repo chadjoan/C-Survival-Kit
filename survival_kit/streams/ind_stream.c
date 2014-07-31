@@ -67,7 +67,11 @@ void skit_ind_stream_module_init()
 skit_ind_stream *skit__ind_stream_cached( skit_stream *src, skit_ind_stream **cached_stream )
 {
 	if ( *cached_stream == NULL )
+	{
 		*cached_stream = skit_ind_stream_new(src);
+		skit_ind_stream_internal *istreami = &(*cached_stream)->as_internal;
+		istreami->is_static = 1;
+	}
 	
 	return *cached_stream;
 }
@@ -93,6 +97,7 @@ void skit_ind_stream_ctor(skit_ind_stream *istream, skit_stream *backing)
 	skit_ind_stream_internal *istreami = &istream->as_internal;
 	istreami->backing_stream = backing;
 	istreami->fmtstr_buf = skit_loaf_alloc(160);
+	istreami->is_static = 0;
 	istreami->owns_backing_stream = 0;
 	istreami->indent_str = "\t";
 	istreami->indent_level = 0;
@@ -454,6 +459,18 @@ void skit_ind_stream_set_ind_str(skit_ind_stream *stream, const char *c)
 void skit_ind_stream_dtor(skit_ind_stream *stream)
 {
 	skit_ind_stream_internal *istreami = &(stream->as_internal);
+
+	if ( istreami->is_static )
+	{
+		// Try to deallocate the backing stream, even if we don't own it.
+		// That stream will probably assert with a much more specific message!
+		skit_stream_free(istreami->backing_stream);
+
+		// If that didn't work, we assert this ourselves to increase the
+		// chances of this logic error in caller code being caught in testing.
+		sENFORCE_MSG( !istreami->is_static, "Attempt to free a statically allocated skit_ind_stream.");
+	}
+
 	if ( !skit_loaf_is_null(istreami->fmtstr_buf) )
 		skit_loaf_free(&istreami->fmtstr_buf);
 
