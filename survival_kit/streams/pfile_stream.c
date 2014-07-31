@@ -123,6 +123,8 @@ void skit_pfile_stream_ctor(skit_pfile_stream *pstream)
 	pstreami->read_buffer = skit_loaf_null();
 	pstreami->file_handle = NULL;
 	pstreami->handle_owned_by_stream = 1;
+	pstreami->flush_condition = NULL;
+	pstreami->flush_condition_arg = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -416,14 +418,60 @@ skit_slice skit_pfile_stream_read_fn(skit_pfile_stream *stream, skit_loaf *buffe
 
 /* ------------------------------------------------------------------------- */
 
+static int skit_pfile_stream_check_flush(
+	skit_pfile_stream_internal *pstreami,
+	skit_slice text_written
+)
+{
+	if ( pstreami->flush_condition == NULL )
+		return 0;
+
+	return pstreami->flush_condition(
+		pstreami->flush_condition_arg, text_written);
+}
+
+/* ------------------------------------------------------------------------- */
+
+// append_int -> append_internal.
+static void skit_pfile_stream_append_int(skit_pfile_stream *stream, skit_slice slice)
+{
+	SKIT_USE_FEATURE_EMULATION;
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
+	if( pstreami->file_handle == NULL )
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
+
+	ssize_t length = sSLENGTH(slice);
+
+	/* Optimize this case. */
+	if ( length == 0 )
+		return;
+		/*sRETURN();*/
+
+	/* Do the write. */
+	size_t n_bytes_written = fwrite( sSPTR(slice), 1, length, pstreami->file_handle );
+	if ( n_bytes_written != length && ferror(pstreami->file_handle) )
+	{
+		char errbuf[1024];
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+
 void skit_pfile_stream_appendln(skit_pfile_stream *stream, skit_slice line)
 {
 	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
 	/* The error handling is handled by subsequent calls. */
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
-	skit_pfile_stream_append(stream, line);
+	int do_flush = 0;
+	skit_pfile_stream_append_int(stream, line);
+	do_flush |= skit_pfile_stream_check_flush(pstreami, line);
 	sTRACE(skit_pfile_stream_newline(pstreami));
+	do_flush |= skit_pfile_stream_check_flush(pstreami, sSLICE("\n"));
+
+	if ( do_flush )
+		skit_pfile_stream_flush(stream);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -448,33 +496,20 @@ void skit_pfile_stream_appendf_va(skit_pfile_stream *stream, const char *fmtstr,
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
 	
 	vfprintf( pstreami->file_handle, fmtstr, vl ); /* TODO: error handling? */
+	if ( skit_pfile_stream_check_flush(pstreami, skit_slice_of_cstr(fmtstr)) )
+		skit_pfile_stream_flush(stream);
 }
 
 /* ------------------------------------------------------------------------- */
 
 void skit_pfile_stream_append(skit_pfile_stream *stream, skit_slice slice)
 {
-	SKIT_USE_FEATURE_EMULATION;
 	sASSERT(stream != NULL);
-	
+
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
-	if( pstreami->file_handle == NULL )
-		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to write to an unopened stream."));
-	
-	ssize_t length = sSLENGTH(slice);
-	
-	/* Optimize this case. */
-	if ( length == 0 )
-		return;
-		/*sRETURN();*/
-	
-	/* Do the write. */
-	size_t n_bytes_written = fwrite( sSPTR(slice), 1, length, pstreami->file_handle );
-	if ( n_bytes_written != length && ferror(pstreami->file_handle) )
-	{
-		char errbuf[1024];
-		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
-	}
+	skit_pfile_stream_append_int(stream, slice);
+	if ( skit_pfile_stream_check_flush(pstreami, slice) )
+		skit_pfile_stream_flush(stream);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -628,6 +663,36 @@ void skit_pfile_stream_dtor(skit_pfile_stream *stream)
 	
 	if ( !skit_loaf_is_null(pstreami->access_mode) )
 		skit_loaf_free(&pstreami->access_mode);
+
+	pstreami->flush_condition = NULL;
+	pstreami->flush_condition_arg = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_pfile_stream_flush_cond(
+	skit_pfile_stream *stream,
+	void *arg,
+	int (*condition)( void *arg, skit_slice text_written )
+)
+{
+	sASSERT(stream != NULL);
+	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
+	pstreami->flush_condition = condition;
+	pstreami->flush_condition_arg = arg;
+}
+
+int skit_pfile_stream_flush_on_nl( void *arg, skit_slice text_written )
+{
+	char *text_ptr = (char*)sSPTR(text_written);
+	ssize_t text_len = sSLENGTH(text_written);
+	ssize_t i;
+
+	for ( i = 0; i < text_len; i++ )
+		if ( text_ptr[i] == '\n' )
+			return 1;
+
+	return 0;
 }
 
 /* ------------------------------------------------------------------------- */

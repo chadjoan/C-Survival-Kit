@@ -18,6 +18,8 @@ struct skit_pfile_stream_internal
 	skit_loaf                 access_mode;
 	FILE                      *file_handle;
 	int                       handle_owned_by_stream;
+	int (*flush_condition)( void *arg, skit_slice text_written );
+	void                      *flush_condition_arg;
 };
 
 /** File stream backed by POSIX style file I/O or equivalent. */
@@ -96,6 +98,57 @@ void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output
 ///   remember what kind of stream was stored, only whether it needs to call
 ///   *_dtor or *_free.
 void skit_pfile_stream_dtor(skit_pfile_stream *stream);
+
+
+/// Specifies a condition for flushing the stream based on the content that
+/// is written to the stream.  This is useful if the stream must be flushed
+/// more frequently than the underlying POSIX implementation's behavior
+/// and the stream will be written to by code that does not have any
+/// flushing logic (ex: inaccessible 3rd party modules).
+///
+/// Whenever the stream issues a write to the host system, it will also
+/// call the 'condition' function that is passed as a parameter to this
+/// function.  The text involved in the write will be passed to the
+/// 'text_written' argument of the 'condition' function.  If the 'condition'
+/// function returns a non-zero value, then the stream will flush, as if
+/// skit_pfile_stream_flush(...) were called on it at the end of the
+/// call that initiated the writing.  If it returns zero, then the underlying
+/// POSIX implementation will determine whether or not flushing occurs.
+///
+/// Note that a single call to any of the skit_pfile_stream's writing functions
+/// may produce multiple calls to the 'condition' function.  For example,
+/// calling skit_pfile_stream_appendln might call it once for its 'line'
+/// argument, then again for the newline character itself.  Even if the
+/// 'condition' function is called multiple times and returns non-zero values
+/// multiple times, skit_pfile_stream_flush might only be called once at the
+/// end of the original writing function's call (ex: appendln).
+///
+/// To disable this feature, pass NULL for the 'condition' parameter.
+/// This feature is disabled by default.
+///
+/// For the sake of an efficient implementation, format strings will appear
+/// unexpanded when passed into this.
+///
+/// Example:
+///   // This causes the given stream to flush whenever a new-line character
+///   // is written to the file.
+///   skit_pfile_stream my_stream;
+///   skit_pfile_stream_ctor(&my_stream);
+///   skit_pfile_stream_open(&my_stream, sSLICE("my_file.txt"), "w");
+///   skit_pfile_stream_flush_cond(
+///       &my_stream, NULL, &skit_pfile_stream_flush_on_nl);
+///   skit_pfile_stream_appendln(&my_stream, sSLICE("Hello world!"));
+///   skit_pfile_stream_dtor(&my_stream);
+///
+void skit_pfile_stream_flush_cond(
+	skit_pfile_stream *stream,
+	void *arg,
+	int (*condition)( void *arg, skit_slice text_written )
+);
+
+/// Use this with skit_pfile_stream_flush_cond to make a skit_pfile_stream
+/// flush whenever a line ending (nl == newline) is written to the file.
+int skit_pfile_stream_flush_on_nl( void *arg, skit_slice text_written );
 
 // As of this writing, this macro symbol is defined nowhere.
 // It is placed as a way to indicate that the given function definition is
