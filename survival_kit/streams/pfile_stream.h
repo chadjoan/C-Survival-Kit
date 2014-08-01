@@ -199,6 +199,14 @@ arguments to the OpenVMS fopen. */
 /// NOTE: It is odd that the name and access_mode must be supplied for an
 ///   already-opened file_handle.  Perhaps there is a better way?
 ///   This might change in the future: these arguments may be removed.
+///
+/// NOTE: It is difficult to get a file name from a FILE* handle because
+///   the FILE* handle can be open to things besides files (ex: sockets and
+///   unnamed pipes).  In those cases it makes sense for the caller to
+///   provide a surrogate name (and access mode?) anyways.
+///   See http://stackoverflow.com/questions/4862327/is-there-a-way-to-get-the-filename-from-a-file
+///   and http://stackoverflow.com/questions/15110642/how-to-fdopen-as-open-with-the-same-mode-and-flags
+///
 void skit_pfile_stream_use_handle(
 	skit_pfile_stream *pstream,
 	FILE *file_handle,
@@ -248,6 +256,11 @@ void skit_pfile_stream_close_with(
 ///
 void skit_pfile_stream_own_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle );
 void skit_pfile_stream_non_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle );
+
+/// A behavior for file handle closing
+/// (for use with skit_pfile_stream_close_with) that simply calls fclose
+/// on 'file_handle' and throws an exception if any errors are encountered.
+void skit_pfile_stream_fcloser( skit_pfile_stream *pstream, void *arg, FILE *file_handle );
 
 /* Internal use functions that are used in the skit_pfile_stream_open macro. */
 /* Do not use directly. */

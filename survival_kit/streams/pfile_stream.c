@@ -783,6 +783,17 @@ void skit_pfile_stream_close_with(
 
 void skit_pfile_stream_own_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
 {
+	// This may seem silly, but it allows us to distinguish who-owns-what.
+	skit_pfile_stream_fcloser(pstream, arg, file_handle);
+}
+
+void skit_pfile_stream_non_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
+{
+	return; // Do nothing.
+}
+
+void skit_pfile_stream_fcloser( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
+{
 	SKIT_USE_FEATURE_EMULATION;
 	skit_pfile_stream_internal *pstreami = &(pstream->as_internal);
 
@@ -793,11 +804,6 @@ void skit_pfile_stream_own_closer( skit_pfile_stream *pstream, void *arg, FILE *
 		/* TODO: throw exception for invalid file handles when (errval == EBADF) */
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(pstream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
-}
-
-void skit_pfile_stream_non_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
-{
-	return; // Do nothing.
 }
 
 /* ------------------------------------------------------------------------- */
