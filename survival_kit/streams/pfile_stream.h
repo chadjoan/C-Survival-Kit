@@ -8,6 +8,10 @@
 #include "survival_kit/streams/file_stream.h"
 #include "survival_kit/streams/ind_stream.h"
 
+// Forward-reference this so that it can appear as an argument in callbacks.
+typedef union skit_pfile_stream skit_pfile_stream;
+union skit_pfile_stream;
+
 typedef struct skit_pfile_stream_internal skit_pfile_stream_internal;
 struct skit_pfile_stream_internal
 {
@@ -17,13 +21,13 @@ struct skit_pfile_stream_internal
 	skit_loaf                 read_buffer;
 	skit_loaf                 access_mode;
 	FILE                      *file_handle;
-	int                       handle_owned_by_stream;
+	void (*closer_func)( skit_pfile_stream *pstream, void *arg, FILE *handle );
+	void                      *closer_func_arg;
 	int (*flush_condition)( void *arg, skit_slice text_written );
 	void                      *flush_condition_arg;
 };
 
 /** File stream backed by POSIX style file I/O or equivalent. */
-typedef union skit_pfile_stream skit_pfile_stream;
 union skit_pfile_stream
 {
 	skit_stream_metadata       meta;
@@ -180,9 +184,18 @@ arguments to the OpenVMS fopen. */
 #endif
 
 /// Opens a file stream using the given handle.
+///
 /// Unlike with skit_pfile_stream_open, the caller will be responsible for
 /// calling fclose/pclose/whatever on the file_handle.
-/// The caller must still call skit_pfile_stream_close when they are done.
+///
+/// If the caller does not have control over how the stream is destructed,
+/// then they can pass a callback into the skit_pfile_stream_close_with
+/// function to ensure that the file handle resource is finalized in a
+/// way that is consistent with how it was initialized.
+///
+/// The caller must still call skit_pfile_stream_close or
+/// skit_pfile_stream_dtor when they are done.
+///
 /// NOTE: It is odd that the name and access_mode must be supplied for an
 ///   already-opened file_handle.  Perhaps there is a better way?
 ///   This might change in the future: these arguments may be removed.
@@ -198,6 +211,43 @@ void skit_pfile_stream_use_handle(
 /// a pfile stream on multiple files and minimize the amount of malloc/free
 /// calls per-file.
 void skit_pfile_stream_close(skit_pfile_stream *stream);
+
+/// This function allows the caller to determine how the stream's file handle
+/// is finalized when skit_pfile_stream_close is called.
+///
+/// By default, 'closer_func' will call fclose in a manner consistent with
+/// how the file stream opened its own internal handle, or will do nothing
+/// if skit_pfile_stream_use_handle was called.
+///
+/// This is intended to be used with skit_pfile_stream_use_handle as a way
+/// to finalize resources when the stream's point-of-destruction is not
+/// directly accessible by the caller (ex: it is in generic code or a 3rd
+/// party module).
+///
+/// The function assigned by this will be overwritten (with the defaults)
+/// by any subsequent calls to skit_pfile_stream_open or
+/// skit_pfile_stream_use_handle.
+///
+/// Passing NULL into the 'closer_func' argument will cause
+/// skit_pfile_stream_non_closer to be used as the file-handle closing
+/// behavior.
+void skit_pfile_stream_close_with(
+	skit_pfile_stream *pstream,
+	void *arg,
+	void (*closer_func)( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
+);
+
+/// These are the built-in behaviors for file handle closing.
+/// They are intended to be used as arguments to skit_pfile_stream_close_with.
+///
+/// skit_pfile_stream_own_closer is the behavior that is assigned by default
+/// whenever skit_pfile_stream_open is called.
+///
+/// skit_pfile_stream_non_closer is the behavior that is assigned by default
+/// whenever skit_pfile_stream_use_handle is called.
+///
+void skit_pfile_stream_own_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle );
+void skit_pfile_stream_non_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle );
 
 /* Internal use functions that are used in the skit_pfile_stream_open macro. */
 /* Do not use directly. */

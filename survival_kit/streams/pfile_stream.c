@@ -122,7 +122,8 @@ void skit_pfile_stream_ctor(skit_pfile_stream *pstream)
 	pstreami->name = skit_loaf_null();
 	pstreami->read_buffer = skit_loaf_null();
 	pstreami->file_handle = NULL;
-	pstreami->handle_owned_by_stream = 1;
+	pstreami->closer_func = &skit_pfile_stream_own_closer;
+	pstreami->closer_func_arg = NULL;
 	pstreami->flush_condition = NULL;
 	pstreami->flush_condition_arg = NULL;
 }
@@ -137,8 +138,9 @@ void skit_pfile_stream_use_handle( skit_pfile_stream *pstream, FILE *file_handle
 	pstreami->access_mode = skit_loaf_copy_cstr(access_mode);
 	
 	pstreami->file_handle = file_handle;
-	
-	pstreami->handle_owned_by_stream = 0;
+
+	pstreami->closer_func = &skit_pfile_stream_non_closer;
+	pstreami->closer_func_arg = NULL;
 }
 
 static skit_pfile_stream *skit_pfile_stream_from_handle( FILE *file_handle, skit_slice name, const char *access_mode )
@@ -630,10 +632,17 @@ void skit_pfile_stream_dump(const skit_pfile_stream *stream, skit_stream *output
 	skit_stream_appendf(output, "File handle:  %p\n", pstreami->file_handle);
 	skit_stream_appendf(output, "Access:       %s\n", skit_loaf_as_cstr(pstreami->access_mode));
 	skit_stream_appendf(output, "Handle owner: ");
-	if ( pstreami->handle_owned_by_stream )
+	if ( pstreami->closer_func == &skit_pfile_stream_own_closer )
 		skit_stream_appendf(output, "The stream owns its file handle.\n");
 	else
-		skit_stream_appendf(output, "The caller's FILE* pointer owns the handle.\n");
+	{
+		skit_stream_appendf(output, "The caller's FILE* pointer owns the handle,\n");
+		if ( pstreami->closer_func == &skit_pfile_stream_non_closer )
+			skit_stream_appendf(output, "  and the stream will not attempt to finalize this file handle.\n");
+		else
+			skit_stream_appendf(output, "  and a custom FILE* handle finalize was given by skit_pfile_stream_close_with(this,%p,%p)\n",
+				pstreami->closer_func_arg, pstreami->closer_func);
+	}
 
 	return;
 }
@@ -731,8 +740,9 @@ void skit__pfile_stream_assign_fp(skit_pfile_stream *stream, FILE *fp)
 		/* TODO: generate different kinds of exceptions depending on what went wrong. */
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
 	}
-	
-	pstreami->handle_owned_by_stream = 1;
+
+	pstreami->closer_func = &skit_pfile_stream_own_closer;
+	pstreami->closer_func_arg = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -744,19 +754,50 @@ void skit_pfile_stream_close(skit_pfile_stream *stream)
 	skit_pfile_stream_internal *pstreami = &(stream->as_internal);
 	if( pstreami->file_handle == NULL )
 		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), "Attempt to close an unopened stream."));
-	
-	if ( pstreami->handle_owned_by_stream )
-	{
-		int errval = fclose(pstreami->file_handle);
-		if ( errval != 0 )
-		{
-			char errbuf[1024];
-			/* TODO: throw exception for invalid file handles when (errval == EBADF) */
-			sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(stream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
-		}
-	}
-	
+
+	sASSERT(pstreami->closer_func != NULL);
+	sTRACE1(pstreami->closer_func(stream, pstreami->closer_func_arg, pstreami->file_handle));
+
 	pstreami->file_handle = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
+void skit_pfile_stream_close_with(
+	skit_pfile_stream *pstream,
+	void *arg,
+	void (*closer_func)( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
+)
+{
+	SKIT_USE_FEATURE_EMULATION;
+	sASSERT(pstream != NULL);
+	skit_pfile_stream_internal *pstreami = &(pstream->as_internal);
+
+	if ( closer_func == NULL )
+		pstreami->closer_func = &skit_pfile_stream_non_closer;
+	else
+		pstreami->closer_func = closer_func;
+
+	pstreami->closer_func_arg = arg;
+}
+
+void skit_pfile_stream_own_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
+{
+	SKIT_USE_FEATURE_EMULATION;
+	skit_pfile_stream_internal *pstreami = &(pstream->as_internal);
+
+	int errval = fclose(pstreami->file_handle);
+	if ( errval != 0 )
+	{
+		char errbuf[1024];
+		/* TODO: throw exception for invalid file handles when (errval == EBADF) */
+		sTRACE(skit_stream_throw_exc(SKIT_FILE_IO_EXCEPTION, &(pstream->as_stream), skit_errno_to_cstr(errbuf, sizeof(errbuf))));
+	}
+}
+
+void skit_pfile_stream_non_closer( skit_pfile_stream *pstream, void *arg, FILE *file_handle )
+{
+	return; // Do nothing.
 }
 
 /* ------------------------------------------------------------------------- */
