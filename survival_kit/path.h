@@ -4,11 +4,14 @@
 
 #include "survival_kit/string.h"
 
-/**
-Cross-platform way to join paths.
-
-On OpenVMS, this will always return a POSIX style path.
-*/
+/// Cross-platform way to join paths.
+///
+/// On OpenVMS, this will always return a POSIX style path.
+///
+/// Because of the large likelyhood that the resulting path will be used
+/// as an argument in C-functions expecting null-terminated char*'s, this
+/// function is guaranteed to leave a 0-byte ('\0') in the buffer just
+/// after the returned slice.
 skit_slice skit_path_join( skit_loaf *path_join_buf, skit_slice a, skit_slice b);
 
 /* Let these be called by other functions like skit_init(). */

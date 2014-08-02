@@ -206,7 +206,9 @@ sSCOPE
 	if ( lhs_len > 0 && rhs_len > 0 && !lhs_is_root )
 		skit_slice_buffered_append(path_join_buf, &result, sSLICE("/"));
 	skit_slice_buffered_append(path_join_buf, &result, rhs);
-	
+	skit_slice_buffered_append(path_join_buf, &result, sSLICE("\0"));
+	result = skit_slice_of(result, 0, sSLENGTH(result)-1);
+
 	sRETURN(result);
 sEND_SCOPE
 
