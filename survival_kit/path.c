@@ -79,7 +79,6 @@ void skit_path_thread_init()
 
 static int skit_path_receive( char *path )
 {
-	printf("skit_path_receive('%s')\n",path);
 	skit_path_receive_struct *path_receive_buf = pthread_getspecific(skit_path_receive_buf_key);
 	path_receive_buf->path = skit_loaf_store_cstr(&path_receive_buf->buffer, path);
 	return 1;
