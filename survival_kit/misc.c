@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <assert.h>
+#include <netdb.h> // EAI_* error codes.
 
 #if defined(__DECC) && defined(__VMS)
 #  include <lib$routines.h> /* lib$signal */
@@ -157,5 +158,66 @@ const char *skit_error_code_to_cstr( int error_code, char *buf, size_t buf_size)
 	#endif
 	
 	return buf;
+}
+
+// Implementation ripped from PostgreSQL source code. (Hopefully no one minds.)
+// They seem to know what's going on.
+const char *skit_gai_strerror(int errcode)
+{
+#ifdef HAVE_HSTRERROR
+	int			hcode;
+
+	switch (errcode)
+	{
+		case EAI_NONAME:
+			hcode = HOST_NOT_FOUND;
+			break;
+		case EAI_AGAIN:
+			hcode = TRY_AGAIN;
+			break;
+		case EAI_FAIL:
+		default:
+			hcode = NO_RECOVERY;
+			break;
+	}
+
+	return hstrerror(hcode);
+#else							/* !HAVE_HSTRERROR */
+
+	switch (errcode)
+	{
+		case EAI_NONAME:
+			return "Unknown host";
+		case EAI_AGAIN:
+			return "Host name lookup failure";
+			/* Errors below are probably WIN32 only */
+#ifdef EAI_BADFLAGS
+		case EAI_BADFLAGS:
+			return "Invalid argument";
+#endif
+#ifdef EAI_FAMILY
+		case EAI_FAMILY:
+			return "Address family not supported";
+#endif
+#ifdef EAI_MEMORY
+		case EAI_MEMORY:
+			return "Not enough memory";
+#endif
+#if defined(EAI_NODATA) && EAI_NODATA != EAI_NONAME		/* MSVC/WIN64 duplicate */
+		case EAI_NODATA:
+			return "No host data of that type was found";
+#endif
+#ifdef EAI_SERVICE
+		case EAI_SERVICE:
+			return "Class type not found";
+#endif
+#ifdef EAI_SOCKTYPE
+		case EAI_SOCKTYPE:
+			return "Socket type not supported";
+#endif
+		default:
+			return "Unknown server error";
+	}
+#endif   /* HAVE_HSTRERROR */
 }
 

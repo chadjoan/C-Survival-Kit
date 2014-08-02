@@ -41,4 +41,9 @@ const char *skit_errno_to_cstr( char *buf, size_t buf_size);
 /// to pass an error code value that is to be used instead of global errno.
 const char *skit_error_code_to_cstr( int error_code, char *buf, size_t buf_size);
 
+/// Thread-safe and consistent alternative to the gai_strerror function that
+/// is used to stringize error codes returned from getaddrinfo and related
+/// functions (anything that returns an EAI_* error code, it seems).
+const char *skit_gai_strerror(int errcode);
+
 #endif
